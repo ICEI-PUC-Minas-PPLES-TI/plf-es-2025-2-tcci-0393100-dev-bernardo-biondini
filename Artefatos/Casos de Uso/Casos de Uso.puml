@@ -1,0 +1,275 @@
+@startuml
+left to right direction
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #F9F9F9
+  BorderColor #333
+  ArrowColor #666
+}
+
+' === Atores ===
+actor "Deputada" as A1
+actor "Chefe de Gabinete" as A2
+actor "Gestora" as A3
+actor "Gestora de Demandas" as A4
+actor "Atendimento" as A5
+actor "Funcionários" as A6
+
+' === Casos de Uso Gerais ===
+usecase "1. Autenticação Sistema" as UC_Auth
+usecase "2 Validar Perfil" as UC_ValidarPerfil
+
+UC_Auth --> UC_ValidarPerfil : <<include>>
+
+' === Cadastros ===
+package "Cadastros" {
+  usecase "3. Cadastrar Instituição" as UC_CadInst
+  usecase "4. Consultar Instituição" as UC_ConsInst
+  usecase "5. Cadastrar Liderança" as UC_CadLid
+  usecase "6. Consultar Lideranças" as UC_ConsLid
+  usecase "7. Cadastrar Informações da Cidade" as UC_CadCid
+  usecase "8. Consultar Cidades" as UC_ConsCid
+  usecase "9. Cadastrar Igreja" as UC_CadIgreja
+  usecase "10. Consultar Igrejas" as UC_ConsIgreja
+}
+
+' === Gestão de Conteúdo do Site ===
+package "Gestão de Conteúdo do Site" {
+  usecase "11. Cadastrar Notícias" as UC_CadNot
+  usecase "12. Consultar Notícias" as UC_ConsNot
+  usecase "13. Atualizar Missão" as UC_Missao
+  usecase "14. Atualizar Trajetória" as UC_Trajetoria
+  usecase "15. Cadastrar Projetos" as UC_CadProjSite
+  usecase "16. Consultar Projetos" as UC_ConsProjSite
+}
+
+' === Projetos de Lei ===
+package "Projetos de Lei" {
+  usecase "17. Cadastrar Projetos de Lei" as UC_CadPL
+  usecase "18. Atualizar Status dos Projetos de Lei" as UC_AtualPL
+  usecase "19. Consultar Projetos de Lei" as UC_ConsPL
+  usecase "20. Gerar Relatório de Projetos" as UC_RelPL
+}
+
+' === Gestão de Emendas ===
+package "Gestão de Emendas" {
+  usecase "21. Cadastrar Emenda" as UC_CadEmenda
+  usecase "22. Atualizar Status da Emenda" as UC_AtualEmenda
+  usecase "23. Gerar Relatório por Cidade" as UC_RelCid
+  usecase "24. Gerar Relatório por Área" as UC_RelArea
+  usecase "25. Visualizar Gráficos" as UC_Graficos
+  usecase "26. Consultar Emendas" as UC_ConsEmendas
+}
+
+' === Gestão de Demandas ===
+package "Gestão de Demandas" {
+  usecase "27. Anexar Ofício" as UC_Oficio
+  usecase "28. Atualizar Status da Demanda" as UC_AtualDemanda
+  usecase "29. Consultar Demandas" as UC_ConsDemanda
+  usecase "30. Atribuir Responsável" as UC_AtribResp
+  usecase "31. Registrar Pessoa Atendida" as UC_RegPessoa
+  usecase "32. Definir Prazo" as UC_DefPrazo
+  usecase "Aux. Abrir Demanda" as UC_AbrirDemanda
+  usecase "Aux. Enviar Notificação" as UC_Notificacao
+}
+
+' Relações include/extend em Demandas
+UC_Oficio .> UC_RegPessoa : <<extend>>
+UC_Oficio .> UC_DefPrazo : <<extend>>
+UC_Oficio .> UC_AtribResp : <<extend>>
+UC_Oficio --> UC_AbrirDemanda : <<include>>
+UC_AtualDemanda --> UC_Notificacao : <<include>>
+UC_AtribResp --> UC_Notificacao : <<include>>
+
+' === Gestão da Agenda ===
+package "Gestão da Agenda" {
+  usecase "33. Cadastrar Evento" as UC_Evento
+  usecase "34. Visualizar Calendário" as UC_Calendario
+  usecase "35. Criar Alerta/Lembrete" as UC_Alerta
+  usecase "Aux. Vincular Contexto ao Evento" as UC_Contexto
+  usecase "Aux. Detectar Conflitos" as UC_Conflitos
+}
+
+UC_Evento .> UC_Contexto : <<extend>>
+UC_Evento --> UC_Conflitos : <<include>>
+UC_Alerta --> UC_Notificacao : <<include>>
+
+' === Relatórios ===
+package "Relatórios" {
+  usecase "36. Gerar Relatório Consolidado" as UC_RelConsolidado
+}
+
+' === Ligações dos atores ===
+
+' -- Deputada
+A1 --> UC_Auth
+A1 --> UC_CadInst
+A1 --> UC_CadLid
+A1 --> UC_RelPL
+A1 --> UC_CadEmenda
+A1 --> UC_AtualEmenda
+A1 --> UC_RelCid
+A1 --> UC_RelArea
+A1 --> UC_Graficos
+A1 --> UC_Evento
+A1 --> UC_Alerta
+A1 --> UC_RelConsolidado
+
+' -- Chefe de Gabinete
+A2 --> UC_Auth
+A2 --> UC_CadInst
+A2 --> UC_CadLid
+A2 --> UC_CadEmenda
+A2 --> UC_AtualEmenda
+A2 --> UC_Evento
+A2 --> UC_Alerta
+
+' -- Gestora
+A3 --> UC_Auth
+A3 --> UC_CadInst
+A3 --> UC_CadLid
+
+' -- Gestora de Demandas
+A4 --> UC_Auth
+A4 --> UC_Oficio
+A4 --> UC_AtribResp
+A4 --> UC_RegPessoa
+A4 --> UC_DefPrazo
+A4 --> UC_AtualDemanda
+A4 --> UC_ConsDemanda
+
+' -- Atendimento
+A5 --> UC_Auth
+A5 --> UC_Oficio
+A5 --> UC_AtribResp
+A5 --> UC_RegPessoa
+A5 --> UC_DefPrazo
+A5 --> UC_AtualDemanda
+A5 --> UC_ConsDemanda
+
+' -- Funcionários
+A6 --> UC_Auth
+A6 --> UC_CadEmenda
+A6 --> UC_AtualEmenda
+
+' === Casos de uso acessíveis a todos (consultas gerais) ===
+A1 --> UC_ConsInst
+A2 --> UC_ConsInst
+A3 --> UC_ConsInst
+A4 --> UC_ConsInst
+A5 --> UC_ConsInst
+A6 --> UC_ConsInst
+
+A1 --> UC_ConsLid
+A2 --> UC_ConsLid
+A3 --> UC_ConsLid
+A4 --> UC_ConsLid
+A5 --> UC_ConsLid
+A6 --> UC_ConsLid
+
+A1 --> UC_CadCid
+A2 --> UC_CadCid
+A3 --> UC_CadCid
+A4 --> UC_CadCid
+A5 --> UC_CadCid
+A6 --> UC_CadCid
+
+A1 --> UC_ConsCid
+A2 --> UC_ConsCid
+A3 --> UC_ConsCid
+A4 --> UC_ConsCid
+A5 --> UC_ConsCid
+A6 --> UC_ConsCid
+
+A1 --> UC_CadIgreja
+A2 --> UC_CadIgreja
+A3 --> UC_CadIgreja
+A4 --> UC_CadIgreja
+A5 --> UC_CadIgreja
+A6 --> UC_CadIgreja
+
+A1 --> UC_ConsIgreja
+A2 --> UC_ConsIgreja
+A3 --> UC_ConsIgreja
+A4 --> UC_ConsIgreja
+A5 --> UC_ConsIgreja
+A6 --> UC_ConsIgreja
+
+A1 --> UC_CadNot
+A2 --> UC_CadNot
+A3 --> UC_CadNot
+A4 --> UC_CadNot
+A5 --> UC_CadNot
+A6 --> UC_CadNot
+
+A1 --> UC_ConsNot
+A2 --> UC_ConsNot
+A3 --> UC_ConsNot
+A4 --> UC_ConsNot
+A5 --> UC_ConsNot
+A6 --> UC_ConsNot
+
+A1 --> UC_Missao
+A2 --> UC_Missao
+A3 --> UC_Missao
+A4 --> UC_Missao
+A5 --> UC_Missao
+A6 --> UC_Missao
+
+A1 --> UC_Trajetoria
+A2 --> UC_Trajetoria
+A3 --> UC_Trajetoria
+A4 --> UC_Trajetoria
+A5 --> UC_Trajetoria
+A6 --> UC_Trajetoria
+
+A1 --> UC_CadProjSite
+A2 --> UC_CadProjSite
+A3 --> UC_CadProjSite
+A4 --> UC_CadProjSite
+A5 --> UC_CadProjSite
+A6 --> UC_CadProjSite
+
+A1 --> UC_ConsProjSite
+A2 --> UC_ConsProjSite
+A3 --> UC_ConsProjSite
+A4 --> UC_ConsProjSite
+A5 --> UC_ConsProjSite
+A6 --> UC_ConsProjSite
+
+A1 --> UC_CadPL
+A2 --> UC_CadPL
+A3 --> UC_CadPL
+A4 --> UC_CadPL
+A5 --> UC_CadPL
+A6 --> UC_CadPL
+
+A1 --> UC_AtualPL
+A2 --> UC_AtualPL
+A3 --> UC_AtualPL
+A4 --> UC_AtualPL
+A5 --> UC_AtualPL
+A6 --> UC_AtualPL
+
+A1 --> UC_ConsPL
+A2 --> UC_ConsPL
+A3 --> UC_ConsPL
+A4 --> UC_ConsPL
+A5 --> UC_ConsPL
+A6 --> UC_ConsPL
+
+A1 --> UC_ConsEmendas
+A2 --> UC_ConsEmendas
+A3 --> UC_ConsEmendas
+A4 --> UC_ConsEmendas
+A5 --> UC_ConsEmendas
+A6 --> UC_ConsEmendas
+
+A1 --> UC_Calendario
+A2 --> UC_Calendario
+A3 --> UC_Calendario
+A4 --> UC_Calendario
+A5 --> UC_Calendario
+A6 --> UC_Calendario
+
+@enduml

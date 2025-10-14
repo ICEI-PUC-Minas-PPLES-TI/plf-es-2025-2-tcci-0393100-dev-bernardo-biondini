@@ -1,0 +1,13 @@
+@startuml
+title Diagrama de Sequência do Sistema (DSS) - 1. Autenticação Sistema
+
+actor "Ator Principal" as actor
+participant ":Sistema" as system
+
+actor -> system: 1. Autenticação Sistema
+activate system
+
+system --> actor: Resposta do Sistema
+deactivate system
+
+@enduml

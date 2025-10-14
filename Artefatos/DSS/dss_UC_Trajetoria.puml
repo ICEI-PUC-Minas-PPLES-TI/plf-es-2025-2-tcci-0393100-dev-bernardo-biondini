@@ -1,0 +1,13 @@
+@startuml
+title Diagrama de Sequência do Sistema (DSS) - 14. Atualizar Trajetória
+
+actor "Ator Principal" as actor
+participant ":Sistema" as system
+
+actor -> system: 14. Atualizar Trajetória
+activate system
+
+system --> actor: Resposta do Sistema
+deactivate system
+
+@enduml

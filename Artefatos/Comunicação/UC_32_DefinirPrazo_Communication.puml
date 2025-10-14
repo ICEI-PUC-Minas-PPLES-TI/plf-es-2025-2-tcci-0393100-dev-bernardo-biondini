@@ -1,0 +1,24 @@
+@startuml
+skinparam shadowing false
+skinparam linetype ortho
+skinparam RectangleBorderColor #333
+skinparam RectangleBackgroundColor #F3F7FF
+skinparam ArrowColor #444
+title UC 32 - Definir Prazo (Comunicação)
+
+rectangle "Usuario" as User
+rectangle "DemandaPrazoController" as C
+rectangle "DemandaPrazoService" as S
+database "DemandaPrazoDB" as DB
+
+left to right direction
+
+User -down-> C : 1. Solicita "Definir Prazo"
+C -down-> S : 2. Executa lógica
+S --> DB : 3. CRUD principal
+DB --> S : 4. Resultado
+S --> C : 5. Resposta
+C --> User : 6. Sucesso
+
+
+@enduml

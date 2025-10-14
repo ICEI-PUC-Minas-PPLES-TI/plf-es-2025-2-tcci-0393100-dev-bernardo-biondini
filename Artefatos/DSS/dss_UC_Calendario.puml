@@ -1,0 +1,13 @@
+@startuml
+title Diagrama de Sequência do Sistema (DSS) - 34. Visualizar Calendário
+
+actor "Ator Principal" as actor
+participant ":Sistema" as system
+
+actor -> system: 34. Visualizar Calendário
+activate system
+
+system --> actor: Resposta do Sistema
+deactivate system
+
+@enduml

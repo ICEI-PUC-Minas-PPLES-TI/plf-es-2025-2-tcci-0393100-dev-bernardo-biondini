@@ -1,0 +1,13 @@
+@startuml
+title Diagrama de Sequência do Sistema (DSS) - 33. Cadastrar Evento
+
+actor "Ator Principal" as actor
+participant ":Sistema" as system
+
+actor -> system: 33. Cadastrar Evento
+activate system
+
+system --> actor: Resposta do Sistema
+deactivate system
+
+@enduml

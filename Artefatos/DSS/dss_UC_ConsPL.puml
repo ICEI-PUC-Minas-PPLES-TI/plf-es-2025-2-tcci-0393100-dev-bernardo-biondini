@@ -1,0 +1,13 @@
+@startuml
+title Diagrama de Sequência do Sistema (DSS) - 19. Consultar Projetos de Lei
+
+actor "Ator Principal" as actor
+participant ":Sistema" as system
+
+actor -> system: 19. Consultar Projetos de Lei
+activate system
+
+system --> actor: Resposta do Sistema
+deactivate system
+
+@enduml

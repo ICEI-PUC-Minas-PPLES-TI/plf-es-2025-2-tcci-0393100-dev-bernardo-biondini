@@ -1,0 +1,13 @@
+@startuml
+title Diagrama de Sequência do Sistema (DSS) - 10. Consultar Igrejas
+
+actor "Ator Principal" as actor
+participant ":Sistema" as system
+
+actor -> system: 10. Consultar Igrejas
+activate system
+
+system --> actor: Resposta do Sistema
+deactivate system
+
+@enduml

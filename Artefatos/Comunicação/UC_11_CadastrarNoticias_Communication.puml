@@ -1,0 +1,24 @@
+@startuml
+skinparam shadowing false
+skinparam linetype ortho
+skinparam RectangleBorderColor #333
+skinparam RectangleBackgroundColor #F3F7FF
+skinparam ArrowColor #444
+title UC 11 - Cadastrar Notícias (Comunicação)
+
+rectangle "Usuario" as User
+rectangle "NoticiaController" as C
+rectangle "NoticiaService" as S
+database "NoticiaDB" as DB
+
+left to right direction
+
+User -down-> C : 1. Solicita "Cadastrar Notícias"
+C -down-> S : 2. Executa lógica
+S --> DB : 3. CRUD principal
+DB --> S : 4. Resultado
+S --> C : 5. Resposta
+C --> User : 6. Sucesso
+
+
+@enduml

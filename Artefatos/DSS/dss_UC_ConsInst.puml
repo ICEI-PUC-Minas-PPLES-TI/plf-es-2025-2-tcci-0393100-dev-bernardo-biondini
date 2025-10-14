@@ -1,0 +1,13 @@
+@startuml
+title Diagrama de Sequência do Sistema (DSS) - 4. Consultar Instituição
+
+actor "Ator Principal" as actor
+participant ":Sistema" as system
+
+actor -> system: 4. Consultar Instituição
+activate system
+
+system --> actor: Resposta do Sistema
+deactivate system
+
+@enduml

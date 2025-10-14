@@ -1,0 +1,13 @@
+@startuml
+title Diagrama de Sequência do Sistema (DSS) - 11. Cadastrar Notícias
+
+actor "Ator Principal" as actor
+participant ":Sistema" as system
+
+actor -> system: 11. Cadastrar Notícias
+activate system
+
+system --> actor: Resposta do Sistema
+deactivate system
+
+@enduml

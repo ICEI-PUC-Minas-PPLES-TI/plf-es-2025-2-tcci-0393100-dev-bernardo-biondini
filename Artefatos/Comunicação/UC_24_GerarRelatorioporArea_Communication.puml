@@ -1,0 +1,24 @@
+@startuml
+skinparam shadowing false
+skinparam linetype ortho
+skinparam RectangleBorderColor #333
+skinparam RectangleBackgroundColor #F3F7FF
+skinparam ArrowColor #444
+title UC 24 - Gerar Relatório por Área (Comunicação)
+
+rectangle "Usuario" as User
+rectangle "EmendaRelatorioAreaController" as C
+rectangle "EmendaRelatorioAreaService" as S
+database "EmendaRelatorioAreaDB" as DB
+
+left to right direction
+
+User -down-> C : 1. Solicita "Gerar Relatório por Área"
+C -down-> S : 2. Executa lógica
+S --> DB : 3. CRUD principal
+DB --> S : 4. Resultado
+S --> C : 5. Resposta
+C --> User : 6. Sucesso
+
+
+@enduml

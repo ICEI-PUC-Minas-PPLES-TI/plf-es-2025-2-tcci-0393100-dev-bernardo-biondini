@@ -1,0 +1,13 @@
+@startuml
+title Diagrama de Sequência do Sistema (DSS) - 26. Consultar Emendas
+
+actor "Ator Principal" as actor
+participant ":Sistema" as system
+
+actor -> system: 26. Consultar Emendas
+activate system
+
+system --> actor: Resposta do Sistema
+deactivate system
+
+@enduml

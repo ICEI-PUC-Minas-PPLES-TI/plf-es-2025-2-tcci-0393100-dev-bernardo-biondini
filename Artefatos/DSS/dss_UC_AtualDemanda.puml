@@ -1,0 +1,13 @@
+@startuml
+title Diagrama de Sequência do Sistema (DSS) - 28. Atualizar Status da Demanda
+
+actor "Ator Principal" as actor
+participant ":Sistema" as system
+
+actor -> system: 28. Atualizar Status da Demanda
+activate system
+
+system --> actor: Resposta do Sistema
+deactivate system
+
+@enduml
