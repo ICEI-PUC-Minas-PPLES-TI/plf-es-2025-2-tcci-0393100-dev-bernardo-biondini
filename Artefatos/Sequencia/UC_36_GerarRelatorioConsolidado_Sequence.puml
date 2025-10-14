@@ -1,0 +1,24 @@
+@startuml
+skinparam shadowing false
+skinparam monochrome false
+skinparam sequenceMessageAlign center
+skinparam ParticipantBorderColor #333
+skinparam ParticipantBackgroundColor #F7F7F7
+skinparam ArrowColor #555
+skinparam NoteBackgroundColor #fffbe6
+title UC 36 - Gerar Relatório Consolidado (Sequência)
+
+actor Usuario as User
+control RelatorioConsolidadoController as C
+control RelatorioConsolidadoService as S
+database RelatorioConsolidadoDB as DB
+
+' Fluxo principal
+User -> C : 1. Solicita "Gerar Relatório Consolidado"
+C -> S : 2. Executa lógica de negócio
+S -> DB : 3. Operação CRUD (criar/atualizar/consultar)
+DB --> S : 4. Resultado
+S --> C : 6. Resposta de negócio
+C --> User : 7. Sucesso/Feedback
+
+@enduml

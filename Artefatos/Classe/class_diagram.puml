@@ -1,0 +1,143 @@
+@startuml
+title Diagrama de Classes - Gabinete Inteligente
+
+' Pacotes (módulos principais)
+package "Demandas" {
+  class Demanda {
+    +id: UUID
+    +titulo: String
+    +descricao: Text
+    +status: StatusDemanda
+    +prioridade: Prioridade
+    +dataAbertura: DateTime
+    +dataConclusao: DateTime
+    +criadaPor(): Usuario
+    +atribuirResponsavel(u: Usuario)
+    +atualizarStatus(novoStatus: StatusDemanda)
+  }
+
+  class HistoricoDemanda {
+    +id: UUID
+    +mudanca: String
+    +data: DateTime
+    +autor: Usuario
+  }
+}
+
+package "Pessoas" {
+  class Usuario {
+    +id: UUID
+    +nome: String
+    +email: String
+    +perfil: PerfilAcesso
+    +ativo: bool
+    +autenticar(senha: String): bool
+  }
+
+  class Lideranca {
+    +id: UUID
+    +nome: String
+    +cargo: String
+    +telefone: String
+    +municipio: Municipio
+  }
+
+  class Instituicao {
+    +id: UUID
+    +nome: String
+    +tipo: String
+    +municipio: Municipio
+  }
+}
+
+package "Cidades" {
+  class Municipio {
+    +id: UUID
+    +nome: String
+    +regiao: String
+    +populacao: int
+  }
+}
+
+package "Agenda" {
+  class Evento {
+    +id: UUID
+    +titulo: String
+    +inicio: DateTime
+    +fim: DateTime
+    +local: String
+    +descricao: Text
+    +vinculos(): List<VinculoContexto>
+  }
+
+  class VinculoContexto {
+    +tipo: String
+    +referenciaId: UUID
+  }
+}
+
+package "Emendas" {
+  class Emenda {
+    +id: UUID
+    +numero: String
+    +valor: Decimal
+    +finalidade: String
+    +municipio: Municipio
+    +status: StatusEmenda
+  }
+}
+
+package "CMS" {
+  class Noticia {
+    +id: UUID
+    +titulo: String
+    +conteudo: Text
+    +publicadaEm: DateTime
+    +autor: Usuario
+  }
+}
+
+' Relacionamentos
+Usuario "1" -- "0..*" Demanda : cria >
+Usuario "0..1" -- "0..*" Demanda : responsável >
+Demanda "1" -- "0..*" HistoricoDemanda : gera >
+Demanda "0..*" -- "0..1" Municipio
+Lideranca "*" -- "1" Municipio
+Instituicao "*" -- "1" Municipio
+Evento "0..*" -- "0..*" VinculoContexto
+Emenda "*" -- "1" Municipio
+Noticia "*" -- "1" Usuario : autor
+
+' Enums
+enum PerfilAcesso {
+  Deputada
+  ChefeDeGabinete
+  Gestora
+  GestoraDeDemandas
+  Atendimento
+  Funcionarios
+}
+
+enum StatusDemanda {
+  Aberta
+  EmAndamento
+  AguardandoInformacao
+  Concluida
+  Cancelada
+}
+
+enum Prioridade {
+  Baixa
+  Media
+  Alta
+  Critica
+}
+
+enum StatusEmenda {
+  Planejada
+  Destinada
+  EmExecucao
+  Concluida
+}
+
+@enduml
