@@ -1,0 +1,41 @@
+
+@startuml
+title Diagrama de Implantação - Gabinete Inteligente
+
+skinparam shadowing false
+
+node "Usuário" as User {
+  artifact "Navegador Web" as Browser
+}
+
+node "Hosting Frontend" as FEHost {
+  artifact "React App (SPA)" as ReactApp
+}
+
+node "Servidor de Aplicação" as AppSrv {
+  node "Container PHP-FPM" as PHP {
+    artifact "Laravel API" as Laravel
+  }
+  node "Nginx/Apache" as WebSrv
+}
+
+node "DB Server" as DBNode {
+  database "MySQL" as MySQL
+}
+
+node "File Storage" as FS {
+  folder "S3/Local" as S3Local
+}
+
+node "E-mail Service" as Mail {
+  artifact "SMTP/API" as SMTP
+}
+
+User -down-> FEHost : HTTPS
+FEHost -down-> AppSrv : HTTPS
+WebSrv -down-> Laravel : FastCGI/Local
+Laravel -down-> MySQL : TCP 3306
+Laravel -down-> S3Local : SDK/API
+Laravel -down-> SMTP : SMTP/HTTPS
+
+@enduml

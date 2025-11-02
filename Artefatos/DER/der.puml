@@ -1,0 +1,112 @@
+
+@startuml
+title DER - Gabinete Inteligente (modelo relacional)
+
+skinparam shadowing false
+skinparam class {
+  BackgroundColor #ffffff
+  BorderColor #2c3e50
+}
+
+entity Usuario {
+  * id : INT <<PK>>
+  --
+  nome : VARCHAR
+  email : VARCHAR
+  senha_hash : VARCHAR
+  papel : ENUM("DEPUTADA","CHEFE","GESTORA","ATENDENTE","FUNCIONARIO")
+  criado_em : DATETIME
+  atualizado_em : DATETIME
+}
+
+entity Demanda {
+  * id : INT <<PK>>
+  --
+  titulo : VARCHAR
+  descricao : TEXT
+  status : ENUM("ABERTA","EM_ANDAMENTO","CONCLUIDA")
+  prioridade : ENUM("BAIXA","MEDIA","ALTA")
+  responsavel_id : INT <<FK>>
+  cidade_id : INT <<FK>>
+  instituicao_id : INT <<FK>>
+  criado_por_id : INT <<FK>>
+  criado_em : DATETIME
+  atualizado_em : DATETIME
+}
+
+entity Emenda {
+  * id : INT <<PK>>
+  --
+  numero : VARCHAR
+  valor : DECIMAL(14,2)
+  status : ENUM("PLANEJADA","EM_EXECUCAO","CONCLUIDA")
+  cidade_id : INT <<FK>>
+  area_aplicacao : VARCHAR
+  criado_em : DATETIME
+  atualizado_em : DATETIME
+}
+
+entity Cidade {
+  * id : INT <<PK>>
+  --
+  nome : VARCHAR
+  regiao : VARCHAR
+}
+
+entity Instituicao {
+  * id : INT <<PK>>
+  --
+  nome : VARCHAR
+  tipo : VARCHAR
+  cidade_id : INT <<FK>>
+}
+
+entity Lideranca {
+  * id : INT <<PK>>
+  --
+  nome : VARCHAR
+  cargo : VARCHAR
+  instituicao_id : INT <<FK>>
+}
+
+entity Evento {
+  * id : INT <<PK>>
+  --
+  titulo : VARCHAR
+  data_hora : DATETIME
+  local : VARCHAR
+  contexto : TEXT
+  criado_em : DATETIME
+  atualizado_em : DATETIME
+}
+
+entity DemandaEvento {
+  * demanda_id : INT <<FK>>
+  * evento_id : INT <<FK>>
+}
+
+entity Anexo {
+  * id : INT <<PK>>
+  --
+  tabela_ref : VARCHAR  'ex.: demandas, emendas'
+  id_ref : INT
+  caminho_arquivo : VARCHAR
+  criado_em : DATETIME
+}
+
+' Relacionamentos
+Usuario "1" -- "0..*" Demanda : cria >\n(criado_por_id)
+Usuario "1" -- "0..*" Demanda : responsável >\n(responsavel_id)
+
+Cidade "1" -- "0..*" Demanda
+Cidade "1" -- "0..*" Emenda
+Cidade "1" -- "0..*" Instituicao
+
+Instituicao "1" -- "0..*" Lideranca
+Instituicao "1" -- "0..*" Demanda
+
+Demanda "0..*" -- "0..*" Evento : DemandaEvento
+Demanda "1" -- "0..*" Anexo : anexos
+Emenda "1" -- "0..*" Anexo : anexos
+
+@enduml

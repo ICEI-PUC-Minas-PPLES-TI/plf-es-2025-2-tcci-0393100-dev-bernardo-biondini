@@ -1,0 +1,41 @@
+
+@startuml
+title Arquitetura Lógica - Diagrama de Contexto (Nível 1)\nSistema: Gabinete Inteligente
+
+skinparam shadowing false
+skinparam rectangle {
+  BorderColor #2c3e50
+  BackgroundColor #ecf0f1
+}
+skinparam actorStyle awesome
+skinparam defaultTextAlignment center
+
+actor "Deputada" as Deputada
+actor "Chefe de\nGabinete" as Chefe
+actor "Gestora de\nDemandas" as Gestora
+actor "Equipe de\nAtendimento" as Atendimento
+actor "Cidadão\n(Consulta Pública)" as Cidadao
+
+rectangle "Sistema Gabinete Inteligente" as SGI {
+  rectangle "Frontend Web\n(React)" as FE
+  rectangle "Backend API\n(Laravel/PHP)" as BE
+}
+
+cloud "Serviços Externos" as Ext {
+  rectangle "E-mail/Notificações\n(SMTP/API)" as Email
+  database "Banco de Dados\n(MySQL)" as DB
+  folder "Armazenamento de Arquivos\n(S3/Local)" as Storage
+}
+
+Deputada --> FE : Consultas estratégicas\n(cidades, emendas, agenda)
+Chefe --> FE : Organiza agenda, prioriza demandas
+Gestora --> FE : Atribui responsáveis\natualiza status, gera relatórios
+Atendimento --> FE : Registra/atualiza demandas,\ninterage com lideranças
+Cidadao --> FE : Acesso a informações públicas\n(site institucional)
+
+FE --> BE : Requisições REST/JSON (HTTPS)
+BE --> DB : CRUD (ORM Eloquent)
+BE --> Storage : Upload/Download\n(anexos, ofícios)
+BE --> Email : Envio de notificações
+
+@enduml

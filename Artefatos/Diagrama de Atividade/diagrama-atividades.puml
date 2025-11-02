@@ -1,0 +1,42 @@
+
+@startuml
+title Diagrama de Atividades - Caso Principal: Gerenciar Demanda
+
+skinparam shadowing false
+skinparam activity {
+  BackgroundColor #ffffff
+  BorderColor #2c3e50
+}
+
+start
+:Login no sistema;
+/' Autenticação via JWT '/
+if (Credenciais válidas?) then (sim)
+  :Acessa dashboard;
+else (não)
+  :Exibe erro de autenticação;
+  stop
+endif
+
+:Seleciona "Nova Demanda";
+:Preenche dados\n(título, descrição, cidade,\ninstituição, prioridade, anexos);
+:Submete demanda;
+
+:Define responsável e prazo;
+/' Pode ser Gestora ou Chefe de Gabinete '/
+
+fork
+  :Atualiza status\n(conforme progresso);\n[Aberta -> Em Andamento -> Concluída];
+fork again
+  :Sistema agenda lembretes\n e envia notificações;
+end fork
+
+if (Demanda concluída?) then (sim)
+  :Encerrar demanda;
+  :Gerar relatório consolidado;
+else (não)
+  :Retornar ao acompanhamento;
+endif
+
+stop
+@enduml

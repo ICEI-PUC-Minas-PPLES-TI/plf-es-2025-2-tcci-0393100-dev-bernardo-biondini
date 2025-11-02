@@ -1,0 +1,66 @@
+
+@startuml
+title Diagrama de Componentes - Backend Gabinete Inteligente
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+package "API REST (Laravel)" {
+  [Gateway HTTP] as Gateway
+  [Auth Controller]
+  [Demandas Controller]
+  [Emendas Controller]
+  [Cidades Controller]
+  [Instituições Controller]
+  [Agenda Controller]
+  [Relatórios Controller]
+
+  [Auth Service]
+  [Demandas Service]
+  [Emendas Service]
+  [Cidades Service]
+  [Instituições Service]
+  [Agenda Service]
+  [Relatórios Service]
+
+  [Policies/Guards]
+  [Eloquent Models]
+  [DTOs/Resources]
+}
+
+database "MySQL" as DB
+folder "Storage (S3/Local)" as Store
+[Email/SMS Provider] as Mail
+
+Gateway --> [Auth Controller]
+Gateway --> [Demandas Controller]
+Gateway --> [Emendas Controller]
+Gateway --> [Cidades Controller]
+Gateway --> [Instituições Controller]
+Gateway --> [Agenda Controller]
+Gateway --> [Relatórios Controller]
+
+[Auth Controller] --> [Auth Service]
+[Demandas Controller] --> [Demandas Service]
+[Emendas Controller] --> [Emendas Service]
+[Cidades Controller] --> [Cidades Service]
+[Instituições Controller] --> [Instituições Service]
+[Agenda Controller] --> [Agenda Service]
+[Relatórios Controller] --> [Relatórios Service]
+
+[Auth Service] --> [Policies/Guards]
+[Demandas Service] --> [Eloquent Models]
+[Emendas Service] --> [Eloquent Models]
+[Cidades Service] --> [Eloquent Models]
+[Instituições Service] --> [Eloquent Models]
+[Agenda Service] --> [Eloquent Models]
+[Relatórios Service] --> [Eloquent Models]
+
+[Eloquent Models] --> DB
+[Relatórios Service] --> Store
+[Demandas Service] --> Store
+
+[Agenda Service] --> Mail : Lembretes/Notificações
+[Demandas Service] --> Mail : Notificações
+
+@enduml

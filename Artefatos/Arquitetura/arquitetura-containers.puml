@@ -1,0 +1,59 @@
+
+@startuml
+title Arquitetura Lógica - Diagrama de Contêineres (Nível 2)\nGabinete Inteligente
+
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam rectangle {
+  BorderColor #34495e
+  BackgroundColor #f8f9fa
+}
+skinparam databaseBackgroundColor #ffffff
+
+node "Navegador do Usuário" as Browser {
+  component "Frontend Web\nReact" as Frontend
+}
+
+node "Infraestrutura" as Infra {
+  node "Servidor de Aplicação" as AppSrv {
+    component "API REST\nLaravel/PHP" as API
+    component "Módulo Autenticação\n(JWT/Guards)" as Auth
+    component "Módulo Demandas" as Dem
+    component "Módulo Emendas" as Eme
+    component "Módulo Cidades\n& Instituições" as CidInst
+    component "Módulo Agenda" as Agd
+    component "Módulo Relatórios" as Rel
+  }
+  node "Banco de Dados" as DBHost {
+    database "MySQL" as MySQL
+  }
+  node "Armazenamento de Arquivos" as Files {
+    folder "S3/Local" as S3Local
+  }
+  node "Serviço de E-mail" as Mail {
+    component "SMTP/API" as SMTP
+  }
+}
+
+Frontend -[#blue]-> API : HTTPS (JSON)
+API --> Auth
+API --> Dem
+API --> Eme
+API --> CidInst
+API --> Agd
+API --> Rel
+
+Auth --> MySQL
+Dem --> MySQL
+Eme --> MySQL
+CidInst --> MySQL
+Agd --> MySQL
+Rel --> MySQL
+
+Dem --> S3Local
+Eme --> S3Local
+Rel --> S3Local
+
+API --> SMTP : Notificações
+
+@enduml
