@@ -1,0 +1,38 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC08d Relatório Consolidado Geral
+
+rectangle Usuario
+rectangle Frontend
+rectangle RelatorioGeralController
+rectangle RelatorioGeralService
+rectangle ProjetoLeiRepository
+rectangle EmendaRepository
+rectangle DemandaRepository
+rectangle CidadeRepository
+rectangle PermissaoService
+
+Usuario --> Frontend : 1: solicitarRelatorioGeral()
+Frontend --> RelatorioGeralController : 2: GET /relatorios/consolidado
+RelatorioGeralController --> RelatorioGeralService : 3: gerarRelatorio()
+
+RelatorioGeralService --> PermissaoService : 4: validarPermissao(usuario, "RELATORIO_CONSOLIDADO")
+PermissaoService --> RelatorioGeralService : 5: permitido
+
+RelatorioGeralService --> ProjetoLeiRepository : 6: listarPL()
+ProjetoLeiRepository --> RelatorioGeralService : 7: pl
+
+RelatorioGeralService --> EmendaRepository : 8: listarEmendas()
+EmendaRepository --> RelatorioGeralService : 9: emendas
+
+RelatorioGeralService --> DemandaRepository : 10: listarDemandas()
+DemandaRepository --> RelatorioGeralService : 11: demandas
+
+RelatorioGeralService --> CidadeRepository : 12: listarCidades()
+CidadeRepository --> RelatorioGeralService : 13: cidades
+
+RelatorioGeralService --> RelatorioGeralController : 14: consolidado
+RelatorioGeralController --> Frontend : 15: resposta(json)
+Frontend --> Usuario : 16: exibirRelatorio()
+
+@enduml

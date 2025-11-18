@@ -1,0 +1,17 @@
+@startuml
+title DSS – Atribuir Responsável
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioDemandas" as repo
+participant "RepositorioHistorico" as hist
+
+u -> s : atribuirResponsavel(idDemanda, idUsuario)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("ATRIBUIR_RESPONSAVEL")
+s -> repo : atualizarResponsavel(idDemanda, idUsuario)
+repo --> s : demanda
+s -> hist : registrar("Responsável atribuído", usuario)
+hist --> s : ok
+s --> u : sucesso
+@enduml

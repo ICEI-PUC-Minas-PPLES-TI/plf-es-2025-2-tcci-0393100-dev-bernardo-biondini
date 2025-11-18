@@ -1,0 +1,22 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC02 Cadastrar Cidade
+
+rectangle Usuario
+rectangle Frontend
+rectangle CidadeController
+rectangle CidadeService
+rectangle CidadeRepository
+
+Usuario --> Frontend : 1: preencherDadosCidade()
+Frontend --> CidadeController : 2: POST /cidades
+CidadeController --> CidadeService : 3: cadastrarCidade(dados)
+
+CidadeService --> CidadeRepository : 4: salvar(dados)
+CidadeRepository --> CidadeService : 5: cidadeCriada
+
+CidadeService --> CidadeController : 6: sucesso()
+CidadeController --> Frontend : 7: respostaOK()
+Frontend --> Usuario : 8: exibirMensagem()
+
+@enduml

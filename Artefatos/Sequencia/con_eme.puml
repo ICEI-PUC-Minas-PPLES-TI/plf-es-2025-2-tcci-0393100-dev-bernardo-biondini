@@ -1,0 +1,21 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control EmendaController as C
+control EmendaService as S
+entity Emenda as M
+
+Usuario -> FE : consultarEmendas(filtros)
+FE -> C : GET /emendas?filtros
+
+C -> S : consultarEmendas(filtros)
+
+S -> M : query(filtros)
+M --> S : listaEmendas
+
+S --> C
+C --> FE
+FE --> Usuario : exibirListaEmendas
+
+@enduml

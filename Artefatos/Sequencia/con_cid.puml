@@ -1,0 +1,25 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control CidadeController as C
+control CidadeService as S
+entity Cidade as M
+control AuthorizationService as AuthZ
+
+Usuario -> FE : consultarCidades()
+FE -> C : GET /cidades
+
+C -> AuthZ : validarPermissao("CONSULTAR_CIDADES")
+AuthZ --> C : permitido
+
+C -> S : consultarCidades()
+
+S -> M : all()
+M --> S : listaCidades
+
+S --> C : listaCidades
+C --> FE : respostaOK
+FE --> Usuario : mostrarLista
+
+@enduml

@@ -1,0 +1,41 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control DemandaController as C
+control DemandaService as S
+entity Demanda as M
+control AuthorizationService as AuthZ
+control ValidationService as Val
+control HistoryService as Hist
+
+Usuario -> FE : definirPrazo(novaData)
+FE -> C : PUT /demandas/{id}/prazo (novaData)
+
+C -> AuthZ : verificarPermissao("DEFINIR_PRAZO")
+AuthZ --> C : permitido
+
+C -> Val : validarPrazo(novaData)
+Val --> C : ok
+
+C -> S : definirPrazo(idDemanda, novaData, usuarioAutenticado)
+
+S -> M : find(idDemanda)
+M --> S : demandaOuNull
+
+alt demanda inexistente
+    S --> C : erro("Demanda não encontrada")
+    C --> FE : respostaErro
+    FE --> Usuario : mostrarErro
+else
+    S -> M : update({prazo = novaData})
+    M --> S : demandaAtualizada
+
+    S -> Hist : registrar("Prazo atualizado", usuarioAutenticado, demandaAtualizada)
+    Hist --> S : ok
+
+    S --> C : sucesso(demandaAtualizada)
+    C --> FE : respostaOK
+    FE --> Usuario : exibirSucesso
+end
+@enduml

@@ -1,0 +1,36 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control CMSController as C
+control CMSService as S
+entity CMSSecao as M
+control AuthorizationService as AuthZ
+control ValidationService as Val
+control HistoryService as Hist
+
+Usuario -> FE : editarTextoMissao(novoTexto)
+FE -> C : PUT /cms/missao (novoTexto)
+
+C -> AuthZ : verificarPermissao("ATUALIZAR_MISSAO")
+AuthZ --> C : permitido
+
+C -> Val : validarTextoNaoVazio(novoTexto)
+Val --> C : ok
+
+C -> S : atualizarMissao(novoTexto, usuarioAutenticado)
+
+S -> M : findByChave("MISSAO")
+M --> S : secaoMissao
+
+S -> Hist : registrar("Atualização Missão", usuarioAutenticado, secaoMissao)
+Hist --> S : ok
+
+S -> M : update(secaoMissao, {conteudo = novoTexto})
+M --> S : secaoAtualizada
+
+S --> C : sucesso
+C --> FE : respostaOK
+FE --> Usuario : exibir "Missão atualizada"
+
+@enduml

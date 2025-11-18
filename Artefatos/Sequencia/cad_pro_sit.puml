@@ -1,0 +1,37 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control ProjetoSiteController as C
+control ProjetoSiteService as S
+entity ProjetoSite as M
+control AuthorizationService as AuthZ
+control ValidationService as Val
+control FileStorageService as FS
+
+Usuario -> FE : preencherFormProjetoSite(titulo, descricao, imagemCapa?)
+FE -> C : POST /projetos-site (dados, arquivoOpcional)
+
+C -> AuthZ : verificarPermissao("CADASTRAR_PROJETO_SITE")
+AuthZ --> C : permitido
+
+C -> Val : validarDadosProjetoSite(dados)
+Val --> C : ok
+
+alt projeto possui imagem de capa
+    C -> FS : armazenar(arquivoCapa)
+    FS --> C : caminhoArquivoCapa
+else sem imagem de capa
+    C -> C : caminhoArquivoCapa = null
+end
+
+C -> S : cadastrarProjetoSite(dados, caminhoArquivoCapa, usuarioAutenticado)
+
+S -> M : create(dados)
+M --> S : projetoCriado
+
+S --> C : sucesso(projetoCriado)
+C --> FE : respostaOK(JSON projeto)
+FE --> Usuario : exibir "Projeto cadastrado com sucesso"
+
+@enduml

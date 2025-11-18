@@ -1,0 +1,25 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control InstituicaoController as C
+control InstituicaoService as S
+entity Instituicao as M
+control AuthorizationService as AuthZ
+
+Usuario -> FE : solicitarListaInstituicoes(filtros)
+FE -> C : GET /instituicoes?filtros
+
+C -> AuthZ : validarPermissao("CONSULTAR_INSTITUICOES")
+AuthZ --> C : permitido
+
+C -> S : consultarInstituicoes(filtros)
+
+S -> M : query(filtros)
+M --> S : listaInstituicoes
+
+S --> C : listaInstituicoes
+C --> FE : respostaOK(lista)
+FE --> Usuario : exibirListaInstituicoes
+
+@enduml

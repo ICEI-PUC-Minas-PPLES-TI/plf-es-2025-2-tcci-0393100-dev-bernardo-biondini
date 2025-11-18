@@ -1,0 +1,20 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC02 Consultar Igrejas
+
+rectangle Usuario
+rectangle Frontend
+rectangle IgrejaController
+rectangle IgrejaService
+rectangle IgrejaRepository
+
+Usuario --> Frontend : 1: solicitarIgrejas()
+Frontend --> IgrejaController : 2: GET /igrejas
+IgrejaController --> IgrejaService : 3: consultar()
+IgrejaService --> IgrejaRepository : 4: listar()
+IgrejaRepository --> IgrejaService : 5: lista
+IgrejaService --> IgrejaController : 6: retornar()
+IgrejaController --> Frontend : 7: resposta
+Frontend --> Usuario : 8: exibirLista()
+
+@enduml

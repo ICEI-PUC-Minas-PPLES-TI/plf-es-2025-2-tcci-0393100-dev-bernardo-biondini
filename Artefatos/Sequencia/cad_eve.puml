@@ -1,0 +1,33 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control AgendaController as C
+control AgendaService as S
+entity Evento as M
+control AuthorizationService as AuthZ
+control ValidationService as Val
+control HistoryService as Hist
+
+Usuario -> FE : preencherFormEvento(titulo, inicio, fim, local, descricao)
+FE -> C : POST /agenda/eventos (dados)
+
+C -> AuthZ : verificarPermissao("CADASTRAR_EVENTO")
+AuthZ --> C : permitido
+
+C -> Val : validarDadosEvento(dados)
+Val --> C : ok
+
+C -> S : cadastrarEvento(dados, usuarioAutenticado)
+
+S -> M : create(dados)
+M --> S : eventoCriado
+
+S -> Hist : registrar("Cadastro de evento", usuarioAutenticado, eventoCriado)
+Hist --> S : ok
+
+S --> C : sucesso(eventoCriado)
+C --> FE : respostaOK(JSON eventoCriado)
+FE --> Usuario : exibir "Evento cadastrado com sucesso"
+
+@enduml

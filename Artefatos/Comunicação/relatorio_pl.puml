@@ -1,0 +1,26 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC08a Relatório de Projetos de Lei
+
+rectangle Usuario
+rectangle Frontend
+rectangle RelatorioPLController
+rectangle RelatorioPLService
+rectangle ProjetoLeiRepository
+rectangle PermissaoService
+
+Usuario --> Frontend : 1: solicitarRelatorioPL(filtros)
+Frontend --> RelatorioPLController : 2: GET /relatorios/projetos-lei
+RelatorioPLController --> RelatorioPLService : 3: gerarRelatorio(filtros)
+
+RelatorioPLService --> PermissaoService : 4: validarPermissao(usuario, "RELATORIO_PL")
+PermissaoService --> RelatorioPLService : 5: permitido
+
+RelatorioPLService --> ProjetoLeiRepository : 6: consultarPLComFiltros(filtros)
+ProjetoLeiRepository --> RelatorioPLService : 7: listaPL
+
+RelatorioPLService --> RelatorioPLController : 8: retornarDados()
+RelatorioPLController --> Frontend : 9: resposta(lista)
+Frontend --> Usuario : 10: exibirRelatorio()
+
+@enduml

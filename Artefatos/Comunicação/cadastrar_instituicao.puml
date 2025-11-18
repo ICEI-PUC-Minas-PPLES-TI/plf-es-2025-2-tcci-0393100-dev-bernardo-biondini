@@ -1,0 +1,26 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC02 Cadastrar Instituição
+
+rectangle Usuario
+rectangle Frontend
+rectangle InstituicaoController
+rectangle InstituicaoService
+rectangle InstituicaoRepository
+rectangle CidadeRepository
+
+Usuario --> Frontend : 1: informarDadosInstituicao()
+Frontend --> InstituicaoController : 2: POST /instituicoes
+InstituicaoController --> InstituicaoService : 3: cadastrarInstituicao(dados)
+
+InstituicaoService --> CidadeRepository : 4: validarCidade(dados.cidadeId)
+CidadeRepository --> InstituicaoService : 5: cidadeOK
+
+InstituicaoService --> InstituicaoRepository : 6: salvar(dados)
+InstituicaoRepository --> InstituicaoService : 7: instituicaoCriada
+
+InstituicaoService --> InstituicaoController : 8: sucesso()
+InstituicaoController --> Frontend : 9: respostaOK()
+Frontend --> Usuario : 10: exibirConfirmacao()
+
+@enduml

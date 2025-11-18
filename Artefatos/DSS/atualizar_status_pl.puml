@@ -1,0 +1,14 @@
+@startuml
+title DSS – Atualizar Status do PL
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioPL" as repo
+
+u -> s : atualizarStatusPL(id, status)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("ATUALIZAR_STATUS_PL")
+s -> repo : atualizarStatus(id, status)
+repo --> s : plAtualizado
+s --> u : sucesso
+@enduml

@@ -1,0 +1,20 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control NoticiaController as C
+control NoticiaService as S
+entity Noticia as M
+
+Usuario -> FE : consultarNoticias(filtro)
+FE -> C : GET /noticias?filtro
+
+C -> S : consultarNoticias(filtro)
+S -> M : query(filtro)
+M --> S : listaNoticias
+
+S --> C
+C --> FE
+FE --> Usuario : exibirNoticias
+
+@enduml

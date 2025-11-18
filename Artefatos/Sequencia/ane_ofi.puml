@@ -1,0 +1,49 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control DemandaController as C
+control DemandaService as S
+control FileStorageService as FS
+entity Demanda as M
+entity Anexo as A
+control AuthorizationService as AuthZ
+control ValidationService as Val
+control HistoryService as Hist
+
+Usuario -> FE : anexarOficio(arquivo)
+FE -> C : POST /demandas/{id}/anexos (arquivo)
+
+C -> AuthZ : verificarPermissao("ANEXAR_OFICIO")
+AuthZ --> C : permitido
+
+C -> Val : validarArquivo(arquivo)
+Val --> C : ok
+
+C -> S : anexarOficio(idDemanda, arquivo, usuarioAutenticado)
+
+S -> M : find(idDemanda)
+M --> S : demandaOuNull
+
+alt demanda inexistente
+    S --> C : erro("Demanda não encontrada")
+    C --> FE : respostaErro
+    FE --> Usuario : mostrarErro
+else
+    ' Upload do arquivo
+    S -> FS : armazenar(arquivo)
+    FS --> S : caminhoArquivo
+
+    ' Registro do anexo
+    S -> A : create(dados)
+    A --> S : anexoCriado
+
+    ' Histórico
+    S -> Hist : registrar("Ofício anexado", usuarioAutenticado, demandaOuNull)
+    Hist --> S : ok
+
+    S --> C : sucesso(anexoCriado)
+    C --> FE : respostaOK
+    FE --> Usuario : exibirSucesso
+end
+@enduml

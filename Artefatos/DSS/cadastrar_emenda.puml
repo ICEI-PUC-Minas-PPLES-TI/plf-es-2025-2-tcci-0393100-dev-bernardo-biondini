@@ -1,0 +1,14 @@
+@startuml
+title DSS – Cadastrar Emenda
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioEmenda" as repo
+
+u -> s : cadastrarEmenda(dados)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("CADASTRAR_EMENDA")
+s -> repo : salvarEmenda(dados)
+repo --> s : emenda
+s --> u : sucesso
+@enduml

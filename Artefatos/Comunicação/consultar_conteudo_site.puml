@@ -1,0 +1,20 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC03 Consultar Conteúdo do Site
+
+rectangle Usuario
+rectangle Frontend
+rectangle ConteudoController
+rectangle ConteudoService
+rectangle ConteudoRepository
+
+Usuario --> Frontend : 1: solicitarConsulta()
+Frontend --> ConteudoController : 2: GET /conteudo/{tipo}
+ConteudoController --> ConteudoService : 3: obterConteudo(tipo)
+ConteudoService --> ConteudoRepository : 4: buscar(tipo)
+ConteudoRepository --> ConteudoService : 5: resultados
+ConteudoService --> ConteudoController : 6: retornar()
+ConteudoController --> Frontend : 7: resposta(json)
+Frontend --> Usuario : 8: exibirConteudo()
+
+@enduml

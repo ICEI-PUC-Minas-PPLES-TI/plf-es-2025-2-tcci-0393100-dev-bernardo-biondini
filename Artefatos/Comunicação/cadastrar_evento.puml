@@ -1,0 +1,30 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC07 Cadastrar Evento
+
+rectangle Usuario
+rectangle Frontend
+rectangle EventoController
+rectangle EventoService
+rectangle EventoRepository
+rectangle ConflitoService
+rectangle NotificacaoService
+
+Usuario --> Frontend : 1: preencherEvento(data, hora, local)
+Frontend --> EventoController : 2: POST /eventos
+EventoController --> EventoService : 3: cadastrarEvento(dados)
+
+EventoService --> ConflitoService : 4: verificarConflitos(dados)
+ConflitoService --> EventoService : 5: semConflitos (ou listaConflitos)
+
+EventoService --> EventoRepository : 6: salvar(dados)
+EventoRepository --> EventoService : 7: eventoCriado
+
+EventoService --> NotificacaoService : 8: notificarCriacao()
+NotificacaoService --> EventoService : 9: ok
+
+EventoService --> EventoController : 10: sucesso()
+EventoController --> Frontend : 11: respostaOK()
+Frontend --> Usuario : 12: exibirConfirmacao()
+
+@enduml

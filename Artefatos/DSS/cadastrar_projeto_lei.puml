@@ -1,0 +1,14 @@
+@startuml
+title DSS – Cadastrar Projeto de Lei
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioPL" as repo
+
+u -> s : cadastrarPL(dados)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("CADASTRAR_PL")
+s -> repo : salvarPL(dados)
+repo --> s : pl
+s --> u : sucesso
+@enduml

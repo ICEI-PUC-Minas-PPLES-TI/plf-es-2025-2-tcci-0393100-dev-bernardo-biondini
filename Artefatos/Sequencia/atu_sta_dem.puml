@@ -1,0 +1,41 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control DemandaController as C
+control DemandaService as S
+entity Demanda as M
+control AuthorizationService as AuthZ
+control ValidationService as Val
+control HistoryService as Hist
+
+Usuario -> FE : alterarStatusDemanda(status)
+FE -> C : PUT /demandas/{id}/status (status)
+
+C -> AuthZ : verificarPermissao("ATUALIZAR_STATUS_DEMANDA")
+AuthZ --> C : permitido
+
+C -> Val : validarStatusDemanda(status)
+Val --> C : ok
+
+C -> S : atualizarStatusDemanda(idDemanda, status, usuarioAutenticado)
+
+S -> M : find(idDemanda)
+M --> S : demandaEncontradaOuNull
+
+alt demanda inexistente
+    S --> C : erro("Demanda não encontrada")
+    C --> FE : respostaErro
+    FE --> Usuario : exibirErro
+else
+    S -> M : update({status = status})
+    M --> S : demandaAtualizada
+
+    S -> Hist : registrar("Status atualizado", usuarioAutenticado, demandaAtualizada)
+    Hist --> S : ok
+
+    S --> C : sucesso(demandaAtualizada)
+    C --> FE : respostaOK
+    FE --> Usuario : exibirSucesso
+end
+@enduml

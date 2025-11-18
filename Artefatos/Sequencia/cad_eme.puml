@@ -1,0 +1,42 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control EmendaController as C
+control EmendaService as S
+entity Emenda as M
+entity Cidade as City
+control AuthorizationService as AuthZ
+control ValidationService as Val
+control HistoryService as Hist
+
+Usuario -> FE : preencherFormEmenda()
+FE -> C : POST /emendas (dados)
+
+C -> AuthZ : verificarPermissao("CADASTRAR_EMENDA")
+AuthZ --> C : permitido
+
+C -> Val : validarDadosEmenda(dados)
+Val --> C : ok
+
+C -> S : cadastrarEmenda(dados, usuarioAutenticado)
+
+S -> City : find(dados.cidade_id)
+City --> S : cidadeEncontradaOuNull
+
+alt cidade inexistente
+    S --> C : erro("Cidade não encontrada")
+    C --> FE : respostaErro
+    FE --> Usuario : exibirErro
+else cidade válida
+    S -> M : create(dados)
+    M --> S : emendaCriada
+
+    S -> Hist : registrar("Cadastro de Emenda", usuarioAutenticado, emendaCriada)
+    Hist --> S : ok
+
+    S --> C : sucesso(emendaCriada)
+    C --> FE : respostaOK
+    FE --> Usuario : exibirSucesso
+end
+@enduml

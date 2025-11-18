@@ -1,0 +1,25 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control RelatorioController as C
+control RelatorioService as S
+entity Emenda as E
+control AuthorizationService as AuthZ
+
+Usuario -> FE : gerarRelatorioEmendas()
+FE -> C : GET /relatorios/emendas
+
+C -> AuthZ : validarPermissao("RELATORIO_EMENDAS")
+AuthZ --> C : permitido
+
+C -> S : gerarRelatorioEmendas()
+
+S -> E : queryTodos()
+E --> S : dadosEmendas
+
+S --> C
+C --> FE
+FE --> Usuario : downloadPDF
+
+@enduml

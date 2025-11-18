@@ -1,0 +1,14 @@
+@startuml
+title DSS – Cadastrar Liderança
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioLideranca" as repo
+
+u -> s : cadastrarLideranca(dados)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("CADASTRAR_LIDERANCA")
+s -> repo : salvarLideranca(dados)
+repo --> s : lideranca
+s --> u : sucesso
+@enduml

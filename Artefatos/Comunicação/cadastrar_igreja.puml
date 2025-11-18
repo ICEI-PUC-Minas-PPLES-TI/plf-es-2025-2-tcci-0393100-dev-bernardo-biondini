@@ -1,0 +1,26 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC02 Cadastrar Igreja
+
+rectangle Usuario
+rectangle Frontend
+rectangle IgrejaController
+rectangle IgrejaService
+rectangle IgrejaRepository
+rectangle CidadeRepository
+
+Usuario --> Frontend : 1: preencherCadastroIgreja()
+Frontend --> IgrejaController : 2: POST /igrejas
+IgrejaController --> IgrejaService : 3: cadastrarIgreja(dados)
+
+IgrejaService --> CidadeRepository : 4: validarCidade(dados.cidadeId)
+CidadeRepository --> IgrejaService : 5: cidadeOK
+
+IgrejaService --> IgrejaRepository : 6: salvar(dados)
+IgrejaRepository --> IgrejaService : 7: igrejaCriada
+
+IgrejaService --> IgrejaController : 8: sucesso()
+IgrejaController --> Frontend : 9: resposta()
+Frontend --> Usuario : 10: mostrarMensagem()
+
+@enduml

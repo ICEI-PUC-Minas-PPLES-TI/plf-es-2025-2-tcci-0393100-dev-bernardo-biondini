@@ -1,0 +1,20 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC06 Consultar Demandas
+
+rectangle Usuario
+rectangle Frontend
+rectangle DemandaController
+rectangle DemandaService
+rectangle DemandaRepository
+
+Usuario --> Frontend : 1: solicitarConsultaDemandas()
+Frontend --> DemandaController : 2: GET /demandas
+DemandaController --> DemandaService : 3: consultar()
+DemandaService --> DemandaRepository : 4: listar()
+DemandaRepository --> DemandaService : 5: listaDemandas
+DemandaService --> DemandaController : 6: retornar()
+DemandaController --> Frontend : 7: resposta(lista)
+Frontend --> Usuario : 8: exibirLista()
+
+@enduml

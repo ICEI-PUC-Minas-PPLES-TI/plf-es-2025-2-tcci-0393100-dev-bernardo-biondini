@@ -1,0 +1,14 @@
+@startuml
+title DSS – Cadastrar Projeto do Site
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioProjetosSite" as repo
+
+u -> s : cadastrarProjetoSite(dados)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("CADASTRAR_PROJETO_SITE")
+s -> repo : salvarProjeto(dados)
+repo --> s : projeto
+s --> u : sucesso
+@enduml

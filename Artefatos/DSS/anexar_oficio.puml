@@ -1,0 +1,20 @@
+@startuml
+title DSS – Anexar Ofício
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioDemandas" as repo
+participant "ServicoArquivos" as fs
+participant "RepositorioHistorico" as hist
+
+u -> s : anexarOficio(idDemanda, arquivo)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("ANEXAR_OFICIO")
+s -> fs : armazenar(arquivo)
+fs --> s : caminhoArquivo
+s -> repo : anexar(idDemanda, caminhoArquivo)
+repo --> s : ok
+s -> hist : registrar("Ofício anexado", usuario)
+hist --> s : ok
+s --> u : sucesso
+@enduml

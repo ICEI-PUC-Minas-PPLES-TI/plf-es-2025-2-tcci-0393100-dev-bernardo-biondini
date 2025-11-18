@@ -1,0 +1,17 @@
+@startuml
+title DSS – Registrar Pessoa Atendida
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioDemandas" as repo
+participant "RepositorioHistorico" as hist
+
+u -> s : registrarPessoaAtendida(idDemanda, dadosPessoa)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("REGISTRAR_PESSOA")
+s -> repo : atualizarPessoaAtendida(idDemanda, dadosPessoa)
+repo --> s : demanda
+s -> hist : registrar("Pessoa atendida registrada", usuario)
+hist --> s : ok
+s --> u : sucesso
+@enduml

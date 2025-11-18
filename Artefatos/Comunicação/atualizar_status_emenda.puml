@@ -1,0 +1,25 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC05 Atualizar Status da Emenda
+
+rectangle Usuario
+rectangle Frontend
+rectangle EmendaController
+rectangle EmendaService
+rectangle EmendaRepository
+
+Usuario --> Frontend : 1: selecionarNovoStatus()
+Frontend --> EmendaController : 2: PATCH /emendas/{id}/status
+EmendaController --> EmendaService : 3: atualizarStatus(id, status)
+
+EmendaService --> EmendaRepository : 4: buscarPorId(id)
+EmendaRepository --> EmendaService : 5: emendaEncontrada
+
+EmendaService --> EmendaRepository : 6: atualizarStatus(id, status)
+EmendaRepository --> EmendaService : 7: statusAtualizado
+
+EmendaService --> EmendaController : 8: sucesso()
+EmendaController --> Frontend : 9: respostaOK()
+Frontend --> Usuario : 10: exibirMensagem()
+
+@enduml

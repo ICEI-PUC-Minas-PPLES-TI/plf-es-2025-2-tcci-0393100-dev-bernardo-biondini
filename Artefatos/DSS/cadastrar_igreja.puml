@@ -1,0 +1,14 @@
+@startuml
+title DSS – Cadastrar Igreja
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioIgreja" as repo
+
+u -> s : cadastrarIgreja(dados)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("CADASTRAR_IGREJA")
+s -> repo : salvarIgreja(dados)
+repo --> s : igreja
+s --> u : sucesso
+@enduml

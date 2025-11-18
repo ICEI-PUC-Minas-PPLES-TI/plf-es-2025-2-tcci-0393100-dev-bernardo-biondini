@@ -1,0 +1,14 @@
+@startuml
+title DSS – Cadastrar Evento
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioEventos" as repo
+
+u -> s : cadastrarEvento(dados)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("CADASTRAR_EVENTO")
+s -> repo : salvarEvento(dados)
+repo --> s : evento
+s --> u : sucesso
+@enduml

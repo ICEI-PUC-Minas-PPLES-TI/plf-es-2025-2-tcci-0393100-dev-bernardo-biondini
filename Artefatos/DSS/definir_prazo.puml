@@ -1,0 +1,17 @@
+@startuml
+title DSS – Definir Prazo
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioDemandas" as repo
+participant "RepositorioHistorico" as hist
+
+u -> s : definirPrazo(idDemanda, data)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("DEFINIR_PRAZO")
+s -> repo : atualizarPrazo(idDemanda, data)
+repo --> s : demanda
+s -> hist : registrar("Prazo definido", usuario)
+hist --> s : ok
+s --> u : sucesso
+@enduml

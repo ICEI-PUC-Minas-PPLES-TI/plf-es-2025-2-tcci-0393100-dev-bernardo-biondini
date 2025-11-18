@@ -1,0 +1,30 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC06 Atribuir Responsável à Demanda
+
+rectangle Usuario
+rectangle Frontend
+rectangle DemandaController
+rectangle DemandaService
+rectangle UsuarioRepository
+rectangle DemandaRepository
+rectangle HistoricoRepository
+
+Usuario --> Frontend : 1: selecionarResponsavel()
+Frontend --> DemandaController : 2: PUT /demandas/{id}/responsavel
+DemandaController --> DemandaService : 3: atribuirResponsavel(id, usuarioId)
+
+DemandaService --> UsuarioRepository : 4: validarExistência(usuarioId)
+UsuarioRepository --> DemandaService : 5: usuarioOK
+
+DemandaService --> DemandaRepository : 6: atualizarResponsavel()
+DemandaRepository --> DemandaService : 7: demandaAtualizada
+
+DemandaService --> HistoricoRepository : 8: registrar("Responsável atribuído")
+HistoricoRepository --> DemandaService : 9: históricoOK
+
+DemandaService --> DemandaController : 10: sucesso()
+DemandaController --> Frontend : 11: respostaOK()
+Frontend --> Usuario : 12: exibirResponsavel()
+
+@enduml

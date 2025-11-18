@@ -1,0 +1,19 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control IgrejaController as C
+control IgrejaService as S
+entity Igreja as M
+
+Usuario -> FE : consultarIgrejas(filtro)
+FE -> C : GET /igrejas?filtro
+C -> S : consultarIgrejas(filtro)
+
+S -> M : query(filtro)
+M --> S : listaIgrejas
+S --> C : listaIgrejas
+C --> FE : respostaOK
+FE --> Usuario : exibirLista
+
+@enduml

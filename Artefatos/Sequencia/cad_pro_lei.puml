@@ -1,0 +1,41 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control ProjetoLeiController as C
+control ProjetoLeiService as S
+entity ProjetoLei as M
+control AuthorizationService as AuthZ
+control ValidationService as Val
+control HistoryService as Hist
+
+Usuario -> FE : preencherFormProjetoLei(dados)
+FE -> C : POST /projetos-lei (dados)
+
+C -> AuthZ : verificarPermissao("CADASTRAR_PL")
+AuthZ --> C : permitido
+
+C -> Val : validarCamposObrigatorios(dados)
+Val --> C : ok
+
+C -> S : cadastrarPL(dados, usuarioAutenticado)
+
+S -> M : where(numero = dados.numero).first()
+M --> S : plExistenteOuNull
+
+alt número já cadastrado
+    S --> C : erro("Número de PL já existe")
+    C --> FE : respostaErro
+    FE --> Usuario : exibirErro
+else novo PL válido
+    S -> M : create(dados)
+    M --> S : plCriado
+
+    S -> Hist : registrar("Cadastro do PL", usuarioAutenticado, plCriado)
+    Hist --> S : ok
+
+    S --> C : sucesso(plCriado)
+    C --> FE : respostaOK
+    FE --> Usuario : exibirSucesso
+end
+@enduml

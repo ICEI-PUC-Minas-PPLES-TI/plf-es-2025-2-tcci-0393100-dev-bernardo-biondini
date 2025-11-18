@@ -1,0 +1,25 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control LiderancaController as C
+control LiderancaService as S
+entity Lideranca as M
+control AuthorizationService as AuthZ
+
+Usuario -> FE : solicitarListaLiderancas(filtros)
+FE -> C : GET /liderancas?filtros
+
+C -> AuthZ : validarPermissao("CONSULTAR_LIDERANCAS")
+AuthZ --> C : permitido
+
+C -> S : consultarLiderancas(filtros)
+
+S -> M : query(filtros)
+M --> S : listaLiderancas
+
+S --> C : listaLiderancas
+C --> FE : respostaOK(lista)
+FE --> Usuario : mostrarLista
+
+@enduml

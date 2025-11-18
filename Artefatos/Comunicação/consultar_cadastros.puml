@@ -1,0 +1,20 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC02 Consultar Cadastros (Cidades/Instituições/Igrejas/Lideranças)
+
+rectangle Usuario
+rectangle Frontend
+rectangle CadastroController
+rectangle CadastroService
+rectangle CadastroRepository
+
+Usuario --> Frontend : 1: solicitarConsulta()
+Frontend --> CadastroController : 2: GET /{entidade}
+CadastroController --> CadastroService : 3: consultar()
+CadastroService --> CadastroRepository : 4: listar()
+CadastroRepository --> CadastroService : 5: lista
+CadastroService --> CadastroController : 6: retornarResultados()
+CadastroController --> Frontend : 7: resposta(lista)
+Frontend --> Usuario : 8: exibirResultados()
+
+@enduml

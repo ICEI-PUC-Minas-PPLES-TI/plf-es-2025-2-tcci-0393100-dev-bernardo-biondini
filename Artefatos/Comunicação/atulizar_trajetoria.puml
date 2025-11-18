@@ -1,0 +1,22 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC03 Atualizar Trajetória
+
+rectangle Usuario
+rectangle Frontend
+rectangle ConteudoController
+rectangle ConteudoService
+rectangle ConteudoRepository
+
+Usuario --> Frontend : 1: editarTrajetoria()
+Frontend --> ConteudoController : 2: PUT /conteudo/trajetoria
+ConteudoController --> ConteudoService : 3: atualizarTrajetoria(texto)
+
+ConteudoService --> ConteudoRepository : 4: atualizar("trajetoria", texto)
+ConteudoRepository --> ConteudoService : 5: atualizado
+
+ConteudoService --> ConteudoController : 6: sucesso()
+ConteudoController --> Frontend : 7: resposta()
+Frontend --> Usuario : 8: exibirMensagem()
+
+@enduml

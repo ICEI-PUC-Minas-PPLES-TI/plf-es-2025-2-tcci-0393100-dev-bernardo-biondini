@@ -1,0 +1,26 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC07 Criar Alerta/Lembrete
+
+rectangle Usuario
+rectangle Frontend
+rectangle AlertaController
+rectangle AlertaService
+rectangle EventoRepository
+rectangle NotificacaoService
+
+Usuario --> Frontend : 1: escolherLembrete(eventoId, horário)
+Frontend --> AlertaController : 2: POST /eventos/{id}/alertas
+AlertaController --> AlertaService : 3: criarAlerta(id, dados)
+
+AlertaService --> EventoRepository : 4: buscarEvento(id)
+EventoRepository --> AlertaService : 5: eventoOK
+
+AlertaService --> NotificacaoService : 6: agendarLembrete()
+NotificacaoService --> AlertaService : 7: agendado
+
+AlertaService --> AlertaController : 8: sucesso()
+AlertaController --> Frontend : 9: respostaOK()
+Frontend --> Usuario : 10: mensagem()
+
+@enduml

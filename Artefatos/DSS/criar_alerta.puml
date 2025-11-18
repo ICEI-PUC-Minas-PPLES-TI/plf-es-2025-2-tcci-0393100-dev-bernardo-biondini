@@ -1,0 +1,17 @@
+@startuml
+title DSS – Criar Alerta / Lembrete
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioEventos" as repo
+participant "ServicoNotificacao" as notif
+
+u -> s : criarAlerta(idEvento, dados)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("CRIAR_ALERTA")
+s -> repo : salvarAlerta(idEvento, dados)
+repo --> s : alerta
+s -> notif : enviar(alerta)
+notif --> s : ok
+s --> u : sucesso
+@enduml

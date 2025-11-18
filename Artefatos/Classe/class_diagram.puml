@@ -1,7 +1,50 @@
 @startuml
 title Diagrama de Classes - Gabinete Inteligente
 
-' Pacotes (módulos principais)
+' ================== PACOTES ==================
+package "Autorização" {
+  class PerfilAcesso {
+    +id: UUID
+    +nome: PerfilEnum
+    +descricao: String
+    +permissoes(): List<Permissao>
+    +temPermissao(p: Permissao): bool
+  }
+
+  class Permissao {
+    +id: UUID
+    +codigo: String
+    +descricao: String
+  }
+}
+
+package "Pessoas" {
+  class Usuario {
+    +id: UUID
+    +nome: String
+    +email: String
+    +perfil: PerfilAcesso
+    +ativo: bool
+    +autenticar(senha: String): bool
+    +temPermissao(cod: String): bool
+  }
+
+  class Lideranca {
+    +id: UUID
+    +nome: String
+    +cargo: String
+    +telefone: String
+    +municipio: Municipio
+  }
+
+  class Instituicao {
+    +id: UUID
+    +nome: String
+    +tipo: String
+    +municipio: Municipio
+  }
+}
+
 package "Demandas" {
   class Demanda {
     +id: UUID
@@ -21,32 +64,6 @@ package "Demandas" {
     +mudanca: String
     +data: DateTime
     +autor: Usuario
-  }
-}
-
-package "Pessoas" {
-  class Usuario {
-    +id: UUID
-    +nome: String
-    +email: String
-    +perfil: PerfilAcesso
-    +ativo: bool
-    +autenticar(senha: String): bool
-  }
-
-  class Lideranca {
-    +id: UUID
-    +nome: String
-    +cargo: String
-    +telefone: String
-    +municipio: Municipio
-  }
-
-  class Instituicao {
-    +id: UUID
-    +nome: String
-    +tipo: String
-    +municipio: Municipio
   }
 }
 
@@ -97,19 +114,29 @@ package "CMS" {
   }
 }
 
-' Relacionamentos
+' ================== RELACIONAMENTOS ==================
+
+Usuario "1" -- "1" PerfilAcesso : possui >
+PerfilAcesso "1" -- "0..*" Permissao : agrega >
+
 Usuario "1" -- "0..*" Demanda : cria >
 Usuario "0..1" -- "0..*" Demanda : responsável >
+
 Demanda "1" -- "0..*" HistoricoDemanda : gera >
-Demanda "0..*" -- "0..1" Municipio
+Demanda "*" -- "1" Municipio
+
 Lideranca "*" -- "1" Municipio
 Instituicao "*" -- "1" Municipio
+
 Evento "0..*" -- "0..*" VinculoContexto
 Emenda "*" -- "1" Municipio
+
 Noticia "*" -- "1" Usuario : autor
 
-' Enums
-enum PerfilAcesso {
+
+' ================== ENUMS ==================
+
+enum PerfilEnum {
   Deputada
   ChefeDeGabinete
   Gestora

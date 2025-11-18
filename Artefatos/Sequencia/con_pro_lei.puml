@@ -1,0 +1,25 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control ProjetoLeiController as C
+control ProjetoLeiService as S
+entity ProjetoLei as M
+control AuthorizationService as AuthZ
+
+Usuario -> FE : consultarPL(filtros)
+FE -> C : GET /projetos-lei?filtros
+
+C -> AuthZ : validarPermissao("CONSULTAR_PL")
+AuthZ --> C : permitido
+
+C -> S : consultarPL(filtros)
+
+S -> M : query(filtros)
+M --> S : listaPL
+
+S --> C
+C --> FE
+FE --> Usuario : exibirListaPL
+
+@enduml

@@ -1,0 +1,21 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control DemandaController as C
+control DemandaService as S
+entity Demanda as M
+
+Usuario -> FE : consultarDemandas(filtros)
+FE -> C : GET /demandas?filtros
+
+C -> S : consultarDemandas(filtros)
+
+S -> M : queryComFiltros(filtros)
+M --> S : listaDemandas
+
+S --> C
+C --> FE
+FE --> Usuario : apresentarDemandas
+
+@enduml

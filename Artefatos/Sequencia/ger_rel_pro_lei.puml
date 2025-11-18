@@ -1,0 +1,25 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control RelatorioController as C
+control RelatorioService as S
+entity ProjetoLei as PL
+control AuthorizationService as AuthZ
+
+Usuario -> FE : gerarRelatorioPL()
+FE -> C : GET /relatorios/projetos-lei
+
+C -> AuthZ : validarPermissao("RELATORIO_PL")
+AuthZ --> C : permitido
+
+C -> S : gerarRelatorioPL()
+
+S -> PL : queryTodos()
+PL --> S : dadosPL
+
+S --> C : relatorioGerado
+C --> FE : arquivo/pdf
+FE --> Usuario : downloadRelatorio
+
+@enduml

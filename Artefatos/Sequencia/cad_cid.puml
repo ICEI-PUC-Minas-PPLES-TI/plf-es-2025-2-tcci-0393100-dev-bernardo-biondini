@@ -1,0 +1,28 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control CidadeController as C
+control CidadeService as S
+entity Cidade as M
+control AuthorizationService as AuthZ
+control ValidationService as Val
+
+Usuario -> FE : preencherFormCidade()
+FE -> C : POST /cidades
+
+C -> AuthZ : verificarPermissao("CADASTRAR_CIDADE")
+AuthZ --> C : permitido
+
+C -> Val : validarCampos(dados)
+Val --> C : ok
+
+C -> S : cadastrarCidade(dados)
+
+S -> M : create(dados)
+M --> S : cidadeCriada
+
+S --> C : sucesso
+C --> FE : respostaOK
+FE --> Usuario : exibir sucesso
+@enduml

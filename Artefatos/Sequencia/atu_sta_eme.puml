@@ -1,0 +1,41 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control EmendaController as C
+control EmendaService as S
+entity Emenda as M
+control AuthorizationService as AuthZ
+control ValidationService as Val
+control HistoryService as Hist
+
+Usuario -> FE : alterarStatusEmenda()
+FE -> C : PUT /emendas/{id}/status (status)
+
+C -> AuthZ : verificarPermissao("ATUALIZAR_STATUS_EMENDA")
+AuthZ --> C : permitido
+
+C -> Val : validarStatusEmenda(status)
+Val --> C : ok
+
+C -> S : atualizarStatusEmenda(id, status, usuarioAutenticado)
+
+S -> M : find(id)
+M --> S : emendaEncontradaOuNull
+
+alt emenda não encontrada
+    S --> C : erro("Emenda não encontrada")
+    C --> FE : respostaErro
+    FE --> Usuario : exibirErro
+else
+    S -> M : update(emendaEncontrada, {status})
+    M --> S : emendaAtualizada
+
+    S -> Hist : registrar("Atualização Status Emenda", usuarioAutenticado, emendaAtualizada)
+    Hist --> S : ok
+
+    S --> C : sucesso(emendaAtualizada)
+    C --> FE : respostaOK
+    FE --> Usuario : mostrarSucesso
+end
+@enduml

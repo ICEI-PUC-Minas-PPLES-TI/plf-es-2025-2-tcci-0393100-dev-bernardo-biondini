@@ -1,0 +1,26 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC08c Relatório de Demandas
+
+rectangle Usuario
+rectangle Frontend
+rectangle RelatorioDemandaController
+rectangle RelatorioDemandaService
+rectangle DemandaRepository
+rectangle PermissaoService
+
+Usuario --> Frontend : 1: solicitarRelatorioDemandas(filtros)
+Frontend --> RelatorioDemandaController : 2: GET /relatorios/demandas
+RelatorioDemandaController --> RelatorioDemandaService : 3: gerarRelatorio(filtros)
+
+RelatorioDemandaService --> PermissaoService : 4: validarPermissao(usuario, "RELATORIO_DEMANDAS")
+PermissaoService --> RelatorioDemandaService : 5: permitido
+
+RelatorioDemandaService --> DemandaRepository : 6: consultarDemandas(filtros)
+DemandaRepository --> RelatorioDemandaService : 7: listaDemandas
+
+RelatorioDemandaService --> RelatorioDemandaController : 8: retornar()
+RelatorioDemandaController --> Frontend : 9: resposta(lista)
+Frontend --> Usuario : 10: visualizar()
+
+@enduml

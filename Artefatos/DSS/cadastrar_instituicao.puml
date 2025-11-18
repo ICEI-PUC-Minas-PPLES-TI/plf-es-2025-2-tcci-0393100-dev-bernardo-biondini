@@ -1,0 +1,14 @@
+@startuml
+title DSS – Cadastrar Instituição
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioInstituicao" as repo
+
+u -> s : cadastrarInstituicao(dados)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("CADASTRAR_INSTITUICAO")
+s -> repo : salvarInstituicao(dados)
+repo --> s : instituicao
+s --> u : sucesso
+@enduml

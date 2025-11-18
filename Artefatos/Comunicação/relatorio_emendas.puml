@@ -1,0 +1,26 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC08b Relatório de Emendas
+
+rectangle Usuario
+rectangle Frontend
+rectangle RelatorioEmendaController
+rectangle RelatorioEmendaService
+rectangle EmendaRepository
+rectangle PermissaoService
+
+Usuario --> Frontend : 1: solicitarRelatorioEmendas(filtros)
+Frontend --> RelatorioEmendaController : 2: GET /relatorios/emendas
+RelatorioEmendaController --> RelatorioEmendaService : 3: gerarRelatorio(filtros)
+
+RelatorioEmendaService --> PermissaoService : 4: validarPermissao(usuario, "RELATORIO_EMENDAS")
+PermissaoService --> RelatorioEmendaService : 5: permitido
+
+RelatorioEmendaService --> EmendaRepository : 6: consultarEmendas(filtros)
+EmendaRepository --> RelatorioEmendaService : 7: listaEmendas
+
+RelatorioEmendaService --> RelatorioEmendaController : 8: retornarDados()
+RelatorioEmendaController --> Frontend : 9: resposta(lista)
+Frontend --> Usuario : 10: exibirRelatorio()
+
+@enduml

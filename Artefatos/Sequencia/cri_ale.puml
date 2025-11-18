@@ -1,0 +1,45 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control AgendaController as C
+control AgendaService as S
+entity Evento as M
+entity Alerta as A
+control AuthorizationService as AuthZ
+control ValidationService as Val
+control NotificationService as Notif
+
+Usuario -> FE : configurarAlerta(idEvento, dataHora, canal)
+FE -> C : POST /agenda/eventos/{idEvento}/alertas (dadosAlerta)
+
+C -> AuthZ : verificarPermissao("CRIAR_ALERTA")
+AuthZ --> C : permitido
+
+C -> Val : validarDadosAlerta(dadosAlerta)
+Val --> C : ok
+
+C -> S : criarAlerta(idEvento, dadosAlerta, usuarioAutenticado)
+
+S -> M : find(idEvento)
+M --> S : eventoOuNull
+
+alt evento inexistente
+    S --> C : erro("Evento não encontrado")
+    C --> FE : respostaErro
+    FE --> Usuario : exibirErro
+else evento encontrado
+    ' Registrar alerta no banco
+    S -> A : create(dados)
+    A --> S : alertaCriado
+
+    ' Agendar notificação
+    S -> Notif : agendar(alertaCriado)
+    Notif --> S : agendamentoOK
+
+    S --> C : sucesso(alertaCriado)
+    C --> FE : respostaOK
+    FE --> Usuario : exibir "Alerta criado e agendado"
+end
+
+@enduml

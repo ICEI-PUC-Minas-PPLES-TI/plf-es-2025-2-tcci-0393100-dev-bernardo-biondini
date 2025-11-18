@@ -1,0 +1,56 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control DemandaController as C
+control DemandaService as S
+entity Demanda as M
+entity Cidade as City
+entity Instituicao as Inst
+control AuthorizationService as AuthZ
+control ValidationService as Val
+control HistoryService as Hist
+
+Usuario -> FE : preencherFormDemanda(dados)
+FE -> C : POST /demandas (dados)
+
+C -> AuthZ : verificarPermissao("CRIAR_DEMANDA")
+AuthZ --> C : permitido
+
+C -> Val : validarCamposDemanda(dados)
+Val --> C : ok
+
+C -> S : abrirDemanda(dados, usuarioAutenticado)
+
+' --- Validação de cidade ---
+S -> City : find(dados.cidade_id)
+City --> S : cidadeOuNull
+
+alt cidade inexistente
+    S --> C : erro("Cidade inválida")
+    C --> FE : respostaErro
+    FE --> Usuario : exibirErro
+else cidade válida
+    ' --- Validação da instituição (opcional) ---
+    S -> Inst : find(dados.instituicao_id)
+    Inst --> S : instOuNull
+
+    alt instituição obrigatória e não encontrada
+        S --> C : erro("Instituição inválida")
+        C --> FE : respostaErro
+        FE --> Usuario : exibirErro
+    else válida ou não obrigatória
+        ' --- Criação da demanda ---
+        S -> M : create(dados)
+        M --> S : demandaCriada
+
+        ' --- Histórico ---
+        S -> Hist : registrar("Demanda criada", usuarioAutenticado, demandaCriada)
+        Hist --> S : ok
+
+        S --> C : sucesso(demandaCriada)
+        C --> FE : respostaOK
+        FE --> Usuario : exibirSucesso
+    end
+end
+@enduml

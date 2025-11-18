@@ -1,0 +1,20 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC03 Consultar Projetos do Site
+
+rectangle Usuario
+rectangle Frontend
+rectangle ProjetoSiteController
+rectangle ProjetoSiteService
+rectangle ProjetoSiteRepository
+
+Usuario --> Frontend : 1: solicitarProjetos()
+Frontend --> ProjetoSiteController : 2: GET /projetos-site
+ProjetoSiteController --> ProjetoSiteService : 3: consultar()
+ProjetoSiteService --> ProjetoSiteRepository : 4: listar()
+ProjetoSiteRepository --> ProjetoSiteService : 5: lista
+ProjetoSiteService --> ProjetoSiteController : 6: retornar()
+ProjetoSiteController --> Frontend : 7: resposta
+Frontend --> Usuario : 8: exibir()
+
+@enduml

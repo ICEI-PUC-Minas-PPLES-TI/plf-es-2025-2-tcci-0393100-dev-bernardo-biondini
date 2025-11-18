@@ -1,0 +1,25 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC06 Registrar Pessoa Atendida
+
+rectangle Usuario
+rectangle Frontend
+rectangle DemandaController
+rectangle DemandaService
+rectangle PessoaAtendidaRepository
+rectangle HistoricoRepository
+
+Usuario --> Frontend : 1: informarDadosPessoa()
+Frontend --> DemandaController : 2: POST /demandas/{id}/pessoas-atendidas
+DemandaController --> DemandaService : 3: registrarPessoaAtendida(id, dados)
+DemandaService --> PessoaAtendidaRepository : 4: criar(dados)
+PessoaAtendidaRepository --> DemandaService : 5: criada
+
+DemandaService --> HistoricoRepository : 6: registrar("Pessoa atendida registrada")
+HistoricoRepository --> DemandaService : 7: históricoOK
+
+DemandaService --> DemandaController : 8: sucesso()
+DemandaController --> Frontend : 9: resposta()
+Frontend --> Usuario : 10: exibirRegistro()
+
+@enduml

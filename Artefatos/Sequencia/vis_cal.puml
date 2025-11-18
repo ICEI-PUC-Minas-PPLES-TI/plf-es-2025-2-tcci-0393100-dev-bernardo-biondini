@@ -1,0 +1,21 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control AgendaController as C
+control AgendaService as S
+entity Evento as M
+
+Usuario -> FE : visualizarCalendario(mes)
+FE -> C : GET /agenda?mes=mes
+
+C -> S : consultarEventosDoMes(mes)
+
+S -> M : where(mes = mes)
+M --> S : listaEventos
+
+S --> C
+C --> FE
+FE --> Usuario : exibirCalendario
+
+@enduml

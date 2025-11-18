@@ -1,0 +1,17 @@
+@startuml
+title DSS – Abrir Demanda
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioDemandas" as repo
+participant "RepositorioHistorico" as hist
+
+u -> s : abrirDemanda(dados)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("CRIAR_DEMANDA")
+s -> repo : salvarDemanda(dados)
+repo --> s : demanda
+s -> hist : registrar("Demanda criada", usuario)
+hist --> s : ok
+s --> u : sucesso
+@enduml

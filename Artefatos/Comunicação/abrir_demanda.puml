@@ -1,0 +1,23 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC06 Abrir Demanda
+
+rectangle Usuario
+rectangle Frontend
+rectangle DemandaController
+rectangle DemandaService
+rectangle DemandaRepository
+rectangle HistoricoRepository
+
+Usuario --> Frontend : 1: preencherFormularioDemanda()
+Frontend --> DemandaController : 2: POST /demandas
+DemandaController --> DemandaService : 3: abrirDemanda(dados)
+DemandaService --> DemandaRepository : 4: criar(demanda)
+DemandaRepository --> DemandaService : 5: demandaCriada
+DemandaService --> HistoricoRepository : 6: registrar("Demanda criada")
+HistoricoRepository --> DemandaService : 7: históricoOK
+DemandaService --> DemandaController : 8: retorno(demanda)
+DemandaController --> Frontend : 9: respostaOK()
+Frontend --> Usuario : 10: exibirConfirmacao()
+
+@enduml

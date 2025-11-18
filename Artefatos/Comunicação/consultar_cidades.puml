@@ -1,0 +1,20 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC02 Consultar Cidades
+
+rectangle Usuario
+rectangle Frontend
+rectangle CidadeController
+rectangle CidadeService
+rectangle CidadeRepository
+
+Usuario --> Frontend : 1: solicitarListaCidades()
+Frontend --> CidadeController : 2: GET /cidades
+CidadeController --> CidadeService : 3: consultar()
+CidadeService --> CidadeRepository : 4: listar()
+CidadeRepository --> CidadeService : 5: lista
+CidadeService --> CidadeController : 6: retornar()
+CidadeController --> Frontend : 7: resposta(lista)
+Frontend --> Usuario : 8: exibirLista()
+
+@enduml

@@ -1,0 +1,28 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control InstituicaoController as C
+control InstituicaoService as S
+entity Instituicao as M
+control AuthorizationService as AuthZ
+control ValidationService as Val
+
+Usuario -> FE : preencherFormInstituicao()
+FE -> C : POST /instituicoes (dados)
+
+C -> AuthZ : verificarPermissao("CADASTRAR_INSTITUICAO")
+AuthZ --> C : permitido
+
+C -> Val : validarCampos(dados)
+Val --> C : ok
+
+C -> S : cadastrarInstituicao(dados)
+
+S -> M : create(dados)
+M --> S : instituicaoCriada
+
+S --> C : sucesso(instituicao)
+C --> FE : respostaOK
+FE --> Usuario : exibir "Instituição cadastrada"
+@enduml

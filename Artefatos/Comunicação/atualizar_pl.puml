@@ -1,0 +1,25 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC04 Atualizar Status de Projeto de Lei
+
+rectangle Usuario
+rectangle Frontend
+rectangle ProjetoLeiController
+rectangle ProjetoLeiService
+rectangle ProjetoLeiRepository
+
+Usuario --> Frontend : 1: selecionarNovoStatus()
+Frontend --> ProjetoLeiController : 2: PATCH /projetos-lei/{id}/status
+ProjetoLeiController --> ProjetoLeiService : 3: atualizarStatus(id, status)
+
+ProjetoLeiService --> ProjetoLeiRepository : 4: buscarPorId(id)
+ProjetoLeiRepository --> ProjetoLeiService : 5: plEncontrado
+
+ProjetoLeiService --> ProjetoLeiRepository : 6: atualizarStatus(id, status)
+ProjetoLeiRepository --> ProjetoLeiService : 7: atualizado
+
+ProjetoLeiService --> ProjetoLeiController : 8: sucesso()
+ProjetoLeiController --> Frontend : 9: respostaOK()
+Frontend --> Usuario : 10: mostrarMensagem()
+
+@enduml

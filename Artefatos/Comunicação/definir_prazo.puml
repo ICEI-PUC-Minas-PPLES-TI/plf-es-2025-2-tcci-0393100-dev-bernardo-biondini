@@ -1,0 +1,29 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC06 Definir Prazo
+
+rectangle Usuario
+rectangle Frontend
+rectangle DemandaController
+rectangle DemandaService
+rectangle DemandaRepository
+rectangle NotificacaoService
+
+Usuario --> Frontend : 1: informarPrazo()
+Frontend --> DemandaController : 2: PATCH /demandas/{id}/prazo
+DemandaController --> DemandaService : 3: definirPrazo(id, prazo)
+
+DemandaService --> DemandaRepository : 4: buscarPorId(id)
+DemandaRepository --> DemandaService : 5: demandaEncontrada
+
+DemandaService --> DemandaRepository : 6: atualizarPrazo()
+DemandaRepository --> DemandaService : 7: atualizado
+
+DemandaService --> NotificacaoService : 8: notificarPrazo()
+NotificacaoService --> DemandaService : 9: ok
+
+DemandaService --> DemandaController : 10: sucesso()
+DemandaController --> Frontend : 11: respostaOK()
+Frontend --> Usuario : 12: mensagem()
+
+@enduml

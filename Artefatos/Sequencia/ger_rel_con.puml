@@ -1,0 +1,33 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control RelatorioController as C
+control RelatorioService as S
+entity Emenda as EM
+entity ProjetoLei as PL
+entity Demanda as DM
+control AuthorizationService as AuthZ
+
+Usuario -> FE : gerarRelatorioConsolidado()
+FE -> C : GET /relatorios/consolidado
+
+C -> AuthZ : validarPermissao("RELATORIO_CONSOLIDADO")
+AuthZ --> C : permitido
+
+C -> S : gerarRelatorioConsolidado()
+
+S -> EM : count()
+EM --> S : totalEmendas
+
+S -> PL : count()
+PL --> S : totalProjetos
+
+S -> DM : count()
+DM --> S : totalDemandas
+
+S --> C : consolidado
+C --> FE
+FE --> Usuario : downloadRelatorio
+
+@enduml

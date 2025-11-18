@@ -1,0 +1,27 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC01 Autenticar no Sistema
+
+rectangle Usuario
+rectangle Frontend
+rectangle AuthController
+rectangle AuthService
+rectangle UsuarioRepository
+rectangle AuthorizationService
+rectangle TokenProvider
+
+Usuario --> Frontend : 1: informarCredenciais()
+Frontend --> AuthController : 2: POST /login
+AuthController --> AuthService : 3: autenticar(email, senha)
+AuthService --> UsuarioRepository : 4: buscarPorEmail(email)
+UsuarioRepository --> AuthService : 5: retornoUsuario
+AuthService --> AuthService : 6: validarSenha()
+AuthService --> AuthorizationService : 7: validarPermissões(usuario)
+AuthorizationService --> AuthService : 8: ok
+AuthService --> TokenProvider : 9: gerarToken(usuario)
+TokenProvider --> AuthService : 10: tokenJWT
+AuthService --> AuthController : 11: sucesso(token)
+AuthController --> Frontend : 12: resposta(token)
+Frontend --> Usuario : 13: redirecionarDashboard()
+
+@enduml

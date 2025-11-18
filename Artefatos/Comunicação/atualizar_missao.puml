@@ -1,0 +1,22 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC03 Atualizar Missão
+
+rectangle Usuario
+rectangle Frontend
+rectangle ConteudoController
+rectangle ConteudoService
+rectangle ConteudoRepository
+
+Usuario --> Frontend : 1: editarTextoMissao()
+Frontend --> ConteudoController : 2: PUT /conteudo/missao
+ConteudoController --> ConteudoService : 3: atualizarMissao(texto)
+
+ConteudoService --> ConteudoRepository : 4: atualizar("missao", texto)
+ConteudoRepository --> ConteudoService : 5: atualizado
+
+ConteudoService --> ConteudoController : 6: sucesso()
+ConteudoController --> Frontend : 7: respostaOK()
+Frontend --> Usuario : 8: exibirMensagem()
+
+@enduml

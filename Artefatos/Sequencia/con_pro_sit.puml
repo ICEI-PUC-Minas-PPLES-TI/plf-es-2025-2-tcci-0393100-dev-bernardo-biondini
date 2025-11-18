@@ -1,0 +1,20 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control ProjetoSiteController as C
+control ProjetoSiteService as S
+entity ProjetoSite as M
+
+Usuario -> FE : consultarProjetos()
+FE -> C : GET /projetos-site
+
+C -> S : consultarProjetos()
+S -> M : all()
+M --> S : listaProjetos
+
+S --> C
+C --> FE
+FE --> Usuario : exibirListaProjetos
+
+@enduml

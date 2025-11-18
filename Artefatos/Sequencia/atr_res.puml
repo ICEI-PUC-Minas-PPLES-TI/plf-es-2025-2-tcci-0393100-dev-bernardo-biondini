@@ -1,0 +1,52 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control DemandaController as C
+control DemandaService as S
+entity Demanda as M
+entity Usuario as UserModel
+control AuthorizationService as AuthZ
+control ValidationService as Val
+control HistoryService as Hist
+
+Usuario -> FE : selecionarResponsavel(idDemanda, idUsuarioResp)
+FE -> C : PUT /demandas/{id}/responsavel (idUsuarioResp)
+
+C -> AuthZ : verificarPermissao("ATRIBUIR_RESPONSAVEL")
+AuthZ --> C : permitido
+
+C -> Val : validarAtribuicaoResponsavel(dados)
+Val --> C : ok
+
+C -> S : atribuirResponsavel(idDemanda, idUsuarioResp, usuarioAutenticado)
+
+S -> M : find(idDemanda)
+M --> S : demandaOuNull
+
+alt demanda inexistente
+    S --> C : erro("Demanda não encontrada")
+    C --> FE : respostaErro
+    FE --> Usuario : exibirErro
+else
+    ' --- verifica usuário responsavel existe ---
+    S -> UserModel : find(idUsuarioResp)
+    UserModel --> S : responsavelOuNull
+
+    alt usuário inexistente
+        S --> C : erro("Responsável inválido")
+        C --> FE : respostaErro
+        FE --> Usuario : exibirErro
+    else
+        S -> M : update({responsavel_id = idUsuarioResp})
+        M --> S : demandaAtualizada
+
+        S -> Hist : registrar("Atribuição de responsável", usuarioAutenticado, demandaAtualizada)
+        Hist --> S : ok
+
+        S --> C : sucesso(demandaAtualizada)
+        C --> FE : respostaOK
+        FE --> Usuario : exibirSucesso
+    end
+end
+@enduml

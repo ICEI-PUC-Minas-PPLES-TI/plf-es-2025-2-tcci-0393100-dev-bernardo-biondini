@@ -1,0 +1,36 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control AuthController as C
+control AuthService as S
+entity Usuario as M
+control AuthorizationService as A
+
+Usuario -> FE : informarCredenciais(email, senha)
+FE -> C : POST /login
+
+C -> S : autenticar(email, senha)
+S -> M : buscarPorEmail(email)
+M --> S : usuarioEncontrado ou null
+
+alt usuário não encontrado
+    S --> C : erro("Credenciais inválidas")
+    C --> FE : respostaErro
+    FE --> Usuario : exibir mensagem
+else usuário encontrado
+    S -> S : verificarHash(senha, usuario.senhaHash)
+    
+    alt senha incorreta
+        S --> C : erro("Credenciais inválidas")
+        C --> FE : respostaErro
+        FE --> Usuario : exibir mensagem
+    else senha correta
+        S -> A : gerarToken(usuario)
+        A --> S : tokenJWT
+        S --> C : sucesso(tokenJWT)
+        C --> FE : respostaOK
+        FE --> Usuario : exibir dashboard
+    end
+end
+@enduml

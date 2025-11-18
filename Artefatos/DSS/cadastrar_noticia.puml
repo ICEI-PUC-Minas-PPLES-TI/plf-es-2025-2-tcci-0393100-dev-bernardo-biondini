@@ -1,0 +1,14 @@
+@startuml
+title DSS – Cadastrar Notícia
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioNoticias" as repo
+
+u -> s : cadastrarNoticia(dados)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("CADASTRAR_NOTICIA")
+s -> repo : salvarNoticia(dados)
+repo --> s : noticia
+s --> u : sucesso
+@enduml

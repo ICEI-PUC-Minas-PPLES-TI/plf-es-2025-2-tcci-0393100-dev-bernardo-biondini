@@ -1,0 +1,20 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC05 Consultar Emendas
+
+rectangle Usuario
+rectangle Frontend
+rectangle EmendaController
+rectangle EmendaService
+rectangle EmendaRepository
+
+Usuario --> Frontend : 1: solicitarConsultaEmendas()
+Frontend --> EmendaController : 2: GET /emendas
+EmendaController --> EmendaService : 3: consultar()
+EmendaService --> EmendaRepository : 4: listar()
+EmendaRepository --> EmendaService : 5: listaEmendas
+EmendaService --> EmendaController : 6: retornarResultados()
+EmendaController --> Frontend : 7: resposta(lista)
+Frontend --> Usuario : 8: exibirLista()
+
+@enduml

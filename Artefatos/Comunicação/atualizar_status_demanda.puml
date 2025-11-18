@@ -1,0 +1,29 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC06 Atualizar Status da Demanda
+
+rectangle Usuario
+rectangle Frontend
+rectangle DemandaController
+rectangle DemandaService
+rectangle DemandaRepository
+rectangle NotificacaoService
+
+Usuario --> Frontend : 1: selecionarStatus()
+Frontend --> DemandaController : 2: PATCH /demandas/{id}/status
+DemandaController --> DemandaService : 3: atualizarStatus(id, status)
+
+DemandaService --> DemandaRepository : 4: buscarPorId(id)
+DemandaRepository --> DemandaService : 5: demandaEncontrada
+
+DemandaService --> DemandaRepository : 6: atualizarStatus()
+DemandaRepository --> DemandaService : 7: atualizado
+
+DemandaService --> NotificacaoService : 8: enviarNotificacaoStatus()
+NotificacaoService --> DemandaService : 9: ok
+
+DemandaService --> DemandaController : 10: sucesso()
+DemandaController --> Frontend : 11: respostaOK()
+Frontend --> Usuario : 12: mostrarMensagem()
+
+@enduml

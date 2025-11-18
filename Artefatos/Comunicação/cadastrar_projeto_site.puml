@@ -1,0 +1,26 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC03 Cadastrar Projeto do Site
+
+rectangle Usuario
+rectangle Frontend
+rectangle ProjetoSiteController
+rectangle ProjetoSiteService
+rectangle ProjetoSiteRepository
+rectangle StorageService
+
+Usuario --> Frontend : 1: preencherProjeto(título, descrição, arquivo opcional)
+Frontend --> ProjetoSiteController : 2: POST /projetos-site
+ProjetoSiteController --> ProjetoSiteService : 3: cadastrarProjeto(dados)
+
+ProjetoSiteService --> StorageService : 4: uploadArquivo() # caso tenha arquivo
+StorageService --> ProjetoSiteService : 5: urlArquivo
+
+ProjetoSiteService --> ProjetoSiteRepository : 6: salvar(dados + urlArquivo)
+ProjetoSiteRepository --> ProjetoSiteService : 7: projetoCriado
+
+ProjetoSiteService --> ProjetoSiteController : 8: sucesso()
+ProjetoSiteController --> Frontend : 9: respostaOK()
+Frontend --> Usuario : 10: mostrarConfirmacao()
+
+@enduml

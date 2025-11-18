@@ -1,0 +1,22 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC07 Consultar Agenda / Calendário
+
+rectangle Usuario
+rectangle Frontend
+rectangle AgendaController
+rectangle AgendaService
+rectangle EventoRepository
+
+Usuario --> Frontend : 1: abrirCalendario()
+Frontend --> AgendaController : 2: GET /agenda?mes=x
+AgendaController --> AgendaService : 3: consultarAgenda(mes)
+
+AgendaService --> EventoRepository : 4: listarPorMes(mes)
+EventoRepository --> AgendaService : 5: listaEventos
+
+AgendaService --> AgendaController : 6: retornarEventos()
+AgendaController --> Frontend : 7: resposta(lista)
+Frontend --> Usuario : 8: exibirEventos()
+
+@enduml

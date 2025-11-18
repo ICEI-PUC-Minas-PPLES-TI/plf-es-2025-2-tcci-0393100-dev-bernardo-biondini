@@ -1,0 +1,29 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control NoticiaController as C
+control NoticiaService as S
+entity Noticia as M
+control AuthorizationService as AuthZ
+control ValidationService as Val
+
+Usuario -> FE : preencherFormNoticia(titulo, conteudo, opcional:imagem)
+FE -> C : POST /noticias (dados)
+
+C -> AuthZ : verificarPermissao("CADASTRAR_NOTICIA")
+AuthZ --> C : permitido
+
+C -> Val : validarCamposNoticia(dados)
+Val --> C : ok
+
+C -> S : cadastrarNoticia(dados, usuarioAutenticado)
+
+S -> M : create(dados)
+M --> S : noticiaCriada
+
+S --> C : sucesso(noticiaCriada)
+C --> FE : respostaOK(JSON noticia)
+FE --> Usuario : exibir "Notícia cadastrada com sucesso"
+
+@enduml

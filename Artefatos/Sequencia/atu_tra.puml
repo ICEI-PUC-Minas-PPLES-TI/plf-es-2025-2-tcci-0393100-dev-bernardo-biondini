@@ -1,0 +1,36 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control CMSController as C
+control CMSService as S
+entity CMSSecao as M
+control AuthorizationService as AuthZ
+control ValidationService as Val
+control HistoryService as Hist
+
+Usuario -> FE : editarTextoTrajetoria(novoTexto)
+FE -> C : PUT /cms/trajetoria (novoTexto)
+
+C -> AuthZ : verificarPermissao("ATUALIZAR_TRAJETORIA")
+AuthZ --> C : permitido
+
+C -> Val : validarTextoNaoVazio(novoTexto)
+Val --> C : ok
+
+C -> S : atualizarTrajetoria(novoTexto, usuarioAutenticado)
+
+S -> M : findByChave("TRAJETORIA")
+M --> S : secaoTrajetoria
+
+S -> Hist : registrar("Atualização Trajetória", usuarioAutenticado, secaoTrajetoria)
+Hist --> S : ok
+
+S -> M : update(secaoTrajetoria, {conteudo = novoTexto})
+M --> S : secaoAtualizada
+
+S --> C : sucesso
+C --> FE : respostaOK
+FE --> Usuario : exibir "Trajetória atualizada"
+
+@enduml

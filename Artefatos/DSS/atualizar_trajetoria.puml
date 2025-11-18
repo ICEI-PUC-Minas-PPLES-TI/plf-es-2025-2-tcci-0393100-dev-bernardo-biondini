@@ -1,0 +1,14 @@
+@startuml
+title DSS – Atualizar Trajetória
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioCMS" as repo
+
+u -> s : atualizarTrajetoria(texto)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("ATUALIZAR_TRAJETORIA")
+s -> repo : atualizarSecao("trajetoria", texto)
+repo --> s : ok
+s --> u : sucesso
+@enduml

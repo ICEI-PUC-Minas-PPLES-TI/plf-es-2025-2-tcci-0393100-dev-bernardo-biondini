@@ -1,0 +1,17 @@
+@startuml
+title DSS – Atualizar Status da Demanda
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioDemandas" as repo
+participant "RepositorioHistorico" as hist
+
+u -> s : atualizarStatusDemanda(idDemanda, status)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("ATUALIZAR_STATUS_DEMANDA")
+s -> repo : atualizarStatus(idDemanda, status)
+repo --> s : demanda
+s -> hist : registrar("Status da demanda atualizado", usuario)
+hist --> s : ok
+s --> u : sucesso
+@enduml

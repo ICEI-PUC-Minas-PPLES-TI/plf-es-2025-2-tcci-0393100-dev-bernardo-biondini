@@ -1,0 +1,26 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC03 Cadastrar Notícia
+
+rectangle Usuario
+rectangle Frontend
+rectangle NoticiaController
+rectangle NoticiaService
+rectangle NoticiaRepository
+rectangle StorageService
+
+Usuario --> Frontend : 1: preencherNoticia(título, descrição, imagem)
+Frontend --> NoticiaController : 2: POST /noticias
+NoticiaController --> NoticiaService : 3: cadastrarNoticia(dados)
+
+NoticiaService --> StorageService : 4: uploadImagem()
+StorageService --> NoticiaService : 5: urlImagem
+
+NoticiaService --> NoticiaRepository : 6: salvarNoticia(dados + urlImagem)
+NoticiaRepository --> NoticiaService : 7: noticiaCriada
+
+NoticiaService --> NoticiaController : 8: sucesso()
+NoticiaController --> Frontend : 9: respostaOK()
+Frontend --> Usuario : 10: exibirConfirmacao()
+
+@enduml

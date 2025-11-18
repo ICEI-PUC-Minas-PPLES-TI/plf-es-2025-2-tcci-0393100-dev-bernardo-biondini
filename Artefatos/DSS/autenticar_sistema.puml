@@ -1,0 +1,14 @@
+@startuml
+title DSS – UC01 Autenticar no Sistema
+
+actor Usuario as u
+participant "Sistema" as s
+participant "ServicoAutenticacao" as auth
+
+u -> s : autenticar(email, senha)
+s -> auth : validarCredenciais(email, senha)
+auth --> s : resultadoAutenticacao
+s -> auth : gerarToken(usuario)
+auth --> s : token
+s --> u : token / erro
+@enduml

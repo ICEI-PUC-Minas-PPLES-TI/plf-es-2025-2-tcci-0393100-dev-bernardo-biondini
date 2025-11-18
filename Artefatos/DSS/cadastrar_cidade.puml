@@ -1,0 +1,14 @@
+@startuml
+title DSS – Cadastrar Cidade
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioCidade" as repo
+
+u -> s : cadastrarCidade(dados)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("CADASTRAR_CIDADE")
+s -> repo : salvarCidade(dados)
+repo --> s : cidade
+s --> u : sucesso
+@enduml

@@ -1,0 +1,14 @@
+@startuml
+title DSS – Atualizar Missão
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioCMS" as repo
+
+u -> s : atualizarMissao(texto)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("ATUALIZAR_MISSAO")
+s -> repo : atualizarSecao("missao", texto)
+repo --> s : ok
+s --> u : sucesso
+@enduml

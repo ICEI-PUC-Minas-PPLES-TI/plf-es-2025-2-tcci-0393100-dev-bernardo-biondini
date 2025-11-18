@@ -1,0 +1,20 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC04 Consultar Projetos de Lei
+
+rectangle Usuario
+rectangle Frontend
+rectangle ProjetoLeiController
+rectangle ProjetoLeiService
+rectangle ProjetoLeiRepository
+
+Usuario --> Frontend : 1: solicitarConsultaPL()
+Frontend --> ProjetoLeiController : 2: GET /projetos-lei
+ProjetoLeiController --> ProjetoLeiService : 3: consultar()
+ProjetoLeiService --> ProjetoLeiRepository : 4: listar()
+ProjetoLeiRepository --> ProjetoLeiService : 5: lista
+ProjetoLeiService --> ProjetoLeiController : 6: retornar()
+ProjetoLeiController --> Frontend : 7: resposta
+Frontend --> Usuario : 8: exibir()
+
+@enduml

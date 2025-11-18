@@ -1,0 +1,41 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control DemandaController as C
+control DemandaService as S
+entity Demanda as M
+control AuthorizationService as AuthZ
+control ValidationService as Val
+control HistoryService as Hist
+
+Usuario -> FE : preencherFormPessoaAtendida(dados)
+FE -> C : PUT /demandas/{id}/pessoa-atendida (dados)
+
+C -> AuthZ : verificarPermissao("REGISTRAR_PESSOA")
+AuthZ --> C : permitido
+
+C -> Val : validarPessoaAtendida(dados)
+Val --> C : ok
+
+C -> S : registrarPessoaAtendida(idDemanda, dados, usuarioAutenticado)
+
+S -> M : find(idDemanda)
+M --> S : demandaOuNull
+
+alt demanda inexistente
+    S --> C : erro("Demanda não encontrada")
+    C --> FE : respostaErro
+    FE --> Usuario : exibirErro
+else
+    S -> M : update(dados)
+    M --> S : demandaAtualizada
+
+    S -> Hist : registrar("Pessoa atendida registrada", usuarioAutenticado, demandaAtualizada)
+    Hist --> S : ok
+
+    S --> C : sucesso(demandaAtualizada)
+    C --> FE : respostaOK
+    FE --> Usuario : exibirSucesso
+end
+@enduml

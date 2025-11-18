@@ -1,11 +1,31 @@
-
 @startuml
-title DER - Gabinete Inteligente (modelo relacional)
+title DER - Gabinete Inteligente (com Perfis e Permissões)
 
 skinparam shadowing false
 skinparam class {
   BackgroundColor #ffffff
   BorderColor #2c3e50
+}
+
+' ===================== AUTORIZAÇÃO =====================
+
+entity PerfilAcesso {
+  * id : INT <<PK>>
+  --
+  nome : VARCHAR   'ex.: DEPUTADA, CHEFE, GESTORA'
+  descricao : VARCHAR
+}
+
+entity Permissao {
+  * id : INT <<PK>>
+  --
+  codigo : VARCHAR   'ex.: RELATORIO_DEMANDAS'
+  descricao : VARCHAR
+}
+
+entity PerfilPermissao {
+  * perfil_id : INT <<FK>>
+  * permissao_id : INT <<FK>>
 }
 
 entity Usuario {
@@ -14,10 +34,13 @@ entity Usuario {
   nome : VARCHAR
   email : VARCHAR
   senha_hash : VARCHAR
-  papel : ENUM("DEPUTADA","CHEFE","GESTORA","ATENDENTE","FUNCIONARIO")
+  perfil_id : INT <<FK>>
   criado_em : DATETIME
   atualizado_em : DATETIME
 }
+
+
+' ===================== DOMÍNIO DO SISTEMA =====================
 
 entity Demanda {
   * id : INT <<PK>>
@@ -88,25 +111,40 @@ entity DemandaEvento {
 entity Anexo {
   * id : INT <<PK>>
   --
-  tabela_ref : VARCHAR  'ex.: demandas, emendas'
+  tabela_ref : VARCHAR     'ex.: demanda, emenda'
   id_ref : INT
   caminho_arquivo : VARCHAR
   criado_em : DATETIME
 }
 
-' Relacionamentos
+
+' ===================== RELACIONAMENTOS =====================
+
+' --- AUTORIZAÇÃO ---
+Usuario "1" -- "1" PerfilAcesso : pertence >
+PerfilAcesso "1" -- "0..*" Usuario
+
+PerfilAcesso "1" -- "0..*" PerfilPermissao : >
+Permissao "1" -- "0..*" PerfilPermissao : <>
+
+' --- USUÁRIO E DEMANDAS ---
 Usuario "1" -- "0..*" Demanda : cria >\n(criado_por_id)
 Usuario "1" -- "0..*" Demanda : responsável >\n(responsavel_id)
 
+' --- CIDADE ---
 Cidade "1" -- "0..*" Demanda
 Cidade "1" -- "0..*" Emenda
 Cidade "1" -- "0..*" Instituicao
 
+' --- INSTITUIÇÃO E LIDERANÇA ---
 Instituicao "1" -- "0..*" Lideranca
 Instituicao "1" -- "0..*" Demanda
 
+' --- EVENTOS E DEMANDAS (N-N) ---
 Demanda "0..*" -- "0..*" Evento : DemandaEvento
+
+' --- ANEXOS POLIMÓRFICOS ---
 Demanda "1" -- "0..*" Anexo : anexos
-Emenda "1" -- "0..*" Anexo : anexos
+Emenda  "1" -- "0..*" Anexo : anexos
 
 @enduml

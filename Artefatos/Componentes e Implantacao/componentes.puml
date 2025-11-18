@@ -1,66 +1,105 @@
-
 @startuml
-title Diagrama de Componentes - Backend Gabinete Inteligente
+title Diagrama de Componentes (UML) – Sistema Gabinete Inteligente
 
-skinparam componentStyle rectangle
+skinparam componentStyle uml2
 skinparam shadowing false
 
-package "API REST (Laravel)" {
-  [Gateway HTTP] as Gateway
-  [Auth Controller]
-  [Demandas Controller]
-  [Emendas Controller]
-  [Cidades Controller]
-  [Instituições Controller]
-  [Agenda Controller]
-  [Relatórios Controller]
-
-  [Auth Service]
-  [Demandas Service]
-  [Emendas Service]
-  [Cidades Service]
-  [Instituições Service]
-  [Agenda Service]
-  [Relatórios Service]
-
-  [Policies/Guards]
-  [Eloquent Models]
-  [DTOs/Resources]
+' ================= Subsistema Frontend =======================
+package "Frontend Web (React)" <<Subsystem>> {
+  [Interface Web] <<Component>>
+  [HTTP Client] <<Component>>
 }
 
-database "MySQL" as DB
-folder "Storage (S3/Local)" as Store
-[Email/SMS Provider] as Mail
+[Interface Web] --> [HTTP Client] : Envia requisições REST
 
-Gateway --> [Auth Controller]
-Gateway --> [Demandas Controller]
-Gateway --> [Emendas Controller]
-Gateway --> [Cidades Controller]
-Gateway --> [Instituições Controller]
-Gateway --> [Agenda Controller]
-Gateway --> [Relatórios Controller]
+' ================= Backend - API REST =========================
+package "Backend API (Laravel)" <<Subsystem>> {
 
-[Auth Controller] --> [Auth Service]
-[Demandas Controller] --> [Demandas Service]
-[Emendas Controller] --> [Emendas Service]
-[Cidades Controller] --> [Cidades Service]
-[Instituições Controller] --> [Instituições Service]
-[Agenda Controller] --> [Agenda Service]
-[Relatórios Controller] --> [Relatórios Service]
+  [API Gateway] <<Component>>
 
-[Auth Service] --> [Policies/Guards]
-[Demandas Service] --> [Eloquent Models]
-[Emendas Service] --> [Eloquent Models]
-[Cidades Service] --> [Eloquent Models]
-[Instituições Service] --> [Eloquent Models]
-[Agenda Service] --> [Eloquent Models]
-[Relatórios Service] --> [Eloquent Models]
+  package "Controladores (Controllers)" <<Subsystem>> {
+    [AuthController] <<Component>>
+    [DemandasController] <<Component>>
+    [EmendasController] <<Component>>
+    [CidadesController] <<Component>>
+    [InstituicoesController] <<Component>>
+    [AgendaController] <<Component>>
+    [RelatoriosController] <<Component>>
+  }
+
+  package "Serviços de Aplicação" <<Subsystem>> {
+    [AuthService] <<Component>>
+    [DemandasService] <<Component>>
+    [EmendasService] <<Component>>
+    [CidadesService] <<Component>>
+    [InstituicoesService] <<Component>>
+    [AgendaService] <<Component>>
+    [RelatoriosService] <<Component>>
+  }
+
+  package "Autorização e Segurança" <<Subsystem>> {
+    [Policies] <<Component>>
+    [Guards/JWT] <<Component>>
+  }
+}
+
+' ================= Backend - Domínio & Persistência ===========
+package "Domínio & Persistência" <<Subsystem>> {
+  [Eloquent Models] <<Component>>
+  [DTOs / Resources] <<Component>>
+  database "MySQL" as DB
+}
+
+' ================= Infraestrutura =============================
+package "Infraestrutura" <<Subsystem>> {
+  folder "Storage (S3/Local)" as Store
+  [Mail Provider] <<Component>>
+}
+
+' ================== Conexões FRONT -> BACK ====================
+[HTTP Client] --> [API Gateway] : HTTPS/JSON
+
+' ================== Controladores =============================
+[API Gateway] --> [AuthController]
+[API Gateway] --> [DemandasController]
+[API Gateway] --> [EmendasController]
+[API Gateway] --> [CidadesController]
+[API Gateway] --> [InstituicoesController]
+[API Gateway] --> [AgendaController]
+[API Gateway] --> [RelatoriosController]
+
+' ================== Services =================================
+[AuthController] --> [AuthService]
+[DemandasController] --> [DemandasService]
+[EmendasController] --> [EmendasService]
+[CidadesController] --> [CidadesService]
+[InstituicoesController] --> [InstituicoesService]
+[AgendaController] --> [AgendaService]
+[RelatoriosController] --> [RelatoriosService]
+
+' ================== Segurança ================================
+[AuthService] --> [Guards/JWT]
+[AuthService] --> [Policies]
+
+[DemandasService] --> [Policies]
+[EmendasService] --> [Policies]
+[AgendaService] --> [Policies]
+[RelatoriosService] --> [Policies]
+
+' ================== Persistência ==============================
+[DemandasService] --> [Eloquent Models]
+[EmendasService] --> [Eloquent Models]
+[CidadesService] --> [Eloquent Models]
+[InstituicoesService] --> [Eloquent Models]
+[AgendaService] --> [Eloquent Models]
+[RelatoriosService] --> [Eloquent Models]
 
 [Eloquent Models] --> DB
-[Relatórios Service] --> Store
-[Demandas Service] --> Store
+[RelatoriosService] --> Store
+[DemandasService] --> Store
 
-[Agenda Service] --> Mail : Lembretes/Notificações
-[Demandas Service] --> Mail : Notificações
+' ================== Notificações =============================
+[AgendaService] --> [Mail Provider] : Envio de alertas
+[DemandasService] --> [Mail Provider] : Notificações
 
 @enduml

@@ -1,0 +1,41 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control ProjetoLeiController as C
+control ProjetoLeiService as S
+entity ProjetoLei as M
+control AuthorizationService as AuthZ
+control ValidationService as Val
+control HistoryService as Hist
+
+Usuario -> FE : selecionarNovoStatus()
+FE -> C : PUT /projetos-lei/{id}/status (status)
+
+C -> AuthZ : verificarPermissao("ATUALIZAR_STATUS_PL")
+AuthZ --> C : permitido
+
+C -> Val : validarStatusPL(status)
+Val --> C : ok
+
+C -> S : atualizarStatusPL(id, status, usuarioAutenticado)
+
+S -> M : find(id)
+M --> S : plExistente
+
+alt PL não encontrado
+    S --> C : erro("PL não encontrado")
+    C --> FE : respostaErro
+    FE --> Usuario : mostrarErro
+else PL encontrado
+    S -> M : update(plExistente, {status})
+    M --> S : plAtualizado
+
+    S -> Hist : registrar("Atualização de Status do PL", usuarioAutenticado, plAtualizado)
+    Hist --> S : ok
+
+    S --> C : sucesso(plAtualizado)
+    C --> FE : respostaOK
+    FE --> Usuario : exibirSucesso
+end
+@enduml

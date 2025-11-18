@@ -1,0 +1,22 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC04 Cadastrar Projeto de Lei
+
+rectangle Usuario
+rectangle Frontend
+rectangle ProjetoLeiController
+rectangle ProjetoLeiService
+rectangle ProjetoLeiRepository
+
+Usuario --> Frontend : 1: preencherCadastroPL(dados)
+Frontend --> ProjetoLeiController : 2: POST /projetos-lei
+ProjetoLeiController --> ProjetoLeiService : 3: cadastrarPL(dados)
+
+ProjetoLeiService --> ProjetoLeiRepository : 4: salvar(dados)
+ProjetoLeiRepository --> ProjetoLeiService : 5: plCriado
+
+ProjetoLeiService --> ProjetoLeiController : 6: sucesso()
+ProjetoLeiController --> Frontend : 7: respostaOK()
+Frontend --> Usuario : 8: exibirConfirmacao()
+
+@enduml

@@ -1,0 +1,20 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC03 Consultar Notícias
+
+rectangle Usuario
+rectangle Frontend
+rectangle NoticiaController
+rectangle NoticiaService
+rectangle NoticiaRepository
+
+Usuario --> Frontend : 1: solicitarNoticias()
+Frontend --> NoticiaController : 2: GET /noticias
+NoticiaController --> NoticiaService : 3: consultar()
+NoticiaService --> NoticiaRepository : 4: listar()
+NoticiaRepository --> NoticiaService : 5: lista
+NoticiaService --> NoticiaController : 6: retornar()
+NoticiaController --> Frontend : 7: resposta
+Frontend --> Usuario : 8: exibirNoticias()
+
+@enduml

@@ -1,0 +1,33 @@
+@startuml
+skinparam linetype ortho
+title Comunicação – UC06 Anexar Ofício à Demanda
+
+rectangle Usuario
+rectangle Frontend
+rectangle DemandaController
+rectangle DemandaService
+rectangle ArquivoService
+rectangle StorageProvider
+rectangle AnexoRepository
+rectangle HistoricoRepository
+
+Usuario --> Frontend : 1: selecionarArquivo()
+Frontend --> DemandaController : 2: POST /demandas/{id}/anexos
+DemandaController --> DemandaService : 3: anexarOficio(id, arquivo)
+DemandaService --> ArquivoService : 4: validarFormato(arquivo)
+ArquivoService --> DemandaService : 5: formatoOK
+
+DemandaService --> StorageProvider : 6: upload(arquivo)
+StorageProvider --> DemandaService : 7: urlArquivo
+
+DemandaService --> AnexoRepository : 8: registrarAnexo(idDemanda, url)
+AnexoRepository --> DemandaService : 9: anexoOK
+
+DemandaService --> HistoricoRepository : 10: registrar("Ofício anexado")
+HistoricoRepository --> DemandaService : 11: históricoOK
+
+DemandaService --> DemandaController : 12: sucesso()
+DemandaController --> Frontend : 13: respostaOK()
+Frontend --> Usuario : 14: mostrarArquivoAnexado()
+
+@enduml
