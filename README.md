@@ -6,7 +6,7 @@ O objetivo deste projeto é desenvolver o sistema  **Gabinete Virtual** , uma pl
 
 ## Alunos integrantes da equipe
 
-* Bernardo Cavanellas BIondini
+* Bernardo Cavanellas Biondini
 
 ## Professores responsáveis
 
