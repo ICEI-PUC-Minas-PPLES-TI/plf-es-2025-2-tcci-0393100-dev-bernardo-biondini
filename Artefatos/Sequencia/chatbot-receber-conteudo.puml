@@ -1,0 +1,10 @@
+@startuml
+participant CMSService
+participant "Chatbot API" as API
+participant "WhatsApp" as WA
+actor Cidadao
+
+CMSService -> API : publicarConteudo(noticia)
+API -> WA : enviar conteúdo
+WA -> Cidadao : receber notícia/projeto
+@enduml

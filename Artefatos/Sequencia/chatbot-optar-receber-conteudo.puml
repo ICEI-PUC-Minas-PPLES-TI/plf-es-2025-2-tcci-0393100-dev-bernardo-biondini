@@ -1,0 +1,16 @@
+@startuml
+actor Cidadao
+participant "WhatsApp" as WA
+participant "Chatbot API" as API
+participant PreferenciaService
+database "Banco de Dados" as DB
+
+Cidadao -> WA : ativar recebimento de conteúdos
+WA -> API : POST /webhook/mensagem
+API -> PreferenciaService : salvarPreferencia(cidadao, true)
+PreferenciaService -> DB : update preferencia
+DB --> PreferenciaService : ok
+PreferenciaService --> API : preferenciaSalva
+API --> WA : confirmação
+WA --> Cidadao : opção registrada
+@enduml

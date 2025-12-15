@@ -1,4 +1,3 @@
-
 @startuml
 title Diagrama de Implantação - Gabinete Inteligente
 
@@ -8,15 +7,19 @@ node "Usuário" as User {
   artifact "Navegador Web" as Browser
 }
 
+node "Cidadão" as Cidadao {
+  artifact "WhatsApp" as WhatsApp
+}
+
 node "Hosting Frontend" as FEHost {
   artifact "React App (SPA)" as ReactApp
 }
 
 node "Servidor de Aplicação" as AppSrv {
+  node "Nginx/Apache" as WebSrv
   node "Container PHP-FPM" as PHP {
     artifact "Laravel API" as Laravel
   }
-  node "Nginx/Apache" as WebSrv
 }
 
 node "DB Server" as DBNode {
@@ -33,6 +36,8 @@ node "E-mail Service" as Mail {
 
 User -down-> FEHost : HTTPS
 FEHost -down-> AppSrv : HTTPS
+Cidadao -down-> AppSrv : Webhook / HTTPS
+
 WebSrv -down-> Laravel : FastCGI/Local
 Laravel -down-> MySQL : TCP 3306
 Laravel -down-> S3Local : SDK/API

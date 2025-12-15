@@ -1,0 +1,16 @@
+@startuml
+actor Cidadao
+participant "WhatsApp" as WA
+participant "Chatbot API" as API
+participant DemandaService
+database "Banco de Dados" as DB
+
+Cidadao -> WA : enviar reclamação/demanda
+WA -> API : POST /webhook/mensagem
+API -> DemandaService : registrarDemanda(texto, cidadao)
+DemandaService -> DB : insert Demanda
+DB --> DemandaService : demandaCriada
+DemandaService --> API : sucesso
+API --> WA : mensagem confirmação
+WA --> Cidadao : demanda registrada
+@enduml

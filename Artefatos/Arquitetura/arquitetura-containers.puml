@@ -1,4 +1,3 @@
-
 @startuml
 title Arquitetura Lógica - Diagrama de Contêineres (Nível 2)\nGabinete Inteligente
 
@@ -14,9 +13,14 @@ node "Navegador do Usuário" as Browser {
   component "Frontend Web\nReact" as Frontend
 }
 
+node "Plataforma de Mensagens" as Msg {
+  component "WhatsApp" as WhatsApp
+}
+
 node "Infraestrutura" as Infra {
   node "Servidor de Aplicação" as AppSrv {
     component "API REST\nLaravel/PHP" as API
+    component "Chatbot API\n(Webhook Handler)" as Chatbot
     component "Módulo Autenticação\n(JWT/Guards)" as Auth
     component "Módulo Demandas" as Dem
     component "Módulo Emendas" as Eme
@@ -24,18 +28,25 @@ node "Infraestrutura" as Infra {
     component "Módulo Agenda" as Agd
     component "Módulo Relatórios" as Rel
   }
+
   node "Banco de Dados" as DBHost {
     database "MySQL" as MySQL
   }
+
   node "Armazenamento de Arquivos" as Files {
     folder "S3/Local" as S3Local
   }
+
   node "Serviço de E-mail" as Mail {
     component "SMTP/API" as SMTP
   }
 }
 
 Frontend -[#blue]-> API : HTTPS (JSON)
+
+WhatsApp --> Chatbot : Webhook
+Chatbot --> API : REST/JSON
+
 API --> Auth
 API --> Dem
 API --> Eme

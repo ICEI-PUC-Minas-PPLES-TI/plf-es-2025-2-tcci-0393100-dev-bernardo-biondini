@@ -1,5 +1,5 @@
 @startuml
-title DER - Gabinete Inteligente (com Perfis e Permissões)
+title DER - Gabinete Inteligente (com Chatbot)
 
 skinparam shadowing false
 skinparam class {
@@ -12,14 +12,14 @@ skinparam class {
 entity PerfilAcesso {
   * id : INT <<PK>>
   --
-  nome : VARCHAR   'ex.: DEPUTADA, CHEFE, GESTORA'
+  nome : VARCHAR
   descricao : VARCHAR
 }
 
 entity Permissao {
   * id : INT <<PK>>
   --
-  codigo : VARCHAR   'ex.: RELATORIO_DEMANDAS'
+  codigo : VARCHAR
   descricao : VARCHAR
 }
 
@@ -39,6 +39,43 @@ entity Usuario {
   atualizado_em : DATETIME
 }
 
+' ===================== CHATBOT =====================
+
+entity Cidadao {
+  * id : INT <<PK>>
+  --
+  nome : VARCHAR
+  cpf : VARCHAR
+  data_nascimento : DATE
+  telefone : VARCHAR
+  criado_em : DATETIME
+}
+
+entity ChatbotSessao {
+  * id : INT <<PK>>
+  --
+  cidadao_id : INT <<FK>>
+  canal : VARCHAR      'WhatsApp'
+  inicio : DATETIME
+  fim : DATETIME
+}
+
+entity PreferenciaConteudo {
+  * id : INT <<PK>>
+  --
+  cidadao_id : INT <<FK>>
+  receber_conteudos : BOOLEAN
+}
+
+entity Notificacao {
+  * id : INT <<PK>>
+  --
+  cidadao_id : INT <<FK>>
+  demanda_id : INT <<FK>>
+  mensagem : TEXT
+  enviada_em : DATETIME
+  tipo : VARCHAR       'status, noticia, alerta'
+}
 
 ' ===================== DOMÍNIO DO SISTEMA =====================
 
@@ -52,7 +89,8 @@ entity Demanda {
   responsavel_id : INT <<FK>>
   cidade_id : INT <<FK>>
   instituicao_id : INT <<FK>>
-  criado_por_id : INT <<FK>>
+  criado_por_usuario_id : INT <<FK>>
+  criado_por_cidadao_id : INT <<FK>>
   criado_em : DATETIME
   atualizado_em : DATETIME
 }
@@ -111,40 +149,46 @@ entity DemandaEvento {
 entity Anexo {
   * id : INT <<PK>>
   --
-  tabela_ref : VARCHAR     'ex.: demanda, emenda'
+  tabela_ref : VARCHAR
   id_ref : INT
   caminho_arquivo : VARCHAR
   criado_em : DATETIME
 }
 
-
 ' ===================== RELACIONAMENTOS =====================
 
 ' --- AUTORIZAÇÃO ---
-Usuario "1" -- "1" PerfilAcesso : pertence >
-PerfilAcesso "1" -- "0..*" Usuario
+Usuario "1" -- "1" PerfilAcesso
+PerfilAcesso "1" -- "0..*" PerfilPermissao
+Permissao "1" -- "0..*" PerfilPermissao
 
-PerfilAcesso "1" -- "0..*" PerfilPermissao : >
-Permissao "1" -- "0..*" PerfilPermissao : <>
+' --- CHATBOT ---
+Cidadao "1" -- "0..*" ChatbotSessao
+Cidadao "1" -- "1" PreferenciaConteudo
+Cidadao "1" -- "0..*" Notificacao
 
-' --- USUÁRIO E DEMANDAS ---
-Usuario "1" -- "0..*" Demanda : cria >\n(criado_por_id)
-Usuario "1" -- "0..*" Demanda : responsável >\n(responsavel_id)
+' --- DEMANDAS ---
+Usuario "1" -- "0..*" Demanda : cria >
+Usuario "1" -- "0..*" Demanda : responsável >
+Cidadao "1" -- "0..*" Demanda : cria via chatbot >
 
 ' --- CIDADE ---
 Cidade "1" -- "0..*" Demanda
 Cidade "1" -- "0..*" Emenda
 Cidade "1" -- "0..*" Instituicao
 
-' --- INSTITUIÇÃO E LIDERANÇA ---
+' --- INSTITUIÇÃO ---
 Instituicao "1" -- "0..*" Lideranca
 Instituicao "1" -- "0..*" Demanda
 
-' --- EVENTOS E DEMANDAS (N-N) ---
+' --- EVENTOS ---
 Demanda "0..*" -- "0..*" Evento : DemandaEvento
 
-' --- ANEXOS POLIMÓRFICOS ---
-Demanda "1" -- "0..*" Anexo : anexos
-Emenda  "1" -- "0..*" Anexo : anexos
+' --- ANEXOS ---
+Demanda "1" -- "0..*" Anexo
+Emenda  "1" -- "0..*" Anexo
+
+' --- NOTIFICAÇÕES ---
+Demanda "1" -- "0..*" Notificacao
 
 @enduml

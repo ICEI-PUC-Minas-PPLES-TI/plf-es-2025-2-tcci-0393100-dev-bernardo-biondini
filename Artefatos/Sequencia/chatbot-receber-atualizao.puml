@@ -1,0 +1,13 @@
+@startuml
+participant DemandaService
+participant "Chatbot API" as API
+participant "WhatsApp" as WA
+actor Cidadao
+database "Banco de Dados" as DB
+
+DemandaService -> DB : atualizar status demanda
+DB --> DemandaService : ok
+DemandaService -> API : notificarAtualizacao(demanda)
+API -> WA : enviar mensagem
+WA -> Cidadao : atualização de status
+@enduml

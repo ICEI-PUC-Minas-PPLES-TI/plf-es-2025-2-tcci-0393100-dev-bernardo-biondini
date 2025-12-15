@@ -1,0 +1,43 @@
+@startuml
+title Diagrama de Classes por Pacotes - Chatbot do Gabinete Virtual
+
+package "Chatbot" {
+  class ChatbotSession {
+    id : UUID
+    canal : String
+    inicio : DateTime
+  }
+
+  class Cidadao {
+    id : UUID
+    nome : String
+    cpf : String
+    dataNascimento : Date
+  }
+
+  class PreferenciaConteudo {
+    receberConteudos : bool
+  }
+
+  class Notificacao {
+    id : UUID
+    mensagem : String
+    dataEnvio : DateTime
+  }
+}
+
+package "Demandas" {
+  class Demanda
+}
+
+package "CMS" {
+  class Noticia
+}
+
+Cidadao --> ChatbotSession
+Cidadao --> PreferenciaConteudo
+Cidadao --> Demanda
+Notificacao --> Demanda
+Notificacao --> Cidadao
+Noticia --> Notificacao
+@enduml

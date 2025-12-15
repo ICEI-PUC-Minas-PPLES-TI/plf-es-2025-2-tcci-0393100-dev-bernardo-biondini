@@ -1,0 +1,79 @@
+@startuml
+title Arquitetura Interna do Backend API (Nível Micro)
+
+allowmixing
+
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+
+package "API Layer" {
+  class DemandaController
+  class RelatorioController
+  class AgendaController
+}
+
+package "DTOs" {
+  class CriarDemandaDTO
+  class AtualizarStatusDTO
+  class EventoDTO
+}
+  
+package "Service Layer" {
+  class DemandaService
+  class RelatorioService
+  class AgendaService
+  class NotificationService
+}
+
+package "Domain Model" {
+  class Demanda
+  class Evento
+  class Emenda
+}
+
+package "Repository Layer" {
+  interface DemandaRepository
+  interface EventoRepository
+  interface EmendaRepository
+}
+
+package "Infrastructure" {
+  class EloquentDemandaRepository
+  class EloquentEventoRepository
+  class EloquentEmendaRepository
+  database MySQL
+}
+
+package "Cross-Cutting Concerns" {
+  class AuthorizationService
+  class ValidationService
+  class EventDispatcher
+}
+
+DemandaController --> CriarDemandaDTO
+DemandaController --> DemandaService
+
+AgendaController --> EventoDTO
+AgendaController --> AgendaService
+
+RelatorioController --> RelatorioService
+
+DemandaService --> DemandaRepository
+AgendaService --> EventoRepository
+RelatorioService --> EmendaRepository
+
+DemandaRepository <|.. EloquentDemandaRepository
+EventoRepository <|.. EloquentEventoRepository
+EmendaRepository <|.. EloquentEmendaRepository
+
+EloquentDemandaRepository --> MySQL
+EloquentEventoRepository --> MySQL
+EloquentEmendaRepository --> MySQL
+
+DemandaService --> AuthorizationService
+DemandaService --> ValidationService
+DemandaService --> EventDispatcher
+
+EventDispatcher --> NotificationService
+@enduml

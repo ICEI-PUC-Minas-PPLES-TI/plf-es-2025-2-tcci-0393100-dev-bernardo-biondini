@@ -1,0 +1,16 @@
+@startuml
+actor Cidadao
+participant "WhatsApp" as WA
+participant "Chatbot API" as API
+participant DemandaService
+database "Banco de Dados" as DB
+
+Cidadao -> WA : consultar status
+WA -> API : POST /webhook/mensagem
+API -> DemandaService : buscarDemandas(cidadao)
+DemandaService -> DB : select Demandas
+DB --> DemandaService : listaDemandas
+DemandaService --> API : statusDemandas
+API --> WA : resposta status
+WA --> Cidadao : exibir status
+@enduml

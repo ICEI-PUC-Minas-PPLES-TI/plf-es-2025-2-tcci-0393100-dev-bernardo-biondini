@@ -1,0 +1,12 @@
+@startuml
+actor Cidadão
+participant "Chatbot" as Chatbot
+participant "Sistema Gabinete Virtual" as Sistema
+
+Cidadão -> Chatbot : iniciarCadastro()
+Chatbot -> Cidadão : solicitarDados(nome, cpf, dataNascimento)
+Cidadão -> Chatbot : enviarDados()
+Chatbot -> Sistema : cadastrarCidadao(dados)
+Sistema --> Chatbot : cadastroConfirmado()
+Chatbot --> Cidadão : confirmarCadastro()
+@enduml

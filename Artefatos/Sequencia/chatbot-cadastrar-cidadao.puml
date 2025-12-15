@@ -1,0 +1,19 @@
+@startuml
+actor Cidadao
+participant "WhatsApp" as WA
+participant "Chatbot API" as API
+participant CidadaoService
+database "Banco de Dados" as DB
+
+Cidadao -> WA : iniciar conversa
+WA -> API : POST /webhook/mensagem
+API -> WA : solicitar dados cadastrais
+Cidadao -> WA : enviar nome, CPF, data nascimento
+WA -> API : POST /chatbot/cadastro
+API -> CidadaoService : cadastrarCidadao(dados)
+CidadaoService -> DB : insert Cidadao
+DB --> CidadaoService : ok
+CidadaoService --> API : cidadaoCriado
+API --> WA : mensagem confirmação
+WA --> Cidadao : cadastro realizado
+@enduml

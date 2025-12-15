@@ -1,0 +1,8 @@
+@startuml
+participant Sistema
+participant Chatbot
+actor Cidadão
+
+Sistema -> Chatbot : notificarAtualizacao(status)
+Chatbot -> Cidadão : enviarMensagemAtualizacao()
+@enduml

@@ -25,6 +25,7 @@ package "Backend API (Laravel)" <<Subsystem>> {
     [InstituicoesController] <<Component>>
     [AgendaController] <<Component>>
     [RelatoriosController] <<Component>>
+    [ChatbotController] <<Component>>
   }
 
   package "Serviços de Aplicação" <<Subsystem>> {
@@ -35,6 +36,7 @@ package "Backend API (Laravel)" <<Subsystem>> {
     [InstituicoesService] <<Component>>
     [AgendaService] <<Component>>
     [RelatoriosService] <<Component>>
+    [ChatbotService] <<Component>>
   }
 
   package "Autorização e Segurança" <<Subsystem>> {
@@ -56,8 +58,14 @@ package "Infraestrutura" <<Subsystem>> {
   [Mail Provider] <<Component>>
 }
 
+' ================= Plataforma de Mensagens ===================
+package "Plataforma de Mensagens" <<Subsystem>> {
+  [WhatsApp] <<Component>>
+}
+
 ' ================== Conexões FRONT -> BACK ====================
 [HTTP Client] --> [API Gateway] : HTTPS/JSON
+[WhatsApp] --> [ChatbotController] : Webhook / HTTPS
 
 ' ================== Controladores =============================
 [API Gateway] --> [AuthController]
@@ -67,6 +75,7 @@ package "Infraestrutura" <<Subsystem>> {
 [API Gateway] --> [InstituicoesController]
 [API Gateway] --> [AgendaController]
 [API Gateway] --> [RelatoriosController]
+[API Gateway] --> [ChatbotController]
 
 ' ================== Services =================================
 [AuthController] --> [AuthService]
@@ -76,6 +85,11 @@ package "Infraestrutura" <<Subsystem>> {
 [InstituicoesController] --> [InstituicoesService]
 [AgendaController] --> [AgendaService]
 [RelatoriosController] --> [RelatoriosService]
+[ChatbotController] --> [ChatbotService]
+
+[ChatbotService] --> [DemandasService]
+[ChatbotService] --> [RelatoriosService]
+[ChatbotService] --> [AuthService]
 
 ' ================== Segurança ================================
 [AuthService] --> [Guards/JWT]

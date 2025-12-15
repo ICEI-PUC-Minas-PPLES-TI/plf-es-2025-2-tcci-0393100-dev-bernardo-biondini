@@ -1,4 +1,3 @@
-
 @startuml
 title Arquitetura Lógica - Diagrama de Contexto (Nível 1)\nSistema: Gabinete Inteligente
 
@@ -14,24 +13,31 @@ actor "Deputada" as Deputada
 actor "Chefe de\nGabinete" as Chefe
 actor "Gestora de\nDemandas" as Gestora
 actor "Equipe de\nAtendimento" as Atendimento
-actor "Cidadão\n(Consulta Pública)" as Cidadao
+actor "Cidadão\n(Consulta Pública)" as CidadaoWeb
+actor "Cidadão\n(Chatbot)" as CidadaoChat
 
 rectangle "Sistema Gabinete Inteligente" as SGI {
   rectangle "Frontend Web\n(React)" as FE
   rectangle "Backend API\n(Laravel/PHP)" as BE
+  rectangle "Chatbot API\n(Webhook)" as Chatbot
 }
 
 cloud "Serviços Externos" as Ext {
+  rectangle "WhatsApp / Plataforma\n de Mensagens" as WhatsApp
   rectangle "E-mail/Notificações\n(SMTP/API)" as Email
   database "Banco de Dados\n(MySQL)" as DB
   folder "Armazenamento de Arquivos\n(S3/Local)" as Storage
 }
 
 Deputada --> FE : Consultas estratégicas\n(cidades, emendas, agenda)
-Chefe --> FE : Organiza agenda, prioriza demandas
+Chefe --> FE : Organiza agenda,\nprioriza demandas
 Gestora --> FE : Atribui responsáveis\natualiza status, gera relatórios
 Atendimento --> FE : Registra/atualiza demandas,\ninterage com lideranças
-Cidadao --> FE : Acesso a informações públicas\n(site institucional)
+CidadaoWeb --> FE : Acesso a informações públicas\n(site institucional)
+
+CidadaoChat --> WhatsApp : Envia mensagens
+WhatsApp --> Chatbot : Webhook / Mensagens
+Chatbot --> BE : Requisições REST/JSON
 
 FE --> BE : Requisições REST/JSON (HTTPS)
 BE --> DB : CRUD (ORM Eloquent)

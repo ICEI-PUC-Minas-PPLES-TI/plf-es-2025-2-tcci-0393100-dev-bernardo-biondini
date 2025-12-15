@@ -1,0 +1,8 @@
+@startuml
+participant Sistema
+participant Chatbot
+actor Cidadão
+
+Sistema -> Chatbot : enviarConteudo(noticiaProjeto)
+Chatbot -> Cidadão : exibirConteudo()
+@enduml

@@ -1,0 +1,12 @@
+@startuml
+actor Cidadão
+participant Chatbot
+participant Sistema
+
+Cidadão -> Chatbot : enviarReclamacaoDemanda()
+Chatbot -> Cidadão : solicitarDescricao()
+Cidadão -> Chatbot : informarDescricao()
+Chatbot -> Sistema : registrarDemanda(dados)
+Sistema --> Chatbot : demandaRegistrada()
+Chatbot --> Cidadão : confirmarEnvio()
+@enduml

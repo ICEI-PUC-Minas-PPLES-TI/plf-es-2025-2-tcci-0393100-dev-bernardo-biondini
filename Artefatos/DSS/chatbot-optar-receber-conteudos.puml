@@ -1,0 +1,10 @@
+@startuml
+actor Cidadão
+participant Chatbot
+participant Sistema
+
+Cidadão -> Chatbot : optarReceberConteudos()
+Chatbot -> Sistema : atualizarPreferencias(cpf, true)
+Sistema --> Chatbot : preferenciaAtualizada()
+Chatbot --> Cidadão : confirmarOpcao()
+@enduml
