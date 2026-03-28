@@ -1,0 +1,26 @@
+[project]
+name = "chatbot-gabinete-virtual"
+version = "0.1.0"
+description = "Initial WhatsApp chatbot service for Gabinete Virtual."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115,<1.0",
+    "httpx>=0.28,<1.0",
+    "pydantic-settings>=2.8,<3.0",
+    "python-dotenv>=1.0,<2.0",
+    "uvicorn[standard]>=0.34,<1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3,<9.0",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
