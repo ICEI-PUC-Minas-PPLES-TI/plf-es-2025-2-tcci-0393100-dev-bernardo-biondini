@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AccessProfileController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DemandController;
+use App\Http\Controllers\Api\DemandHistoryController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\UserController;
 use App\Support\PermissionCodes;
@@ -45,6 +46,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/', [DemandController::class, 'index'])
             ->middleware('permission:'.PermissionCodes::DEMANDS_MANAGE);
         Route::get('/options', [DemandController::class, 'options'])
+            ->middleware('permission:'.PermissionCodes::DEMANDS_MANAGE);
+        Route::get('/{id}/histories', [DemandHistoryController::class, 'indexByDemand'])
             ->middleware('permission:'.PermissionCodes::DEMANDS_MANAGE);
         Route::post('/', [DemandController::class, 'store'])
             ->middleware('permission:'.PermissionCodes::DEMANDS_MANAGE);

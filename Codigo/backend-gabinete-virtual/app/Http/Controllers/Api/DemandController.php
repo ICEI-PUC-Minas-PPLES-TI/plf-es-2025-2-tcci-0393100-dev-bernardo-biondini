@@ -18,9 +18,17 @@ class DemandController extends Controller
     public function index(Request $request): JsonResponse
     {
         $perPage = max(1, min((int) $request->integer('per_page', 10), 100));
+        $filters = [
+            'search' => $request->string('search')->toString(),
+            'responsible_user_id' => $request->filled('responsible_user_id')
+                ? $request->integer('responsible_user_id')
+                : null,
+            'sort_by' => $request->query('sort_by', 'created_at'),
+            'sort_direction' => $request->query('sort_direction', 'desc'),
+        ];
 
         return response()->json([
-            'data' => $this->demandService->list($perPage),
+            'data' => $this->demandService->list($perPage, $filters),
         ]);
     }
 
@@ -53,7 +61,11 @@ class DemandController extends Controller
 
     public function update(UpdateDemandRequest $request, int $id): JsonResponse
     {
-        $demand = $this->demandService->update($id, $request->validated());
+        $demand = $this->demandService->update(
+            $id,
+            $request->validated(),
+            $request->user()?->id,
+        );
 
         return response()->json([
             'message' => 'Demanda atualizada com sucesso.',
@@ -63,7 +75,7 @@ class DemandController extends Controller
 
     public function destroy(int $id): JsonResponse
     {
-        $this->demandService->delete($id);
+        $this->demandService->delete($id, request()->user()?->id);
 
         return response()->json([
             'message' => 'Demanda removida com sucesso.',

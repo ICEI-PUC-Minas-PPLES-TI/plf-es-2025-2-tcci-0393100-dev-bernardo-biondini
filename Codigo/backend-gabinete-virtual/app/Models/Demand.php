@@ -31,6 +31,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property User $user
  * @property Institution $institution
  * @property Collection|Event[] $events
+ * @property Collection|DemandHistory[] $histories
  * @property Collection|Notification[] $notifications
  *
  * @package App\Models
@@ -82,6 +83,11 @@ class Demand extends Model
 	public function events()
 	{
 		return $this->belongsToMany(Event::class);
+	}
+
+	public function histories()
+	{
+		return $this->hasMany(DemandHistory::class);
 	}
 
 	public function notifications()
