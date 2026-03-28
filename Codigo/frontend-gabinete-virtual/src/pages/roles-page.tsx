@@ -183,7 +183,7 @@ export function RolesPage() {
     }
 
     const shouldDelete = window.confirm(
-      `Deseja remover o papel \"${role.name}\"?`,
+      `Deseja remover o papel "${role.name}"?`,
     );
 
     if (!shouldDelete) {

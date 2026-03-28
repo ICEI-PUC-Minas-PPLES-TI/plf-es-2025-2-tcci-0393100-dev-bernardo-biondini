@@ -17,6 +17,18 @@ export interface DemandOptionInstitutionType {
   city_id: number;
 }
 
+export interface ManagedDemandHistoryType {
+  id: number;
+  demand_id: number;
+  user_id: number | null;
+  action: string;
+  description: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+  user: DemandOptionUserType | null;
+}
+
 export interface ManagedDemandType {
   id: number;
   title: string;

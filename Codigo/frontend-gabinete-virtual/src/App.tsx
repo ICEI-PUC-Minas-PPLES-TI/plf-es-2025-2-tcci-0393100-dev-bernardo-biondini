@@ -10,7 +10,6 @@ import { DemandsPage } from "./pages/demands-page";
 import { HomePage } from "./pages/home-page";
 import { LoginPage } from "./pages/login-page";
 import { RolesPage } from "./pages/roles-page";
-import { RegisterPage } from "./pages/register-page";
 import { UsersPage } from "./pages/users-page";
 
 export default function App() {

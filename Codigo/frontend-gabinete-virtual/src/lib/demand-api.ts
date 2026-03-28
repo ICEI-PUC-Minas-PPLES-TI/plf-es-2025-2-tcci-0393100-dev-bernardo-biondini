@@ -2,6 +2,7 @@ import { API_BASE_URL, extractApiError, getStoredToken } from "./auth";
 import { toPaginatedType } from "./pagination";
 import type {
   DemandOptionsType,
+  ManagedDemandHistoryType,
   ManagedDemandType,
 } from "../types/demand/managed-demand-type";
 import type { PaginatedType } from "../types/paginated-type";
@@ -14,6 +15,13 @@ interface DemandMutationPayload {
   responsible_user_id: number;
   city_id: number;
   institution_id: number;
+}
+
+interface DemandListFilters {
+  search?: string;
+  responsibleUserId?: number | null;
+  sortBy?: "title" | "created_at";
+  sortDirection?: "asc" | "desc";
 }
 
 async function authenticatedRequest<T>(
@@ -54,7 +62,23 @@ async function authenticatedRequest<T>(
 export async function listDemands(
   page = 1,
   perPage = 10,
+  filters: DemandListFilters = {},
 ): Promise<PaginatedType<ManagedDemandType>> {
+  const params = new URLSearchParams({
+    page: String(page),
+    per_page: String(perPage),
+    sort_by: filters.sortBy ?? "created_at",
+    sort_direction: filters.sortDirection ?? "desc",
+  });
+
+  if (filters.search?.trim()) {
+    params.set("search", filters.search.trim());
+  }
+
+  if (filters.responsibleUserId) {
+    params.set("responsible_user_id", String(filters.responsibleUserId));
+  }
+
   const response = await authenticatedRequest<{
     data: {
       data: ManagedDemandType[];
@@ -65,7 +89,7 @@ export async function listDemands(
       from: number | null;
       to: number | null;
     };
-  }>(`/demands?page=${page}&per_page=${perPage}`);
+  }>(`/demands?${params.toString()}`);
 
   return toPaginatedType(response?.data);
 }
@@ -84,27 +108,67 @@ export async function getDemandOptions(): Promise<DemandOptionsType> {
   );
 }
 
-export async function createDemand(payload: DemandMutationPayload): Promise<void> {
-  await authenticatedRequest<{ message: string; data: ManagedDemandType }>(
+export async function listDemandHistories(
+  demandId: number,
+  page = 1,
+  perPage = 5,
+): Promise<PaginatedType<ManagedDemandHistoryType>> {
+  const response = await authenticatedRequest<{
+    data: {
+      data: ManagedDemandHistoryType[];
+      total: number;
+      per_page: number;
+      current_page: number;
+      last_page: number;
+      from: number | null;
+      to: number | null;
+    };
+  }>(`/demands/${demandId}/histories?page=${page}&per_page=${perPage}`);
+
+  return toPaginatedType(response?.data);
+}
+
+export async function createDemand(
+  payload: DemandMutationPayload,
+): Promise<ManagedDemandType> {
+  const response = await authenticatedRequest<{
+    message: string;
+    data: ManagedDemandType;
+  }>(
     "/demands",
     {
       method: "POST",
       body: JSON.stringify(payload),
     },
   );
+
+  if (!response?.data) {
+    throw new Error("Resposta invalida ao criar a demanda.");
+  }
+
+  return response.data;
 }
 
 export async function updateDemand(
   demandId: number,
   payload: DemandMutationPayload,
-): Promise<void> {
-  await authenticatedRequest<{ message: string; data: ManagedDemandType }>(
+): Promise<ManagedDemandType> {
+  const response = await authenticatedRequest<{
+    message: string;
+    data: ManagedDemandType;
+  }>(
     `/demands/${demandId}`,
     {
       method: "PUT",
       body: JSON.stringify(payload),
     },
   );
+
+  if (!response?.data) {
+    throw new Error("Resposta invalida ao atualizar a demanda.");
+  }
+
+  return response.data;
 }
 
 export async function removeDemand(demandId: number): Promise<void> {
