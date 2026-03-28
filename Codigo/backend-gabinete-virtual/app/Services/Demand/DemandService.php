@@ -10,16 +10,39 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class DemandService
 {
-    public function list(int $perPage = 10): LengthAwarePaginator
+    public function __construct(private readonly DemandHistoryService $demandHistoryService)
     {
+    }
+
+    public function list(int $perPage = 10, array $filters = []): LengthAwarePaginator
+    {
+        $search = trim((string) ($filters['search'] ?? ''));
+        $responsibleUserId = $filters['responsible_user_id'] ?? null;
+        $sortBy = in_array($filters['sort_by'] ?? null, ['title', 'created_at'], true)
+            ? $filters['sort_by']
+            : 'created_at';
+        $sortDirection = in_array($filters['sort_direction'] ?? null, ['asc', 'desc'], true)
+            ? $filters['sort_direction']
+            : 'desc';
+
         return Demand::query()
             ->with([
                 'user:id,name,email',
                 'city:id,name,region',
                 'institution:id,name,type,city_id',
             ])
-            ->orderByDesc('created_at')
-            ->paginate($perPage);
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($subQuery) use ($search) {
+                    $subQuery->where('title', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            })
+            ->when($responsibleUserId, function ($query) use ($responsibleUserId) {
+                $query->where('responsible_user_id', $responsibleUserId);
+            })
+            ->orderBy($sortBy, $sortDirection)
+            ->paginate($perPage)
+            ->withQueryString();
     }
 
     public function findById(int $id): Demand
@@ -47,12 +70,33 @@ class DemandService
             'created_by_citizen_id' => null,
         ]);
 
+        $this->demandHistoryService->logDemandChange(
+            $demand->id,
+            $authenticatedUserId,
+            'created',
+            'Demanda criada.',
+            [
+                'status' => $demand->status,
+                'priority' => $demand->priority,
+                'responsible_user_id' => $demand->responsible_user_id,
+            ],
+        );
+
         return $this->findById($demand->id);
     }
 
-    public function update(int $id, array $data): Demand
+    public function update(int $id, array $data, ?int $authenticatedUserId): Demand
     {
         $demand = Demand::query()->findOrFail($id);
+        $original = $demand->only([
+            'title',
+            'description',
+            'status',
+            'priority',
+            'responsible_user_id',
+            'city_id',
+            'institution_id',
+        ]);
 
         $demand->update([
             'title' => $data['title'],
@@ -64,12 +108,25 @@ class DemandService
             'institution_id' => $data['institution_id'],
         ]);
 
+        $this->registerUpdateHistory($demand, $original, $data, $authenticatedUserId);
+
         return $this->findById($demand->id);
     }
 
-    public function delete(int $id): void
+    public function delete(int $id, ?int $authenticatedUserId): void
     {
         $demand = Demand::query()->findOrFail($id);
+
+        $this->demandHistoryService->logDemandChange(
+            $demand->id,
+            $authenticatedUserId,
+            'deleted',
+            'Demanda removida.',
+            [
+                'title' => $demand->title,
+                'status' => $demand->status,
+            ],
+        );
 
         $demand->delete();
     }
@@ -87,5 +144,41 @@ class DemandService
                 ->orderBy('name')
                 ->get(['id', 'name', 'type', 'city_id']),
         ];
+    }
+
+    private function registerUpdateHistory(
+        Demand $demand,
+        array $original,
+        array $updated,
+        ?int $authenticatedUserId,
+    ): void {
+        $changes = [];
+
+        foreach ([
+            'title',
+            'description',
+            'status',
+            'priority',
+            'responsible_user_id',
+            'city_id',
+            'institution_id',
+        ] as $field) {
+            if (($original[$field] ?? null) !== ($updated[$field] ?? null)) {
+                $changes[$field] = [
+                    'from' => $original[$field] ?? null,
+                    'to' => $updated[$field] ?? null,
+                ];
+            }
+        }
+
+        if ($changes !== []) {
+            $this->demandHistoryService->logDemandChange(
+                $demand->id,
+                $authenticatedUserId,
+                'updated',
+                'Demanda atualizada.',
+                $changes,
+            );
+        }
     }
 }

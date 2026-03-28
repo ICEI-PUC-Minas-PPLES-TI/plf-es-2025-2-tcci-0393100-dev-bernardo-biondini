@@ -45,6 +45,11 @@ class User extends Authenticatable
         return $this->hasMany(ApiToken::class);
     }
 
+    public function demandHistories()
+    {
+        return $this->hasMany(DemandHistory::class);
+    }
+
     public function getPermissionCodesAttribute(): array
     {
         $permissions = $this->relationLoaded('access_profile')
