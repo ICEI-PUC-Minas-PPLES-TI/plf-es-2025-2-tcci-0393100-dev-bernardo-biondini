@@ -1,57 +1,61 @@
 <?php
 
-/**
- * Created by Reliese Model.
- */
-
 namespace App\Models;
 
-use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
-/**
- * Class User
- * 
- * @property int $id
- * @property string $name
- * @property string $email
- * @property string $password
- * @property int $access_profile_id
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * 
- * @property AccessProfile $access_profile
- * @property Collection|Demand[] $demands
- *
- * @package App\Models
- */
-class User extends Model
+class User extends Authenticatable
 {
-	protected $table = 'users';
+    use HasFactory;
+    use Notifiable;
 
-	protected $casts = [
-		'access_profile_id' => 'int'
-	];
+    protected $table = 'users';
 
-	protected $hidden = [
-		'password'
-	];
+    protected $casts = [
+        'access_profile_id' => 'int',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
 
-	protected $fillable = [
-		'name',
-		'email',
-		'password',
-		'access_profile_id'
-	];
+    protected $hidden = [
+        'password',
+    ];
 
-	public function access_profile()
-	{
-		return $this->belongsTo(AccessProfile::class);
-	}
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'access_profile_id',
+    ];
 
-	public function demands()
-	{
-		return $this->hasMany(Demand::class, 'responsible_user_id');
-	}
+    public function access_profile()
+    {
+        return $this->belongsTo(AccessProfile::class);
+    }
+
+    public function demands()
+    {
+        return $this->hasMany(Demand::class, 'responsible_user_id');
+    }
+
+    public function apiTokens()
+    {
+        return $this->hasMany(ApiToken::class);
+    }
+
+    public function getPermissionCodesAttribute(): array
+    {
+        $permissions = $this->relationLoaded('access_profile')
+            ? $this->access_profile?->permissions
+            : $this->access_profile()->with('permissions')->first()?->permissions;
+
+        return $permissions?->pluck('code')->values()->all() ?? [];
+    }
+
+    public function hasPermission(string $permissionCode): bool
+    {
+        return in_array($permissionCode, $this->permission_codes, true);
+    }
 }
