@@ -15,8 +15,8 @@ use Illuminate\Database\Eloquent\Model;
  * 
  * @property int $id
  * @property string $name
- * @property string $cpf
- * @property Carbon $birth_date
+ * @property string|null $cpf
+ * @property Carbon|null $birth_date
  * @property string $phone
  * @property Carbon $created_at
  * 

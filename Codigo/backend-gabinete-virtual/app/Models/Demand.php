@@ -17,8 +17,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $title
  * @property string $description
  * @property string $status
- * @property string $priority
- * @property int $responsible_user_id
+ * @property string|null $priority
+ * @property int|null $responsible_user_id
  * @property int $city_id
  * @property int $institution_id
  * @property int|null $created_by_user_id
@@ -28,7 +28,7 @@ use Illuminate\Database\Eloquent\Model;
  * 
  * @property City $city
  * @property Citizen|null $citizen
- * @property User $user
+ * @property User|null $user
  * @property Institution $institution
  * @property Collection|Event[] $events
  * @property Collection|DemandHistory[] $histories

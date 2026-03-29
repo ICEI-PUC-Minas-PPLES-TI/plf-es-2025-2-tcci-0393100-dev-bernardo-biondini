@@ -33,9 +33,9 @@ export interface ManagedDemandType {
   id: number;
   title: string;
   description: string;
-  status: "open" | "in_progress" | "completed";
-  priority: "low" | "medium" | "high";
-  responsible_user_id: number;
+  status: "open" | "under_review" | "in_progress" | "completed";
+  priority: "low" | "medium" | "high" | null;
+  responsible_user_id: number | null;
   city_id: number;
   institution_id: number;
   created_by_user_id: number | null;

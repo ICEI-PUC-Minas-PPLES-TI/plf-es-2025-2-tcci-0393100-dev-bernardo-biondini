@@ -10,9 +10,9 @@ import type { PaginatedType } from "../types/paginated-type";
 interface DemandMutationPayload {
   title: string;
   description: string;
-  status: "open" | "in_progress" | "completed";
+  status: "open" | "under_review" | "in_progress" | "completed";
   priority: "low" | "medium" | "high";
-  responsible_user_id: number;
+  responsible_user_id: number | null;
   city_id: number;
   institution_id: number;
 }

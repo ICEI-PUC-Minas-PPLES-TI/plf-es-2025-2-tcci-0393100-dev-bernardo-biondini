@@ -56,18 +56,22 @@ class DemandService
             ->findOrFail($id);
     }
 
-    public function create(array $data, ?int $authenticatedUserId): Demand
+    public function create(
+        array $data,
+        ?int $authenticatedUserId,
+        ?int $createdByCitizenId = null,
+    ): Demand
     {
         $demand = Demand::query()->create([
             'title' => $data['title'],
             'description' => $data['description'],
             'status' => $data['status'],
             'priority' => $data['priority'],
-            'responsible_user_id' => $data['responsible_user_id'],
+            'responsible_user_id' => $data['responsible_user_id'] ?? null,
             'city_id' => $data['city_id'],
             'institution_id' => $data['institution_id'],
             'created_by_user_id' => $authenticatedUserId,
-            'created_by_citizen_id' => null,
+            'created_by_citizen_id' => $createdByCitizenId,
         ]);
 
         $this->demandHistoryService->logDemandChange(
@@ -79,6 +83,7 @@ class DemandService
                 'status' => $demand->status,
                 'priority' => $demand->priority,
                 'responsible_user_id' => $demand->responsible_user_id,
+                'created_by_citizen_id' => $demand->created_by_citizen_id,
             ],
         );
 
@@ -103,7 +108,7 @@ class DemandService
             'description' => $data['description'],
             'status' => $data['status'],
             'priority' => $data['priority'],
-            'responsible_user_id' => $data['responsible_user_id'],
+            'responsible_user_id' => $data['responsible_user_id'] ?? null,
             'city_id' => $data['city_id'],
             'institution_id' => $data['institution_id'],
         ]);

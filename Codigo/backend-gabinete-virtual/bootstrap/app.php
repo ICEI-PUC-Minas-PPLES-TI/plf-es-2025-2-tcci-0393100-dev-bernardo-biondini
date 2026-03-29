@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\ChatbotInternalTokenMiddleware;
 use App\Http\Middleware\PermissionMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -14,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
+            'chatbot.internal' => ChatbotInternalTokenMiddleware::class,
             'permission' => PermissionMiddleware::class,
         ]);
     })

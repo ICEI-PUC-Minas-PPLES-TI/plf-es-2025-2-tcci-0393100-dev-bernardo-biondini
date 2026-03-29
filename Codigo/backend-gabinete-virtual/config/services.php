@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'chatbot' => [
+        'internal_token' => env('CHATBOT_INTERNAL_TOKEN', ''),
+    ],
+
 ];

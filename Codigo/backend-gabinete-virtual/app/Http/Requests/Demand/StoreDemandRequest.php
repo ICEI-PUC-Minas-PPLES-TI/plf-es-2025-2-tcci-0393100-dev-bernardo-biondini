@@ -17,9 +17,9 @@ class StoreDemandRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string'],
-            'status' => ['required', Rule::in(['open', 'in_progress', 'completed'])],
+            'status' => ['required', Rule::in(['open', 'under_review', 'in_progress', 'completed'])],
             'priority' => ['required', Rule::in(['low', 'medium', 'high'])],
-            'responsible_user_id' => ['required', 'integer', Rule::exists('users', 'id')],
+            'responsible_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'city_id' => ['required', 'integer', Rule::exists('cities', 'id')],
             'institution_id' => ['required', 'integer', Rule::exists('institutions', 'id')],
         ];

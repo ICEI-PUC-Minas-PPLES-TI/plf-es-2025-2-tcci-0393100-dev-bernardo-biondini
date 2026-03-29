@@ -1,4 +1,4 @@
-export type DemandStatusType = "open" | "in_progress" | "completed";
+export type DemandStatusType = "open" | "under_review" | "in_progress" | "completed";
 export type DemandPriorityType = "low" | "medium" | "high";
 
 export interface DemandType {
@@ -6,8 +6,8 @@ export interface DemandType {
   title: string;
   description: string;
   status: DemandStatusType;
-  priority: DemandPriorityType;
-  responsible_user_id: number;
+  priority: DemandPriorityType | null;
+  responsible_user_id: number | null;
   city_id: number;
   institution_id: number;
   created_by_user_id: number | null;

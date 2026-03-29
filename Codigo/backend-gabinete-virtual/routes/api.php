@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AccessProfileController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ChatbotDemandController;
 use App\Http\Controllers\Api\DemandController;
 use App\Http\Controllers\Api\DemandHistoryController;
 use App\Http\Controllers\Api\PermissionController;
@@ -17,6 +18,11 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::get('/access-profiles', [AccessProfileController::class, 'index']);
+
+Route::prefix('chatbot')->middleware('chatbot.internal')->group(function () {
+    Route::get('/demand-options', [ChatbotDemandController::class, 'options']);
+    Route::post('/demands', [ChatbotDemandController::class, 'store']);
+});
 
 Route::middleware('auth:api')->group(function () {
     Route::get('/permissions', [PermissionController::class, 'index'])
