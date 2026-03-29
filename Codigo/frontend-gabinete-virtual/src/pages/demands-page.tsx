@@ -18,8 +18,8 @@ import type {
 interface DemandFormState {
   title: string;
   description: string;
-  status: "open" | "in_progress" | "completed";
-  priority: "low" | "medium" | "high";
+  status: "open" | "under_review" | "in_progress" | "completed";
+  priority: "" | "low" | "medium" | "high";
   responsibleUserId: string;
   cityId: string;
   institutionId: string;
@@ -57,6 +57,7 @@ const DEFAULT_FILTERS: DemandFilterState = {
 function formatStatusLabel(status: DemandFormState["status"]): string {
   const labels = {
     open: "Aberta",
+    under_review: "Em analise",
     in_progress: "Em andamento",
     completed: "Concluida",
   } as const;
@@ -64,7 +65,11 @@ function formatStatusLabel(status: DemandFormState["status"]): string {
   return labels[status];
 }
 
-function formatPriorityLabel(priority: DemandFormState["priority"]): string {
+function formatPriorityLabel(priority: ManagedDemandType["priority"]): string {
+  if (!priority) {
+    return "Nao definida";
+  }
+
   const labels = {
     low: "Baixa",
     medium: "Media",
@@ -384,8 +389,10 @@ export function DemandsPage() {
       title: demand.title,
       description: demand.description,
       status: demand.status,
-      priority: demand.priority,
-      responsibleUserId: String(demand.responsible_user_id),
+      priority: demand.priority ?? "",
+      responsibleUserId: demand.responsible_user_id
+        ? String(demand.responsible_user_id)
+        : "",
       cityId: String(demand.city_id),
       institutionId: String(demand.institution_id),
     });
@@ -407,25 +414,35 @@ export function DemandsPage() {
     setSuccess(null);
 
     try {
-      if (!form.responsibleUserId || !form.cityId || !form.institutionId) {
-        setError("Selecione usuario responsavel, cidade e instituicao.");
+      if (!form.cityId || !form.institutionId) {
+        setError("Selecione cidade e instituicao.");
+        return;
+      }
+
+      const title = form.title.trim();
+      const description = form.description.trim();
+
+      if (!title || !description) {
+        setError("Informe titulo e descricao da demanda.");
+        return;
+      }
+
+      if (!form.priority) {
+        setError("Selecione a prioridade da demanda.");
         return;
       }
 
       const payload = {
-        title: form.title.trim(),
-        description: form.description.trim(),
+        title,
+        description,
         status: form.status,
         priority: form.priority,
-        responsible_user_id: Number(form.responsibleUserId),
+        responsible_user_id: form.responsibleUserId
+          ? Number(form.responsibleUserId)
+          : null,
         city_id: Number(form.cityId),
         institution_id: Number(form.institutionId),
       };
-
-      if (!payload.title || !payload.description) {
-        setError("Informe titulo e descricao da demanda.");
-        return;
-      }
 
       if (modalMode === "edit" && activeDemand) {
         const updatedDemand = await updateDemand(activeDemand.id, payload);
@@ -803,6 +820,7 @@ export function DemandsPage() {
                         }
                       >
                         <option value="open">Aberta</option>
+                        <option value="under_review">Em analise</option>
                         <option value="in_progress">Em andamento</option>
                         <option value="completed">Concluida</option>
                       </select>
@@ -821,6 +839,7 @@ export function DemandsPage() {
                           }))
                         }
                       >
+                        <option value="">Nao definida</option>
                         <option value="low">Baixa</option>
                         <option value="medium">Media</option>
                         <option value="high">Alta</option>
@@ -842,7 +861,7 @@ export function DemandsPage() {
                       }
                       required
                     >
-                      <option value="">Selecione o responsavel</option>
+                      <option value="">Sem responsavel definido</option>
                       {options.users.map((user) => (
                         <option key={user.id} value={user.id}>
                           {user.name} ({user.email})
