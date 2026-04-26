@@ -55,4 +55,9 @@ class ChatbotDemandService
             'institution_id' => $data['institution_id'],
         ], null, $citizen->id);
     }
+
+    public function status(int $id): array
+    {
+        return $this->demandService->findStatusById($id);
+    }
 }

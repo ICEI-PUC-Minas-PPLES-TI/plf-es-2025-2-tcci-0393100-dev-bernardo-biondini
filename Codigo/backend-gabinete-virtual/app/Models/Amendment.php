@@ -27,11 +27,19 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Amendment extends Model
 {
+	public const STATUSES = [
+		'planned',
+		'in_execution',
+		'completed',
+	];
+
 	protected $table = 'amendments';
 
 	protected $casts = [
 		'amount' => 'float',
-		'city_id' => 'int'
+		'city_id' => 'int',
+		'created_at' => 'datetime',
+		'updated_at' => 'datetime'
 	];
 
 	protected $fillable = [

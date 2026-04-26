@@ -29,4 +29,11 @@ class ChatbotDemandController extends Controller
             'data' => $demand,
         ], 201);
     }
+
+    public function status(int $id): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->chatbotDemandService->status($id),
+        ]);
+    }
 }

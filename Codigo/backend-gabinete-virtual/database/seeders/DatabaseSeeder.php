@@ -28,6 +28,8 @@ class DatabaseSeeder extends Seeder
             ['code' => PermissionCodes::USERS_VIEW, 'description' => 'Visualizar usuarios'],
             ['code' => PermissionCodes::USERS_CREATE, 'description' => 'Cadastrar usuarios'],
             ['code' => PermissionCodes::DEMANDS_MANAGE, 'description' => 'Gerenciar demandas'],
+            ['code' => PermissionCodes::AMENDMENTS_MANAGE, 'description' => 'Gerenciar emendas'],
+            ['code' => PermissionCodes::PROJECT_LAWS_MANAGE, 'description' => 'Gerenciar projetos de lei'],
             ['code' => PermissionCodes::ROLES_VIEW, 'description' => 'Visualizar papeis'],
             ['code' => PermissionCodes::ROLES_CREATE, 'description' => 'Criar papeis'],
             ['code' => PermissionCodes::ROLES_UPDATE, 'description' => 'Atualizar papeis'],

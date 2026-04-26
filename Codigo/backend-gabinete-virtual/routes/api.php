@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\Api\AccessProfileController;
+use App\Http\Controllers\Api\AmendmentController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChatbotDemandController;
 use App\Http\Controllers\Api\DemandController;
 use App\Http\Controllers\Api\DemandHistoryController;
 use App\Http\Controllers\Api\PermissionController;
+use App\Http\Controllers\Api\ProjectLawController;
 use App\Http\Controllers\Api\UserController;
 use App\Support\PermissionCodes;
 use Illuminate\Support\Facades\Route;
@@ -22,6 +24,7 @@ Route::get('/access-profiles', [AccessProfileController::class, 'index']);
 Route::prefix('chatbot')->middleware('chatbot.internal')->group(function () {
     Route::get('/demand-options', [ChatbotDemandController::class, 'options']);
     Route::post('/demands', [ChatbotDemandController::class, 'store']);
+    Route::get('/demands/{id}/status', [ChatbotDemandController::class, 'status']);
 });
 
 Route::middleware('auth:api')->group(function () {
@@ -63,5 +66,39 @@ Route::middleware('auth:api')->group(function () {
             ->middleware('permission:'.PermissionCodes::DEMANDS_MANAGE);
         Route::delete('/{id}', [DemandController::class, 'destroy'])
             ->middleware('permission:'.PermissionCodes::DEMANDS_MANAGE);
+    });
+
+    Route::prefix('amendments')->group(function () {
+        Route::get('/', [AmendmentController::class, 'index'])
+            ->middleware('permission:'.PermissionCodes::AMENDMENTS_MANAGE);
+        Route::get('/options', [AmendmentController::class, 'options'])
+            ->middleware('permission:'.PermissionCodes::AMENDMENTS_MANAGE);
+        Route::post('/', [AmendmentController::class, 'store'])
+            ->middleware('permission:'.PermissionCodes::AMENDMENTS_MANAGE);
+        Route::put('/{id}/status', [AmendmentController::class, 'updateStatus'])
+            ->middleware('permission:'.PermissionCodes::AMENDMENTS_MANAGE);
+        Route::get('/{id}', [AmendmentController::class, 'show'])
+            ->middleware('permission:'.PermissionCodes::AMENDMENTS_MANAGE);
+        Route::put('/{id}', [AmendmentController::class, 'update'])
+            ->middleware('permission:'.PermissionCodes::AMENDMENTS_MANAGE);
+        Route::delete('/{id}', [AmendmentController::class, 'destroy'])
+            ->middleware('permission:'.PermissionCodes::AMENDMENTS_MANAGE);
+    });
+
+    Route::prefix('project-laws')->group(function () {
+        Route::get('/', [ProjectLawController::class, 'index'])
+            ->middleware('permission:'.PermissionCodes::PROJECT_LAWS_MANAGE);
+        Route::get('/options', [ProjectLawController::class, 'options'])
+            ->middleware('permission:'.PermissionCodes::PROJECT_LAWS_MANAGE);
+        Route::post('/', [ProjectLawController::class, 'store'])
+            ->middleware('permission:'.PermissionCodes::PROJECT_LAWS_MANAGE);
+        Route::put('/{id}/status', [ProjectLawController::class, 'updateStatus'])
+            ->middleware('permission:'.PermissionCodes::PROJECT_LAWS_MANAGE);
+        Route::get('/{id}', [ProjectLawController::class, 'show'])
+            ->middleware('permission:'.PermissionCodes::PROJECT_LAWS_MANAGE);
+        Route::put('/{id}', [ProjectLawController::class, 'update'])
+            ->middleware('permission:'.PermissionCodes::PROJECT_LAWS_MANAGE);
+        Route::delete('/{id}', [ProjectLawController::class, 'destroy'])
+            ->middleware('permission:'.PermissionCodes::PROJECT_LAWS_MANAGE);
     });
 });

@@ -56,6 +56,22 @@ class DemandService
             ->findOrFail($id);
     }
 
+    public function findStatusById(int $id): array
+    {
+        $demand = Demand::query()
+            ->select(['id', 'title', 'status', 'priority', 'updated_at'])
+            ->findOrFail($id);
+
+        return [
+            'id' => $demand->id,
+            'title' => $demand->title,
+            'status' => $demand->status,
+            'status_label' => $this->translateStatus($demand->status),
+            'priority' => $demand->priority,
+            'updated_at' => $demand->updated_at,
+        ];
+    }
+
     public function create(
         array $data,
         ?int $authenticatedUserId,
@@ -185,5 +201,16 @@ class DemandService
                 $changes,
             );
         }
+    }
+
+    private function translateStatus(string $status): string
+    {
+        return match ($status) {
+            'open' => 'Aberta',
+            'under_review' => 'Em análise',
+            'in_progress' => 'Em andamento',
+            'completed' => 'Concluída',
+            default => $status,
+        };
     }
 }
