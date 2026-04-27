@@ -15,6 +15,19 @@ export function AppLayout({ children }: AppLayoutProps) {
     permissionCodes,
     PERMISSION_CODES.USERS_VIEW,
   );
+  const canManageAmendments = hasPermission(
+    permissionCodes,
+    PERMISSION_CODES.AMENDMENTS_MANAGE,
+  );
+  const canManageProjectLaws = hasPermission(
+    permissionCodes,
+    PERMISSION_CODES.PROJECT_LAWS_MANAGE,
+  );
+  const canManageAgenda = hasPermission(
+    permissionCodes,
+    PERMISSION_CODES.AGENDA_MANAGE,
+  );
+  const canManageCms = hasPermission(permissionCodes, PERMISSION_CODES.CMS_MANAGE);
   const canViewRoles = hasPermission(
     permissionCodes,
     PERMISSION_CODES.ROLES_VIEW,
@@ -102,6 +115,62 @@ export function AppLayout({ children }: AppLayoutProps) {
                 }
               >
                 Demandas
+              </NavLink>
+            ) : null}
+            {canManageAmendments ? (
+              <NavLink
+                to="/painel/emendas"
+                className={({ isActive }) =>
+                  `rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                    isActive
+                      ? "bg-primary text-white"
+                      : "border border-border bg-surface-strong text-foreground hover:bg-background-strong"
+                  }`
+                }
+              >
+                Emendas
+              </NavLink>
+            ) : null}
+            {canManageProjectLaws ? (
+              <NavLink
+                to="/painel/projetos-de-lei"
+                className={({ isActive }) =>
+                  `rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                    isActive
+                      ? "bg-primary text-white"
+                      : "border border-border bg-surface-strong text-foreground hover:bg-background-strong"
+                  }`
+                }
+              >
+                Projetos de lei
+              </NavLink>
+            ) : null}
+            {canManageAgenda ? (
+              <NavLink
+                to="/painel/agenda"
+                className={({ isActive }) =>
+                  `rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                    isActive
+                      ? "bg-primary text-white"
+                      : "border border-border bg-surface-strong text-foreground hover:bg-background-strong"
+                  }`
+                }
+              >
+                Agenda
+              </NavLink>
+            ) : null}
+            {canManageCms ? (
+              <NavLink
+                to="/painel/cms"
+                className={({ isActive }) =>
+                  `rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                    isActive
+                      ? "bg-primary text-white"
+                      : "border border-border bg-surface-strong text-foreground hover:bg-background-strong"
+                  }`
+                }
+              >
+                CMS
               </NavLink>
             ) : null}
             {canViewRoles ? (

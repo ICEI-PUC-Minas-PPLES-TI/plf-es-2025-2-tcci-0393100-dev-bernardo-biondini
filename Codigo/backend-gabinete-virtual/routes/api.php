@@ -1,13 +1,17 @@
 <?php
 
 use App\Http\Controllers\Api\AccessProfileController;
+use App\Http\Controllers\Api\AgendaController;
 use App\Http\Controllers\Api\AmendmentController;
+use App\Http\Controllers\Api\CmsController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChatbotDemandController;
 use App\Http\Controllers\Api\DemandController;
 use App\Http\Controllers\Api\DemandHistoryController;
+use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ProjectLawController;
+use App\Http\Controllers\Api\SiteProjectController;
 use App\Http\Controllers\Api\UserController;
 use App\Support\PermissionCodes;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +24,10 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::get('/access-profiles', [AccessProfileController::class, 'index']);
+Route::get('/site-content', [CmsController::class, 'publicOverview']);
+Route::get('/content/{key}', [CmsController::class, 'showPublic']);
+Route::get('/news', [NewsController::class, 'publicIndex']);
+Route::get('/site-projects', [SiteProjectController::class, 'publicIndex']);
 
 Route::prefix('chatbot')->middleware('chatbot.internal')->group(function () {
     Route::get('/demand-options', [ChatbotDemandController::class, 'options']);
@@ -100,5 +108,45 @@ Route::middleware('auth:api')->group(function () {
             ->middleware('permission:'.PermissionCodes::PROJECT_LAWS_MANAGE);
         Route::delete('/{id}', [ProjectLawController::class, 'destroy'])
             ->middleware('permission:'.PermissionCodes::PROJECT_LAWS_MANAGE);
+    });
+
+    Route::prefix('agenda')->group(function () {
+        Route::get('/events', [AgendaController::class, 'index'])
+            ->middleware('permission:'.PermissionCodes::AGENDA_MANAGE);
+        Route::get('/events/options', [AgendaController::class, 'options'])
+            ->middleware('permission:'.PermissionCodes::AGENDA_MANAGE);
+        Route::post('/events', [AgendaController::class, 'store'])
+            ->middleware('permission:'.PermissionCodes::AGENDA_MANAGE);
+        Route::get('/events/{id}', [AgendaController::class, 'show'])
+            ->middleware('permission:'.PermissionCodes::AGENDA_MANAGE);
+        Route::put('/events/{id}', [AgendaController::class, 'update'])
+            ->middleware('permission:'.PermissionCodes::AGENDA_MANAGE);
+        Route::delete('/events/{id}', [AgendaController::class, 'destroy'])
+            ->middleware('permission:'.PermissionCodes::AGENDA_MANAGE);
+
+        Route::get('/alerts', [AgendaController::class, 'listAlerts'])
+            ->middleware('permission:'.PermissionCodes::AGENDA_MANAGE);
+        Route::post('/alerts', [AgendaController::class, 'storeAlert'])
+            ->middleware('permission:'.PermissionCodes::AGENDA_MANAGE);
+        Route::delete('/alerts/{id}', [AgendaController::class, 'destroyAlert'])
+            ->middleware('permission:'.PermissionCodes::AGENDA_MANAGE);
+    });
+
+    Route::prefix('cms')->middleware('permission:'.PermissionCodes::CMS_MANAGE)->group(function () {
+        Route::get('/sections', [CmsController::class, 'index']);
+        Route::get('/options', [CmsController::class, 'options']);
+        Route::put('/sections/{key}', [CmsController::class, 'update']);
+
+        Route::get('/news', [NewsController::class, 'index']);
+        Route::get('/news/{id}', [NewsController::class, 'show']);
+        Route::post('/news', [NewsController::class, 'store']);
+        Route::put('/news/{id}', [NewsController::class, 'update']);
+        Route::delete('/news/{id}', [NewsController::class, 'destroy']);
+
+        Route::get('/site-projects', [SiteProjectController::class, 'index']);
+        Route::get('/site-projects/{id}', [SiteProjectController::class, 'show']);
+        Route::post('/site-projects', [SiteProjectController::class, 'store']);
+        Route::put('/site-projects/{id}', [SiteProjectController::class, 'update']);
+        Route::delete('/site-projects/{id}', [SiteProjectController::class, 'destroy']);
     });
 });

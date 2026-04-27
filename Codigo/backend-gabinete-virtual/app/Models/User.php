@@ -50,6 +50,16 @@ class User extends Authenticatable
         return $this->hasMany(DemandHistory::class);
     }
 
+    public function news()
+    {
+        return $this->hasMany(News::class, 'author_id');
+    }
+
+    public function siteProjects()
+    {
+        return $this->hasMany(SiteProject::class, 'author_id');
+    }
+
     public function getPermissionCodesAttribute(): array
     {
         $permissions = $this->relationLoaded('access_profile')

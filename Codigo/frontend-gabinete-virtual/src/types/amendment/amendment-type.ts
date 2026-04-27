@@ -1,3 +1,5 @@
+import type { CityType } from "../city/city-type";
+
 export type AmendmentStatusType = "planned" | "in_execution" | "completed";
 
 export interface AmendmentType {
@@ -7,6 +9,7 @@ export interface AmendmentType {
   status: AmendmentStatusType;
   city_id: number;
   application_area: string;
+  city?: CityType | null;
   created_at: string;
   updated_at: string;
 }

@@ -9,6 +9,8 @@ final class PermissionCodes
     public const DEMANDS_MANAGE = 'demands.manage';
     public const AMENDMENTS_MANAGE = 'amendments.manage';
     public const PROJECT_LAWS_MANAGE = 'project_laws.manage';
+    public const AGENDA_MANAGE = 'agenda.manage';
+    public const CMS_MANAGE = 'cms.manage';
 
     public const ROLES_VIEW = 'roles.view';
     public const ROLES_CREATE = 'roles.create';

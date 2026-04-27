@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\AccessProfile;
 use App\Models\Permission;
 use App\Models\User;
+use App\Services\Cms\CmsSectionService;
 use App\Support\PermissionCodes;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -30,6 +31,8 @@ class DatabaseSeeder extends Seeder
             ['code' => PermissionCodes::DEMANDS_MANAGE, 'description' => 'Gerenciar demandas'],
             ['code' => PermissionCodes::AMENDMENTS_MANAGE, 'description' => 'Gerenciar emendas'],
             ['code' => PermissionCodes::PROJECT_LAWS_MANAGE, 'description' => 'Gerenciar projetos de lei'],
+            ['code' => PermissionCodes::AGENDA_MANAGE, 'description' => 'Gerenciar agenda'],
+            ['code' => PermissionCodes::CMS_MANAGE, 'description' => 'Gerenciar conteudo do site'],
             ['code' => PermissionCodes::ROLES_VIEW, 'description' => 'Visualizar papeis'],
             ['code' => PermissionCodes::ROLES_CREATE, 'description' => 'Criar papeis'],
             ['code' => PermissionCodes::ROLES_UPDATE, 'description' => 'Atualizar papeis'],
@@ -42,6 +45,8 @@ class DatabaseSeeder extends Seeder
                 ['description' => $permission['description']],
             );
         }
+
+        (new CmsSectionService())->ensureDefaultSections();
 
         $profile = AccessProfile::query()->firstOrCreate(
             ['name' => 'Administrador'],

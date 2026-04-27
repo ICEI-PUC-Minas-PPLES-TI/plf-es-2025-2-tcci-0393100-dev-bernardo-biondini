@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
  * 
  * @property Collection|Amendment[] $amendments
  * @property Collection|Demand[] $demands
+ * @property Collection|Event[] $events
  * @property Collection|Institution[] $institutions
  *
  * @package App\Models
@@ -42,8 +43,18 @@ class City extends Model
 		return $this->hasMany(Demand::class);
 	}
 
+	public function events()
+	{
+		return $this->hasMany(Event::class);
+	}
+
 	public function institutions()
 	{
 		return $this->hasMany(Institution::class);
+	}
+
+	public function siteProjects()
+	{
+		return $this->hasMany(SiteProject::class);
 	}
 }
