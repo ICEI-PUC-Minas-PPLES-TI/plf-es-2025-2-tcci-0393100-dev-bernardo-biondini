@@ -18,6 +18,7 @@ import type {
 interface DemandFormState {
   title: string;
   description: string;
+  serviceArea: string;
   status: "open" | "under_review" | "in_progress" | "completed";
   priority: "" | "low" | "medium" | "high";
   responsibleUserId: string;
@@ -38,6 +39,7 @@ type ModalMode = "create" | "edit";
 const EMPTY_FORM: DemandFormState = {
   title: "",
   description: "",
+  serviceArea: "",
   status: "open",
   priority: "medium",
   responsibleUserId: "",
@@ -93,6 +95,7 @@ function formatFieldLabel(field: string): string {
   const labels: Record<string, string> = {
     title: "Titulo",
     description: "Descricao",
+    service_area: "Area atendida",
     status: "Status",
     priority: "Prioridade",
     responsible_user_id: "Responsavel",
@@ -178,6 +181,7 @@ export function DemandsPage() {
     users: [],
     cities: [],
     institutions: [],
+    service_areas: [],
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
@@ -248,6 +252,25 @@ export function DemandsPage() {
       (institution) => institution.city_id === Number(form.cityId),
     );
   }, [form.cityId, options.institutions]);
+
+  const serviceAreaLabelMap = useMemo(
+    () =>
+      new Map(
+        options.service_areas.map((serviceArea) => [
+          serviceArea.value,
+          serviceArea.label,
+        ]),
+      ),
+    [options.service_areas],
+  );
+
+  function formatServiceAreaLabel(serviceArea: string | null): string {
+    if (!serviceArea) {
+      return "Nao informada";
+    }
+
+    return serviceAreaLabelMap.get(serviceArea) ?? serviceArea;
+  }
 
   function toDemandListFilters(activeFilters: DemandFilterState) {
     return {
@@ -388,6 +411,7 @@ export function DemandsPage() {
     setForm({
       title: demand.title,
       description: demand.description,
+      serviceArea: demand.service_area ?? "",
       status: demand.status,
       priority: demand.priority ?? "",
       responsibleUserId: demand.responsible_user_id
@@ -427,6 +451,11 @@ export function DemandsPage() {
         return;
       }
 
+      if (!form.serviceArea) {
+        setError("Selecione a area atendida da demanda.");
+        return;
+      }
+
       if (!form.priority) {
         setError("Selecione a prioridade da demanda.");
         return;
@@ -435,6 +464,7 @@ export function DemandsPage() {
       const payload = {
         title,
         description,
+        service_area: form.serviceArea,
         status: form.status,
         priority: form.priority,
         responsible_user_id: form.responsibleUserId
@@ -690,6 +720,9 @@ export function DemandsPage() {
                         <span>
                           Instituicao: {demand.institution?.name ?? "Nao informada"}
                         </span>
+                        <span>
+                          Area atendida: {formatServiceAreaLabel(demand.service_area)}
+                        </span>
                         <span>Abertura: {formatDateTime(demand.created_at)}</span>
                       </div>
                     </div>
@@ -803,6 +836,29 @@ export function DemandsPage() {
                       rows={5}
                       required
                     />
+                  </label>
+
+                  <label className="block space-y-2">
+                    <span className="text-sm font-medium text-foreground">
+                      Area atendida
+                    </span>
+                    <select
+                      value={form.serviceArea}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          serviceArea: event.target.value,
+                        }))
+                      }
+                      required
+                    >
+                      <option value="">Selecione a area da demanda</option>
+                      {options.service_areas.map((serviceArea) => (
+                        <option key={serviceArea.value} value={serviceArea.value}>
+                          {serviceArea.label}
+                        </option>
+                      ))}
+                    </select>
                   </label>
 
                   <div className="grid gap-4 md:grid-cols-2">

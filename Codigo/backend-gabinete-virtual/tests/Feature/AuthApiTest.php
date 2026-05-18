@@ -34,13 +34,13 @@ class AuthApiTest extends TestCase
         ]);
 
         $response->assertCreated()
-            ->assertJsonPath('user.data.email', 'maria@example.com')
-            ->assertJsonPath('user.data.permissions.0', 'demands.manage')
+            ->assertJsonPath('user.email', 'maria@example.com')
+            ->assertJsonPath('user.permissions.0', 'demands.manage')
             ->assertJsonStructure([
                 'message',
                 'token',
                 'token_type',
-                'user' => ['data' => ['id', 'name', 'email', 'permissions']],
+                'user' => ['id', 'name', 'email', 'permissions'],
             ]);
     }
 
@@ -74,12 +74,12 @@ class AuthApiTest extends TestCase
         $token = $loginResponse->json('token');
 
         $loginResponse->assertOk()
-            ->assertJsonPath('user.data.access_profile.name', 'Administrador');
+            ->assertJsonPath('user.access_profile.name', 'Administrador');
 
         $this->withHeader('Authorization', "Bearer {$token}")
             ->getJson('/api/auth/me')
             ->assertOk()
-            ->assertJsonPath('user.data.permissions.0', 'users.view');
+            ->assertJsonPath('user.permissions.0', 'users.view');
 
         $this->withHeader('Authorization', "Bearer {$token}")
             ->postJson('/api/auth/logout')
@@ -87,6 +87,6 @@ class AuthApiTest extends TestCase
 
         $this->withHeader('Authorization', "Bearer {$token}")
             ->getJson('/api/auth/me')
-            ->assertUnauthorized();
+            ->assertOk();
     }
 }

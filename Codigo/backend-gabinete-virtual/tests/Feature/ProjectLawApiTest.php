@@ -33,6 +33,11 @@ class ProjectLawApiTest extends TestCase
             ->assertJsonPath('data.status', 'in_committee');
 
         $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/project-laws/options')
+            ->assertOk()
+            ->assertJsonStructure(['data' => ['statuses']]);
+
+        $this->withHeader('Authorization', "Bearer {$token}")
             ->getJson('/api/project-laws?search=PL 234/2025')
             ->assertOk()
             ->assertJsonPath('data.data.0.number', 'PL 234/2025');
@@ -54,6 +59,19 @@ class ProjectLawApiTest extends TestCase
             ])
             ->assertOk()
             ->assertJsonPath('data.status', 'approved');
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson("/api/project-laws/{$projectLawId}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $projectLawId)
+            ->assertJsonPath('data.status', 'approved');
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->deleteJson("/api/project-laws/{$projectLawId}")
+            ->assertOk()
+            ->assertJsonPath('message', 'Projeto de lei removido com sucesso.');
+
+        $this->assertDatabaseMissing('project_laws', ['id' => $projectLawId]);
     }
 
     private function issueTokenForPermission(string $permissionCode): string

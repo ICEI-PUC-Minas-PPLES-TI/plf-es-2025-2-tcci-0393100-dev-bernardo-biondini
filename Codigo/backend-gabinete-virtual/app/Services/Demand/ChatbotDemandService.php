@@ -6,6 +6,7 @@ use App\Models\Citizen;
 use App\Models\City;
 use App\Models\Demand;
 use App\Models\Institution;
+use App\Support\DemandServiceAreas;
 
 class ChatbotDemandService
 {
@@ -22,6 +23,7 @@ class ChatbotDemandService
             'institutions' => Institution::query()
                 ->orderBy('name')
                 ->get(['id', 'name', 'type', 'city_id']),
+            'service_areas' => DemandServiceAreas::options(),
         ];
     }
 
@@ -48,6 +50,7 @@ class ChatbotDemandService
         return $this->demandService->create([
             'title' => $data['title'],
             'description' => $data['description'],
+            'service_area' => $data['service_area'] ?? null,
             'status' => 'under_review',
             'priority' => $data['priority'] ?? null,
             'responsible_user_id' => null,

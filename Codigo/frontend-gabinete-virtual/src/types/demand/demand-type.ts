@@ -5,6 +5,7 @@ export interface DemandType {
   id: number;
   title: string;
   description: string;
+  service_area: string | null;
   status: DemandStatusType;
   priority: DemandPriorityType | null;
   responsible_user_id: number | null;

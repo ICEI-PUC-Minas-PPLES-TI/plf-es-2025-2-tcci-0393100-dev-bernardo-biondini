@@ -39,6 +39,11 @@ class AmendmentApiTest extends TestCase
             ->assertJsonPath('data.status', 'planned');
 
         $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/amendments/options')
+            ->assertOk()
+            ->assertJsonStructure(['data' => ['statuses', 'cities']]);
+
+        $this->withHeader('Authorization', "Bearer {$token}")
             ->getJson('/api/amendments?search=E-45/2025')
             ->assertOk()
             ->assertJsonPath('data.data.0.number', 'E-45/2025');
@@ -61,6 +66,19 @@ class AmendmentApiTest extends TestCase
             ])
             ->assertOk()
             ->assertJsonPath('data.status', 'completed');
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson("/api/amendments/{$amendmentId}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $amendmentId)
+            ->assertJsonPath('data.status', 'completed');
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->deleteJson("/api/amendments/{$amendmentId}")
+            ->assertOk()
+            ->assertJsonPath('message', 'Emenda removida com sucesso.');
+
+        $this->assertDatabaseMissing('amendments', ['id' => $amendmentId]);
     }
 
     private function issueTokenForPermission(string $permissionCode): string

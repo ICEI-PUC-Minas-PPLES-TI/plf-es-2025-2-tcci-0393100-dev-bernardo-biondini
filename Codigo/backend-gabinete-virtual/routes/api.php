@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AccessProfileController;
 use App\Http\Controllers\Api\AgendaController;
 use App\Http\Controllers\Api\AmendmentController;
 use App\Http\Controllers\Api\CmsController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChatbotDemandController;
 use App\Http\Controllers\Api\DemandController;
@@ -36,6 +37,8 @@ Route::prefix('chatbot')->middleware('chatbot.internal')->group(function () {
 });
 
 Route::middleware('auth:api')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'show']);
+
     Route::get('/permissions', [PermissionController::class, 'index'])
         ->middleware('permission:'.PermissionCodes::ROLES_VIEW);
 

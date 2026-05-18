@@ -45,6 +45,17 @@ class AgendaApiTest extends TestCase
             ->assertJsonPath('data.city_id', $city->id);
 
         $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/agenda/events/options')
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'types',
+                    'cities',
+                    'demands',
+                ],
+            ]);
+
+        $this->withHeader('Authorization', "Bearer {$token}")
             ->getJson('/api/agenda/events?month=4&year=2026')
             ->assertOk()
             ->assertJsonPath('data.data.0.id', $eventId);
@@ -80,9 +91,44 @@ class AgendaApiTest extends TestCase
             ->assertJsonPath('data.title', 'Lembrete da audiência');
 
         $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson("/api/agenda/events/{$eventId}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $eventId)
+            ->assertJsonPath('data.type', 'audience');
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->putJson("/api/agenda/events/{$eventId}", [
+                'title' => 'Audiência com lideranças comunitárias',
+                'type' => 'meeting',
+                'starts_at' => '2026-04-14 11:00:00',
+                'ends_at' => '2026-04-14 12:00:00',
+                'location' => 'Gabinete Regional',
+                'description' => 'Ajuste da agenda do dia.',
+                'participants_expected' => 14,
+                'color' => '#1F7A8C',
+                'city_id' => $city->id,
+                'demand_ids' => [],
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.type', 'meeting')
+            ->assertJsonPath('data.title', 'Audiência com lideranças comunitárias');
+
+        $this->withHeader('Authorization', "Bearer {$token}")
             ->getJson('/api/agenda/alerts?month=4&year=2026')
             ->assertOk()
             ->assertJsonPath('data.data.0.id', $alertId);
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->deleteJson("/api/agenda/alerts/{$alertId}")
+            ->assertOk()
+            ->assertJsonPath('message', 'Alerta removido com sucesso.');
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->deleteJson("/api/agenda/events/{$eventId}")
+            ->assertOk()
+            ->assertJsonPath('message', 'Evento removido com sucesso.');
+
+        $this->assertDatabaseMissing('events', ['id' => $eventId]);
     }
 
     private function issueTokenForPermission(string $permissionCode): string

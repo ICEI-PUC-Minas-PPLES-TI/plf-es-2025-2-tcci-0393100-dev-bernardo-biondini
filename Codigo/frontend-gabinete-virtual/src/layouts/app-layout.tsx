@@ -87,7 +87,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 }`
               }
             >
-              Resumo da sessao
+              Dashboard
             </NavLink>
             {canViewUsers ? (
               <NavLink
@@ -192,6 +192,10 @@ export function AppLayout({ children }: AppLayoutProps) {
           <div className="mt-8 rounded-[28px] bg-primary px-5 py-6 text-white">
             <p className="text-xs tracking-[0.2em] uppercase text-white/72">
               Sessao ativa
+            </p>
+            <p className="mt-3 text-sm leading-6 text-white/88">
+              Indicadores consolidados, atividades recentes e atalhos do painel
+              interno.
             </p>
           </div>
         </aside>

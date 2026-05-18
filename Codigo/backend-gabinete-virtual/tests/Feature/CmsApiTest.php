@@ -8,7 +8,6 @@ use App\Models\Permission;
 use App\Models\User;
 use App\Support\PermissionCodes;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -35,6 +34,23 @@ class CmsApiTest extends TestCase
             ->assertJsonPath('data.key', 'mission')
             ->assertJsonPath('data.content', 'Missao institucional atualizada para o portal.');
 
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/cms/sections')
+            ->assertOk()
+            ->assertJsonFragment([
+                'key' => 'mission',
+            ]);
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/cms/options')
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'site_project_statuses',
+                    'cities',
+                ],
+            ]);
+
         $createNewsResponse = $this->withHeaders([
             'Authorization' => "Bearer {$token}",
             'Accept' => 'application/json',
@@ -42,7 +58,6 @@ class CmsApiTest extends TestCase
             'title' => 'Nova agenda parlamentar',
             'content' => 'Publicacao com destaques da semana.',
             'published_at' => '2026-04-26 10:00:00',
-            'image' => UploadedFile::fake()->image('news.jpg'),
         ]);
 
         $newsId = $createNewsResponse->json('data.id');
@@ -55,6 +70,11 @@ class CmsApiTest extends TestCase
             ->getJson('/api/cms/news?search=agenda')
             ->assertOk()
             ->assertJsonPath('data.data.0.title', 'Nova agenda parlamentar');
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson("/api/cms/news/{$newsId}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $newsId);
 
         $this->withHeader('Authorization', "Bearer {$token}")
             ->putJson("/api/cms/news/{$newsId}", [
@@ -75,7 +95,6 @@ class CmsApiTest extends TestCase
             'description' => 'Acao institucional com entregas previstas para o semestre.',
             'city_id' => $city->id,
             'status' => 'in_progress',
-            'cover_image' => UploadedFile::fake()->image('project.jpg'),
         ]);
 
         $siteProjectId = $createSiteProjectResponse->json('data.id');
@@ -91,6 +110,11 @@ class CmsApiTest extends TestCase
             ->assertJsonPath('data.data.0.id', $siteProjectId);
 
         $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson("/api/cms/site-projects/{$siteProjectId}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $siteProjectId);
+
+        $this->withHeader('Authorization', "Bearer {$token}")
             ->putJson("/api/cms/site-projects/{$siteProjectId}", [
                 'title' => 'Projeto de apoio ao municipio',
                 'description' => 'Acao concluida com entregas registradas.',
@@ -104,9 +128,22 @@ class CmsApiTest extends TestCase
 
         $this->getJson('/api/site-content')
             ->assertOk()
-            ->assertJsonPath('data.sections.0.key', 'mission')
+            ->assertJsonFragment(['key' => 'mission'])
             ->assertJsonPath('data.news.0.id', $newsId)
             ->assertJsonPath('data.site_projects.0.id', $siteProjectId);
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->deleteJson("/api/cms/news/{$newsId}")
+            ->assertOk()
+            ->assertJsonPath('message', 'Noticia removida com sucesso.');
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->deleteJson("/api/cms/site-projects/{$siteProjectId}")
+            ->assertOk()
+            ->assertJsonPath('message', 'Projeto do site removido com sucesso.');
+
+        $this->assertDatabaseMissing('news', ['id' => $newsId]);
+        $this->assertDatabaseMissing('site_projects', ['id' => $siteProjectId]);
     }
 
     private function issueTokenForPermission(string $permissionCode): string

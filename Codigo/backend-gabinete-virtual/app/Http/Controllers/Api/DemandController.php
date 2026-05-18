@@ -23,6 +23,15 @@ class DemandController extends Controller
             'responsible_user_id' => $request->filled('responsible_user_id')
                 ? $request->integer('responsible_user_id')
                 : null,
+            'city_id' => $request->filled('city_id')
+                ? $request->integer('city_id')
+                : null,
+            'region' => $request->filled('region')
+                ? $request->string('region')->toString()
+                : null,
+            'service_area' => $request->filled('service_area')
+                ? $request->string('service_area')->toString()
+                : null,
             'sort_by' => $request->query('sort_by', 'created_at'),
             'sort_direction' => $request->query('sort_direction', 'desc'),
         ];

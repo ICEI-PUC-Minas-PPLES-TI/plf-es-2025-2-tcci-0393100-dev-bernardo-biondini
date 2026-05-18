@@ -17,6 +17,11 @@ export interface DemandOptionInstitutionType {
   city_id: number;
 }
 
+export interface DemandServiceAreaOptionType {
+  value: string;
+  label: string;
+}
+
 export interface ManagedDemandHistoryType {
   id: number;
   demand_id: number;
@@ -33,6 +38,7 @@ export interface ManagedDemandType {
   id: number;
   title: string;
   description: string;
+  service_area: string | null;
   status: "open" | "under_review" | "in_progress" | "completed";
   priority: "low" | "medium" | "high" | null;
   responsible_user_id: number | null;
@@ -51,4 +57,5 @@ export interface DemandOptionsType {
   users: DemandOptionUserType[];
   cities: DemandOptionCityType[];
   institutions: DemandOptionInstitutionType[];
+  service_areas: DemandServiceAreaOptionType[];
 }

@@ -10,6 +10,7 @@ import type { PaginatedType } from "../types/paginated-type";
 interface DemandMutationPayload {
   title: string;
   description: string;
+  service_area: string;
   status: "open" | "under_review" | "in_progress" | "completed";
   priority: "low" | "medium" | "high";
   responsible_user_id: number | null;
@@ -20,6 +21,9 @@ interface DemandMutationPayload {
 interface DemandListFilters {
   search?: string;
   responsibleUserId?: number | null;
+  cityId?: number | null;
+  region?: string | null;
+  serviceArea?: string | null;
   sortBy?: "title" | "created_at";
   sortDirection?: "asc" | "desc";
 }
@@ -79,6 +83,18 @@ export async function listDemands(
     params.set("responsible_user_id", String(filters.responsibleUserId));
   }
 
+  if (filters.cityId) {
+    params.set("city_id", String(filters.cityId));
+  }
+
+  if (filters.region?.trim()) {
+    params.set("region", filters.region.trim());
+  }
+
+  if (filters.serviceArea?.trim()) {
+    params.set("service_area", filters.serviceArea.trim());
+  }
+
   const response = await authenticatedRequest<{
     data: {
       data: ManagedDemandType[];
@@ -104,6 +120,7 @@ export async function getDemandOptions(): Promise<DemandOptionsType> {
       users: [],
       cities: [],
       institutions: [],
+      service_areas: [],
     }
   );
 }

@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $id
  * @property string $title
  * @property string $description
+ * @property string|null $service_area
  * @property string $status
  * @property string|null $priority
  * @property int|null $responsible_user_id
@@ -51,6 +52,7 @@ class Demand extends Model
 	protected $fillable = [
 		'title',
 		'description',
+		'service_area',
 		'status',
 		'priority',
 		'responsible_user_id',

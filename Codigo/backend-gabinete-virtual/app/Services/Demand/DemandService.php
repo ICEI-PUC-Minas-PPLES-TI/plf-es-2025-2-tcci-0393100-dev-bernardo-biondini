@@ -6,6 +6,7 @@ use App\Models\City;
 use App\Models\Demand;
 use App\Models\Institution;
 use App\Models\User;
+use App\Support\DemandServiceAreas;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class DemandService
@@ -18,7 +19,10 @@ class DemandService
     {
         $search = trim((string) ($filters['search'] ?? ''));
         $responsibleUserId = $filters['responsible_user_id'] ?? null;
-        $sortBy = in_array($filters['sort_by'] ?? null, ['title', 'created_at'], true)
+        $cityId = $filters['city_id'] ?? null;
+        $region = trim((string) ($filters['region'] ?? ''));
+        $serviceArea = $filters['service_area'] ?? null;
+        $sortBy = in_array($filters['sort_by'] ?? null, ['title', 'created_at', 'service_area'], true)
             ? $filters['sort_by']
             : 'created_at';
         $sortDirection = in_array($filters['sort_direction'] ?? null, ['asc', 'desc'], true)
@@ -34,11 +38,23 @@ class DemandService
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery->where('title', 'like', "%{$search}%")
-                        ->orWhere('description', 'like', "%{$search}%");
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhere('service_area', 'like', "%{$search}%");
                 });
             })
             ->when($responsibleUserId, function ($query) use ($responsibleUserId) {
                 $query->where('responsible_user_id', $responsibleUserId);
+            })
+            ->when($cityId, function ($query) use ($cityId) {
+                $query->where('city_id', $cityId);
+            })
+            ->when($region !== '', function ($query) use ($region) {
+                $query->whereHas('city', function ($cityQuery) use ($region) {
+                    $cityQuery->where('region', $region);
+                });
+            })
+            ->when($serviceArea, function ($query) use ($serviceArea) {
+                $query->where('service_area', $serviceArea);
             })
             ->orderBy($sortBy, $sortDirection)
             ->paginate($perPage)
@@ -81,6 +97,7 @@ class DemandService
         $demand = Demand::query()->create([
             'title' => $data['title'],
             'description' => $data['description'],
+            'service_area' => $data['service_area'] ?? null,
             'status' => $data['status'],
             'priority' => $data['priority'],
             'responsible_user_id' => $data['responsible_user_id'] ?? null,
@@ -97,6 +114,7 @@ class DemandService
             'Demanda criada.',
             [
                 'status' => $demand->status,
+                'service_area' => $demand->service_area,
                 'priority' => $demand->priority,
                 'responsible_user_id' => $demand->responsible_user_id,
                 'created_by_citizen_id' => $demand->created_by_citizen_id,
@@ -112,6 +130,7 @@ class DemandService
         $original = $demand->only([
             'title',
             'description',
+            'service_area',
             'status',
             'priority',
             'responsible_user_id',
@@ -122,6 +141,7 @@ class DemandService
         $demand->update([
             'title' => $data['title'],
             'description' => $data['description'],
+            'service_area' => $data['service_area'] ?? null,
             'status' => $data['status'],
             'priority' => $data['priority'],
             'responsible_user_id' => $data['responsible_user_id'] ?? null,
@@ -164,6 +184,7 @@ class DemandService
             'institutions' => Institution::query()
                 ->orderBy('name')
                 ->get(['id', 'name', 'type', 'city_id']),
+            'service_areas' => DemandServiceAreas::options(),
         ];
     }
 
@@ -178,6 +199,7 @@ class DemandService
         foreach ([
             'title',
             'description',
+            'service_area',
             'status',
             'priority',
             'responsible_user_id',
