@@ -19,7 +19,7 @@ interface DemandFormState {
   title: string;
   description: string;
   serviceArea: string;
-  status: "open" | "under_review" | "in_progress" | "completed";
+  status: "open" | "under_review" | "in_progress" | "completed" | "discarded";
   priority: "" | "low" | "medium" | "high";
   responsibleUserId: string;
   cityId: string;
@@ -62,6 +62,7 @@ function formatStatusLabel(status: DemandFormState["status"]): string {
     under_review: "Em analise",
     in_progress: "Em andamento",
     completed: "Concluida",
+    discarded: "Descartada",
   } as const;
 
   return labels[status];
@@ -879,6 +880,7 @@ export function DemandsPage() {
                         <option value="under_review">Em analise</option>
                         <option value="in_progress">Em andamento</option>
                         <option value="completed">Concluida</option>
+                        <option value="discarded">Descartada</option>
                       </select>
                     </label>
 

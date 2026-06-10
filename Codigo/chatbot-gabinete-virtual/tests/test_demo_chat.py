@@ -27,13 +27,14 @@ def test_demo_chat_mock_flow() -> None:
     assert "nome completo" in send("1")["reply"]
     assert "titulo curto" in send("Maria Silva")["reply"]
     assert "explique um pouco melhor" in send("Falta de atendimento")["reply"]
-    assert "Informe o nome da cidade" in send(
+    assert "primeiras 2 letras da cidade" in send(
         "Preciso de ajuda com atendimento de saude no meu bairro."
     )["reply"]
-    assert "Cidade selecionada" in send("Belo Horizonte")["reply"]
-    confirmation = send(
-        "Prefeitura de Belo Horizonte"
-    )["reply"]
+    city_choice = send("Be")["reply"]
+    assert "Encontrei mais de uma cidade" in city_choice
+    institution_choice = send("1")["reply"]
+    assert "Cidade selecionada: Belo Horizonte" in institution_choice
+    confirmation = send("1")["reply"]
     assert "A definir pelo gestor" in confirmation
     assert "Status inicial: Em analise" in confirmation
 

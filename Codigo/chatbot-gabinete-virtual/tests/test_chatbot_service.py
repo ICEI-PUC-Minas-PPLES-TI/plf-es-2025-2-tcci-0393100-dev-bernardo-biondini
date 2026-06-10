@@ -1,6 +1,13 @@
+import asyncio
+
 from app.config import Settings
 from app.models.whatsapp import IncomingWhatsAppMessage
 from app.services.chatbot import ChatbotService
+from app.services.demand_validation import (
+    HateSpeechDetectedError,
+    InvalidLanguageError,
+    SimilarDemandFoundError,
+)
 
 
 class FakeWhatsAppClient:
@@ -9,22 +16,74 @@ class FakeWhatsAppClient:
 
 
 class FakeBackendApiClient:
-    def __init__(self) -> None:
+    def __init__(self, recent_open_demands: list[dict] | None = None) -> None:
         self.created_payload: dict | None = None
+        self.recent_open_demands = recent_open_demands or []
 
     async def get_demand_options(self) -> dict:
         return {
             "cities": [
                 {"id": 1, "name": "Belo Horizonte", "region": "Centro"},
+                {"id": 2, "name": "Betim", "region": "Metropolitana"},
             ],
             "institutions": [
                 {"id": 10, "name": "Prefeitura de Belo Horizonte", "type": "Prefeitura", "city_id": 1},
+                {"id": 11, "name": "Camara Municipal de Belo Horizonte", "type": "Legislativo", "city_id": 1},
+                {"id": 20, "name": "Prefeitura de Betim", "type": "Prefeitura", "city_id": 2},
             ],
         }
 
+    async def search_cities(
+        self,
+        query: str,
+        limit: int = 5,
+    ) -> list[dict]:
+        normalized_query = query.strip().lower()
+        cities = (await self.get_demand_options()).get("cities", [])
+        matches = [
+            city
+            for city in cities
+            if city["name"].lower().startswith(normalized_query)
+            or f" {normalized_query}" in city["name"].lower()
+        ]
+        return matches[:limit]
+
+    async def get_city_institutions(
+        self,
+        city_id: int,
+    ) -> list[dict]:
+        institutions = (await self.get_demand_options()).get("institutions", [])
+        return [
+            institution
+            for institution in institutions
+            if institution.get("city_id") == city_id
+        ]
+
     async def create_demand(self, payload: dict) -> dict:
         self.created_payload = payload
-        return {"id": 123}
+        return {
+            "id": 123,
+            "status": "under_review" if payload.get("can_create", True) else "discarded",
+        }
+
+    async def get_recent_open_demands(
+        self,
+        city_id: int,
+        months: int = 3,
+    ) -> list[dict]:
+        return self.recent_open_demands
+
+
+class FakeDemandValidationService:
+    def __init__(self, error: Exception | None = None) -> None:
+        self.error = error
+        self.validated_payload: dict | None = None
+
+    async def validate(self, demand: dict) -> None:
+        self.validated_payload = demand
+
+        if self.error is not None:
+            raise self.error
 
 
 async def _reply(service: ChatbotService, sender: str, text: str) -> str:
@@ -37,38 +96,47 @@ async def _reply(service: ChatbotService, sender: str, text: str) -> str:
     )
 
 
-async def test_chatbot_opens_demand_flow() -> None:
+def _run(coroutine):
+    return asyncio.run(coroutine)
+
+
+def test_chatbot_opens_demand_flow() -> None:
     backend_client = FakeBackendApiClient()
+    validation_service = FakeDemandValidationService()
     service = ChatbotService(
         settings=Settings(whatsapp_echo_enabled=True),
         whatsapp_client=FakeWhatsAppClient(),
         backend_api_client=backend_client,
+        demand_validation_service=validation_service,
     )
 
     sender = "31999999999"
 
-    assert "1 - Abrir demanda" in await _reply(service, sender, "oi")
-    assert "nome completo" in await _reply(service, sender, "1")
-    assert "titulo curto" in await _reply(service, sender, "Maria Silva")
-    assert "explique um pouco melhor" in await _reply(service, sender, "Falta de atendimento")
-    assert "Informe o nome da cidade" in await _reply(
-        service,
-        sender,
-        "Preciso de ajuda com atendimento de saude no meu bairro.",
+    assert "1 - Abrir demanda" in _run(_reply(service, sender, "oi"))
+    assert "nome completo" in _run(_reply(service, sender, "1"))
+    assert "titulo curto" in _run(_reply(service, sender, "Maria Silva"))
+    assert "explique um pouco melhor" in _run(_reply(service, sender, "Falta de atendimento"))
+    assert "primeiras 2 letras da cidade" in _run(
+        _reply(
+            service,
+            sender,
+            "Preciso de ajuda com atendimento de saude no meu bairro.",
+        )
     )
-    assert "Cidade selecionada" in await _reply(service, sender, "Belo Horizonte")
-    confirmation = await _reply(
-        service,
-        sender,
-        "Prefeitura de Belo Horizonte",
-    )
+    city_reply = _run(_reply(service, sender, "Be"))
+    assert "Encontrei mais de uma cidade" in city_reply
+    assert "Belo Horizonte" in city_reply
+    institution_reply = _run(_reply(service, sender, "1"))
+    assert "Cidade selecionada: Belo Horizonte" in institution_reply
+    assert "0 - Nenhuma instituicao" in institution_reply
+    confirmation = _run(_reply(service, sender, "1"))
     assert "A definir pelo gestor" in confirmation
     assert "Status inicial: Em analise" in confirmation
 
-    final_reply = await _reply(service, sender, "1")
+    final_reply = _run(_reply(service, sender, "1"))
 
     assert "Demanda aberta com sucesso" in final_reply
-    assert backend_client.created_payload == {
+    assert validation_service.validated_payload == {
         "citizen_name": "Maria Silva",
         "phone": sender,
         "title": "Falta de atendimento",
@@ -76,4 +144,218 @@ async def test_chatbot_opens_demand_flow() -> None:
         "priority": None,
         "city_id": 1,
         "institution_id": 10,
+    }
+    assert backend_client.created_payload == {
+        "can_create": True,
+        "reason": None,
+        "message": None,
+        "demanda": {
+            "citizen_name": "Maria Silva",
+            "phone": sender,
+            "title": "Falta de atendimento",
+            "description": "Preciso de ajuda com atendimento de saude no meu bairro.",
+            "priority": None,
+            "city_id": 1,
+            "institution_id": 10,
+        },
+    }
+
+
+def test_chatbot_discards_demand_when_language_is_invalid() -> None:
+    backend_client = FakeBackendApiClient()
+    service = ChatbotService(
+        settings=Settings(whatsapp_echo_enabled=True),
+        whatsapp_client=FakeWhatsAppClient(),
+        backend_api_client=backend_client,
+        demand_validation_service=FakeDemandValidationService(
+            error=InvalidLanguageError("Ingles")
+        ),
+    )
+
+    sender = "31999999999"
+
+    _run(_reply(service, sender, "1"))
+    _run(_reply(service, sender, "Maria Silva"))
+    _run(_reply(service, sender, "Falta de atendimento"))
+    _run(_reply(service, sender, "Need help with public healthcare in my neighborhood."))
+    _run(_reply(service, sender, "Be"))
+    _run(_reply(service, sender, "1"))
+    _run(_reply(service, sender, "1"))
+
+    final_reply = _run(_reply(service, sender, "1"))
+
+    assert "marcada como descartada" in final_reply
+    assert "Idioma identificado: Ingles" in final_reply
+    assert backend_client.created_payload == {
+        "can_create": False,
+        "reason": "invalid_language",
+        "message": "Idioma identificado nao e portugues, mas Ingles.",
+        "demanda": {
+            "citizen_name": "Maria Silva",
+            "phone": sender,
+            "title": "Falta de atendimento",
+            "description": "Need help with public healthcare in my neighborhood.",
+            "priority": None,
+            "city_id": 1,
+            "institution_id": 10,
+        },
+    }
+
+
+def test_chatbot_discards_demand_when_hate_speech_is_detected() -> None:
+    backend_client = FakeBackendApiClient()
+    service = ChatbotService(
+        settings=Settings(whatsapp_echo_enabled=True),
+        whatsapp_client=FakeWhatsAppClient(),
+        backend_api_client=backend_client,
+        demand_validation_service=FakeDemandValidationService(
+            error=HateSpeechDetectedError(
+                categories=["racismo", "ofensa"],
+                score=0.91,
+            )
+        ),
+    )
+
+    sender = "31999999999"
+
+    _run(_reply(service, sender, "1"))
+    _run(_reply(service, sender, "Maria Silva"))
+    _run(_reply(service, sender, "Denuncia"))
+    _run(_reply(service, sender, "Essa mensagem contem termos de odio e ataque direto."))
+    _run(_reply(service, sender, "Be"))
+    _run(_reply(service, sender, "1"))
+    _run(_reply(service, sender, "1"))
+
+    final_reply = _run(_reply(service, sender, "1"))
+
+    assert "marcada como descartada" in final_reply
+    assert "discurso de odio" in final_reply
+    assert "racismo e ofensa" in final_reply
+    assert backend_client.created_payload == {
+        "can_create": False,
+        "reason": "hate_speech_detected",
+        "message": (
+            "Foi identificado discurso de odio nas categorias "
+            "racismo e ofensa com confianca de 0.91."
+        ),
+        "demanda": {
+            "citizen_name": "Maria Silva",
+            "phone": sender,
+            "title": "Denuncia",
+            "description": "Essa mensagem contem termos de odio e ataque direto.",
+            "priority": None,
+            "city_id": 1,
+            "institution_id": 10,
+        },
+    }
+
+
+def test_chatbot_discards_demand_when_similar_demand_is_found() -> None:
+    backend_client = FakeBackendApiClient(
+        recent_open_demands=[
+            {
+                "id": 7001,
+                "title": "Falta de atendimento na unidade central",
+                "description": "Solicitacao parecida ja em andamento.",
+                "status": "under_review",
+            }
+        ]
+    )
+    service = ChatbotService(
+        settings=Settings(whatsapp_echo_enabled=True),
+        whatsapp_client=FakeWhatsAppClient(),
+        backend_api_client=backend_client,
+        demand_validation_service=FakeDemandValidationService(
+            error=SimilarDemandFoundError(
+                demand_id=7001,
+                title="Falta de atendimento na unidade central",
+                similarity_score=0.86,
+            )
+        ),
+    )
+
+    sender = "31999999999"
+
+    _run(_reply(service, sender, "1"))
+    _run(_reply(service, sender, "Maria Silva"))
+    _run(_reply(service, sender, "Atendimento parado"))
+    _run(_reply(service, sender, "A unidade de saude continua sem atendimento regular."))
+    _run(_reply(service, sender, "Be"))
+    _run(_reply(service, sender, "1"))
+    _run(_reply(service, sender, "1"))
+
+    final_reply = _run(_reply(service, sender, "1"))
+
+    assert "marcada como descartada" in final_reply
+    assert "demanda parecida (#7001)" in final_reply
+    assert backend_client.created_payload == {
+        "can_create": False,
+        "reason": "similar_demand_found",
+        "message": "Similaridade com a demanda #7001, cerca de 0.86 de similaridade.",
+        "demanda": {
+            "citizen_name": "Maria Silva",
+            "phone": sender,
+            "title": "Atendimento parado",
+            "description": "A unidade de saude continua sem atendimento regular.",
+            "priority": None,
+            "city_id": 1,
+            "institution_id": 10,
+        },
+    }
+
+
+def test_chatbot_allows_blank_institution_after_city_selection() -> None:
+    backend_client = FakeBackendApiClient()
+    validation_service = FakeDemandValidationService()
+    service = ChatbotService(
+        settings=Settings(whatsapp_echo_enabled=True),
+        whatsapp_client=FakeWhatsAppClient(),
+        backend_api_client=backend_client,
+        demand_validation_service=validation_service,
+    )
+
+    sender = "31988887777"
+
+    _run(_reply(service, sender, "1"))
+    _run(_reply(service, sender, "Joao Silva"))
+    _run(_reply(service, sender, "Atendimento no bairro"))
+    _run(_reply(service, sender, "Preciso registrar uma demanda para a unidade da cidade."))
+    city_reply = _run(_reply(service, sender, "Be"))
+
+    assert "Encontrei mais de uma cidade" in city_reply
+
+    institution_reply = _run(_reply(service, sender, "2"))
+    assert "Cidade selecionada: Betim" in institution_reply
+    assert "responda 0 para deixar em branco" in institution_reply
+
+    confirmation = _run(_reply(service, sender, "0"))
+
+    assert "Instituicao: nao informada." in confirmation
+    assert "Instituicao: Nao informada" in confirmation
+
+    final_reply = _run(_reply(service, sender, "1"))
+
+    assert "Demanda aberta com sucesso" in final_reply
+    assert validation_service.validated_payload == {
+        "citizen_name": "Joao Silva",
+        "phone": sender,
+        "title": "Atendimento no bairro",
+        "description": "Preciso registrar uma demanda para a unidade da cidade.",
+        "priority": None,
+        "city_id": 2,
+        "institution_id": None,
+    }
+    assert backend_client.created_payload == {
+        "can_create": True,
+        "reason": None,
+        "message": None,
+        "demanda": {
+            "citizen_name": "Joao Silva",
+            "phone": sender,
+            "title": "Atendimento no bairro",
+            "description": "Preciso registrar uma demanda para a unidade da cidade.",
+            "priority": None,
+            "city_id": 2,
+            "institution_id": None,
+        },
     }

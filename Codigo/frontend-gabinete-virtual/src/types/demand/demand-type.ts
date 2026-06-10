@@ -1,4 +1,9 @@
-export type DemandStatusType = "open" | "under_review" | "in_progress" | "completed";
+export type DemandStatusType =
+  | "open"
+  | "under_review"
+  | "in_progress"
+  | "completed"
+  | "discarded";
 export type DemandPriorityType = "low" | "medium" | "high";
 
 export interface DemandType {

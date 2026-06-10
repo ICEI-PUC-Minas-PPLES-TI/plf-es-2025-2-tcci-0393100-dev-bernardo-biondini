@@ -7,6 +7,7 @@ from typing import Any
 from app.config import Settings
 from app.models.whatsapp import IncomingWhatsAppMessage
 from app.services.backend_api import BackendApiClient
+from app.services.demand_validation import DemandValidationException, DemandValidationService
 from app.services.whatsapp import WhatsAppClient
 
 
@@ -25,12 +26,13 @@ class ChatbotService:
         settings: Settings,
         whatsapp_client: WhatsAppClient,
         backend_api_client: BackendApiClient,
+        demand_validation_service: DemandValidationService | None = None,
     ) -> None:
         self.settings = settings
         self.whatsapp_client = whatsapp_client
         self.backend_api_client = backend_api_client
+        self.demand_validation_service = demand_validation_service
         self.sessions: dict[str, ConversationSession] = {}
-        self._demand_options_cache: dict[str, Any] | None = None
 
     async def handle_webhook(self, payload: dict[str, Any]) -> None:
         for message in self._extract_messages(payload):
@@ -66,10 +68,7 @@ class ChatbotService:
             return await self._handle_city_step(sender_session, message.text)
 
         if sender_session.state == "waiting_city_choice":
-            return self._handle_city_choice_step(sender_session, normalized_text)
-
-        if sender_session.state == "waiting_institution":
-            return await self._handle_institution_step(sender_session, message.text)
+            return await self._handle_city_choice_step(sender_session, normalized_text)
 
         if sender_session.state == "waiting_institution_choice":
             return self._handle_institution_choice_step(sender_session, normalized_text)
@@ -133,72 +132,62 @@ class ChatbotService:
         session.data["description"] = cleaned_text
         session.state = "waiting_city"
 
-        return "Informe o nome da cidade relacionada a essa demanda."
+        return "Informe pelo menos as primeiras 2 letras da cidade relacionada a essa demanda."
 
     async def _handle_city_step(self, session: ConversationSession, text: str) -> str:
-        city_options = (await self._get_demand_options()).get("cities", [])
-        return self._match_named_option(
-            session=session,
-            text=text,
-            options=city_options,
-            key="name",
-            next_state="waiting_city_choice",
-            storage_key="city_candidates",
+        query = text.strip()
+
+        if len(query) < 2:
+            return "Informe pelo menos as primeiras 2 letras da cidade."
+
+        city_options = await self.backend_api_client.search_cities(query, limit=5)
+
+        if not city_options:
+            return (
+                "Nao encontrei cidades com esse inicio.\n"
+                "Tente digitar novamente as primeiras letras da cidade."
+            )
+
+        if len(city_options) == 1:
+            return await self._select_city(session, city_options[0])
+
+        session.state = "waiting_city_choice"
+        session.data["city_candidates"] = city_options
+
+        return self._build_numbered_options_message(
             singular_label="cidade",
-            success_callback=self._select_city,
+            options=city_options,
+            label_builder=lambda city: f"{city['name']} ({city.get('region', 'Sem regiao')})",
         )
 
-    def _handle_city_choice_step(
+    async def _handle_city_choice_step(
         self,
         session: ConversationSession,
         normalized_text: str,
     ) -> str:
-        selection_message = self._resolve_numbered_choice(
-            session=session,
-            normalized_text=normalized_text,
-            storage_key="city_candidates",
-            singular_label="cidade",
-            success_callback=self._select_city,
-        )
+        candidates = session.data.get("city_candidates", [])
 
-        return selection_message
+        if not normalized_text.isdigit():
+            return "Responda com o numero da cidade desejada."
 
-    async def _handle_institution_step(
-        self,
-        session: ConversationSession,
-        text: str,
-    ) -> str:
-        selected_city_id = session.data.get("city_id")
-        all_institutions = (await self._get_demand_options()).get("institutions", [])
-        institutions = [
-            institution
-            for institution in all_institutions
-            if institution.get("city_id") == selected_city_id
-        ]
+        selected_index = int(normalized_text) - 1
 
-        if not institutions:
-            session.state = "waiting_city"
-            return (
-                "Nao encontrei instituicoes cadastradas para essa cidade.\n"
-                "Informe outra cidade para continuar."
-            )
+        if selected_index < 0 or selected_index >= len(candidates):
+            return "Escolha um numero valido para a cidade."
 
-        return self._match_named_option(
-            session=session,
-            text=text,
-            options=institutions,
-            key="name",
-            next_state="waiting_institution_choice",
-            storage_key="institution_candidates",
-            singular_label="instituicao",
-            success_callback=self._select_institution,
-        )
+        selected_option = candidates[selected_index]
+        session.data.pop("city_candidates", None)
+
+        return await self._select_city(session, selected_option)
 
     def _handle_institution_choice_step(
         self,
         session: ConversationSession,
         normalized_text: str,
     ) -> str:
+        if normalized_text in {"0", "nenhuma", "sem instituicao", "sem instituicao.", "em branco"}:
+            return self._select_institution(session, None)
+
         return self._resolve_numbered_choice(
             session=session,
             normalized_text=normalized_text,
@@ -225,18 +214,10 @@ class ChatbotService:
                 "Responda com 1 para confirmar a abertura da demanda ou 2 para editar."
             )
 
+        demand_payload = self._build_demand_payload(session, sender)
+
         try:
-            demand = await self.backend_api_client.create_demand(
-                {
-                    "citizen_name": session.data["citizen_name"],
-                    "phone": sender,
-                    "title": session.data["title"],
-                    "description": session.data["description"],
-                    "priority": None,
-                    "city_id": session.data["city_id"],
-                    "institution_id": session.data["institution_id"],
-                }
-            )
+            demand, validation_error = await self._submit_demand(demand_payload)
         except Exception:
             logger.exception("Failed to create demand from WhatsApp flow.")
             return (
@@ -247,12 +228,59 @@ class ChatbotService:
         session.state = "menu"
         session.data = {}
 
+        if validation_error is not None:
+            return (
+                "Sua demanda foi registrada, mas marcada como descartada e nao seguira "
+                "para o fluxo normal de aprovacao.\n"
+                f"Motivo: {validation_error.reply_message}\n"
+                f"Protocolo interno: #{demand.get('id')}\n"
+                "Se quiser abrir outra demanda, responda 1."
+            )
+
         return (
             "Demanda aberta com sucesso.\n"
             f"Protocolo interno: #{demand.get('id')}\n"
             "Ela foi registrada com status Em analise e sera atribuida para a equipe.\n"
             "Se quiser abrir outra demanda, responda 1."
         )
+
+    def _build_demand_payload(
+        self,
+        session: ConversationSession,
+        sender: str,
+    ) -> dict[str, Any]:
+        return {
+            "citizen_name": session.data["citizen_name"],
+            "phone": sender,
+            "title": session.data["title"],
+            "description": session.data["description"],
+            "priority": None,
+            "city_id": session.data["city_id"],
+            "institution_id": session.data["institution_id"],
+        }
+
+    async def _submit_demand(
+        self,
+        demand_payload: dict[str, Any],
+    ) -> tuple[dict[str, Any], DemandValidationException | None]:
+        validation_error: DemandValidationException | None = None
+
+        if self.demand_validation_service is not None:
+            try:
+                await self.demand_validation_service.validate(demand_payload)
+            except DemandValidationException as exc:
+                validation_error = exc
+
+        demand = await self.backend_api_client.create_demand(
+            {
+                "can_create": validation_error is None,
+                "reason": validation_error.reason if validation_error else None,
+                "message": validation_error.backend_message if validation_error else None,
+                "demanda": demand_payload,
+            }
+        )
+
+        return demand, validation_error
 
     def _match_named_option(
         self,
@@ -340,28 +368,48 @@ class ChatbotService:
 
         return success_callback(session, selected_option)
 
-    def _select_city(self, session: ConversationSession, city: dict[str, Any]) -> str:
+    async def _select_city(self, session: ConversationSession, city: dict[str, Any]) -> str:
         session.data["city_id"] = city["id"]
         session.data["city_name"] = city["name"]
-        session.state = "waiting_institution"
+        institutions = await self.backend_api_client.get_city_institutions(city["id"])
+        session.data["institution_candidates"] = institutions
+
+        if not institutions:
+            return self._select_institution(session, None)
+
+        session.state = "waiting_institution_choice"
+
+        numbered_options = "\n".join(
+            f"{index} - {institution.get('name')}"
+            for index, institution in enumerate(institutions, start=1)
+        )
 
         return (
             f"Cidade selecionada: {city['name']}.\n"
-            "Agora informe o nome da instituicao relacionada a demanda."
+            "Escolha a instituicao pelo numero ou responda 0 para deixar em branco:\n"
+            f"0 - Nenhuma instituicao\n{numbered_options}"
         )
 
     def _select_institution(
         self,
         session: ConversationSession,
-        institution: dict[str, Any],
+        institution: dict[str, Any] | None,
     ) -> str:
-        session.data["institution_id"] = institution["id"]
-        session.data["institution_name"] = institution["name"]
+        session.data["institution_id"] = institution["id"] if institution else None
+        session.data["institution_name"] = institution["name"] if institution else None
         session.data["priority"] = None
+        session.data.pop("institution_candidates", None)
         session.state = "waiting_confirmation"
 
-        return (
+        institution_label = (
             f"Instituicao selecionada: {institution['name']}.\n"
+            if institution
+            else "Instituicao: nao informada.\n"
+        )
+
+        return (
+            institution_label
+            +
             "A prioridade sera definida posteriormente pelo gestor responsavel.\n"
             f"{self._build_confirmation_message(session)}"
         )
@@ -373,17 +421,11 @@ class ChatbotService:
             f"Titulo: {session.data['title']}\n"
             f"Descricao: {session.data['description']}\n"
             f"Cidade: {session.data['city_name']}\n"
-            f"Instituicao: {session.data['institution_name']}\n"
+            f"Instituicao: {session.data.get('institution_name') or 'Nao informada'}\n"
             "Prioridade: A definir pelo gestor\n"
             "Status inicial: Em analise\n\n"
             "Responda 1 para confirmar ou 2 para editar o titulo."
         )
-
-    async def _get_demand_options(self) -> dict[str, Any]:
-        if self._demand_options_cache is None:
-            self._demand_options_cache = await self.backend_api_client.get_demand_options()
-
-        return self._demand_options_cache
 
     def _menu_message(self, prefix: str | None = None) -> str:
         message = (
@@ -397,6 +439,22 @@ class ChatbotService:
             return f"{prefix}\n\n{message}"
 
         return message
+
+    def _build_numbered_options_message(
+        self,
+        singular_label: str,
+        options: list[dict[str, Any]],
+        label_builder: Any,
+    ) -> str:
+        numbered_options = "\n".join(
+            f"{index} - {label_builder(option)}"
+            for index, option in enumerate(options, start=1)
+        )
+
+        return (
+            f"Encontrei mais de uma {singular_label}. Escolha pelo numero:\n"
+            f"{numbered_options}"
+        )
 
     def _normalize_text(self, value: str) -> str:
         normalized = unicodedata.normalize("NFKD", value)

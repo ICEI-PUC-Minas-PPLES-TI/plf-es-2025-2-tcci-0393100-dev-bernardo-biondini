@@ -11,7 +11,7 @@ interface DemandMutationPayload {
   title: string;
   description: string;
   service_area: string;
-  status: "open" | "under_review" | "in_progress" | "completed";
+  status: "open" | "under_review" | "in_progress" | "completed" | "discarded";
   priority: "low" | "medium" | "high";
   responsible_user_id: number | null;
   city_id: number;

@@ -39,7 +39,7 @@ export interface ManagedDemandType {
   title: string;
   description: string;
   service_area: string | null;
-  status: "open" | "under_review" | "in_progress" | "completed";
+  status: "open" | "under_review" | "in_progress" | "completed" | "discarded";
   priority: "low" | "medium" | "high" | null;
   responsible_user_id: number | null;
   city_id: number;

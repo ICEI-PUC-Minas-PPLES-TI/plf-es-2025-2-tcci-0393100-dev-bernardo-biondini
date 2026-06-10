@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Chatbot\SearchChatbotCitiesRequest;
+use App\Http\Requests\Chatbot\ListRecentChatbotDemandsRequest;
 use App\Http\Requests\Chatbot\StoreChatbotDemandRequest;
+use App\Models\City;
 use App\Services\Demand\ChatbotDemandService;
 use Illuminate\Http\JsonResponse;
 
@@ -20,6 +23,23 @@ class ChatbotDemandController extends Controller
         ]);
     }
 
+    public function searchCities(SearchChatbotCitiesRequest $request): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->chatbotDemandService->searchCities(
+                $request->string('query')->toString(),
+                $request->integer('limit', 5),
+            ),
+        ]);
+    }
+
+    public function cityInstitutions(City $city): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->chatbotDemandService->institutionsByCity($city->id),
+        ]);
+    }
+
     public function store(StoreChatbotDemandRequest $request): JsonResponse
     {
         $demand = $this->chatbotDemandService->create($request->validated());
@@ -28,6 +48,16 @@ class ChatbotDemandController extends Controller
             'message' => 'Demanda recebida com sucesso.',
             'data' => $demand,
         ], 201);
+    }
+
+    public function openDemands(ListRecentChatbotDemandsRequest $request): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->chatbotDemandService->recentOpenDemands(
+                $request->integer('city_id'),
+                $request->integer('months', 3),
+            ),
+        ]);
     }
 
     public function status(int $id): JsonResponse

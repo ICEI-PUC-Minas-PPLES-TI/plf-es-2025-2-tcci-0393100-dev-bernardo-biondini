@@ -1,5 +1,5 @@
-from typing import Any
 import logging
+from typing import Any
 
 
 import httpx
@@ -7,6 +7,7 @@ import httpx
 from app.config import Settings
 
 logger = logging.getLogger(__name__)
+
 
 class BackendApiClient:
     def __init__(self, settings: Settings) -> None:
@@ -34,6 +35,39 @@ class BackendApiClient:
 
         return payload.get("data", {})
 
+    async def search_cities(
+        self,
+        query: str,
+        limit: int = 5,
+    ) -> list[dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.get(
+                f"{self.base_url}/api/chatbot/cities",
+                headers=self._headers(),
+                params={
+                    "query": query,
+                    "limit": limit,
+                },
+            )
+            response.raise_for_status()
+            payload = response.json()
+
+        return payload.get("data", [])
+
+    async def get_city_institutions(
+        self,
+        city_id: int,
+    ) -> list[dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.get(
+                f"{self.base_url}/api/chatbot/cities/{city_id}/institutions",
+                headers=self._headers(),
+            )
+            response.raise_for_status()
+            payload = response.json()
+
+        return payload.get("data", [])
+
     async def create_demand(self, payload: dict[str, Any]) -> dict[str, Any]:
         async with httpx.AsyncClient(timeout=20.0) as client:
             logger.info("Creating demand with payload: %s", payload)
@@ -48,3 +82,22 @@ class BackendApiClient:
             body = response.json()
 
         return body.get("data", {})
+
+    async def get_recent_open_demands(
+        self,
+        city_id: int,
+        months: int = 3,
+    ) -> list[dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.get(
+                f"{self.base_url}/api/chatbot/demands/open",
+                headers=self._headers(),
+                params={
+                    "city_id": city_id,
+                    "months": months,
+                },
+            )
+            response.raise_for_status()
+            payload = response.json()
+
+        return payload.get("data", [])

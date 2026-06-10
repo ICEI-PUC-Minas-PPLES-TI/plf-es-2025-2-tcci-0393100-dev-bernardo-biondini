@@ -16,18 +16,34 @@ class StoreChatbotDemandRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'citizen_name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:40'],
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['required', 'string'],
-            'service_area' => ['nullable', 'string', Rule::in(DemandServiceAreas::values())],
-            'priority' => ['nullable', Rule::in(['low', 'medium', 'high'])],
-            'city_id' => ['required', 'integer', Rule::exists('cities', 'id')],
-            'institution_id' => [
-                'required',
+            'can_create' => ['required', 'boolean'],
+            'reason' => [
+                Rule::requiredIf(fn () => ! $this->boolean('can_create')),
+                'nullable',
+                'string',
+                'max:100',
+            ],
+            'message' => [
+                Rule::requiredIf(fn () => ! $this->boolean('can_create')),
+                'nullable',
+                'string',
+            ],
+            'demanda' => ['required', 'array'],
+            'demanda.citizen_name' => ['required', 'string', 'max:255'],
+            'demanda.phone' => ['required', 'string', 'max:40'],
+            'demanda.title' => ['required', 'string', 'max:255'],
+            'demanda.description' => ['required', 'string'],
+            'demanda.service_area' => ['nullable', 'string', Rule::in(DemandServiceAreas::values())],
+            'demanda.priority' => ['nullable', Rule::in(['low', 'medium', 'high'])],
+            'demanda.city_id' => ['required', 'integer', Rule::exists('cities', 'id')],
+            'demanda.institution_id' => [
+                'nullable',
                 'integer',
                 Rule::exists('institutions', 'id')->where(
-                    fn ($query) => $query->where('city_id', $this->integer('city_id')),
+                    fn ($query) => $query->where(
+                        'city_id',
+                        data_get($this->input('demanda'), 'city_id'),
+                    ),
                 ),
             ],
         ];

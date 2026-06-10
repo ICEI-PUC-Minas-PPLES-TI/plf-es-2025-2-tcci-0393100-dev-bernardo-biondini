@@ -106,15 +106,17 @@ class DashboardService
         $monthEnd = now()->endOfMonth();
 
         $demandsQuery = $this->filteredDemandQuery($filters);
-        $totalDemands = (clone $demandsQuery)->count();
-        $completedDemands = (clone $demandsQuery)
+        $trackedDemandsQuery = (clone $demandsQuery)
+            ->where('status', '!=', 'discarded');
+        $totalDemands = (clone $trackedDemandsQuery)->count();
+        $completedDemands = (clone $trackedDemandsQuery)
             ->where('status', 'completed')
             ->count();
 
         $amendmentsQuery = $this->filteredAmendmentQuery($filters);
 
         return [
-            'active_demands' => (clone $demandsQuery)
+            'active_demands' => (clone $trackedDemandsQuery)
                 ->whereIn('status', ['open', 'under_review', 'in_progress'])
                 ->count(),
             'completed_demands' => $completedDemands,
@@ -449,6 +451,7 @@ class DashboardService
             'under_review' => 'Em análise',
             'in_progress' => 'Em andamento',
             'completed' => 'Concluída',
+            'discarded' => 'Descartada',
             default => $status,
         };
     }

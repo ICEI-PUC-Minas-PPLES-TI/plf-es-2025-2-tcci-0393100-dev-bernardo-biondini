@@ -5,10 +5,16 @@ description = "Initial WhatsApp chatbot service for Gabinete Virtual."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "better-profanity>=0.7,<1.0",
     "fastapi>=0.115,<1.0",
     "httpx>=0.28,<1.0",
+    "lingua-language-detector>=2.0,<3.0",
     "pydantic-settings>=2.8,<3.0",
+    "pysentimiento>=0.7,<1.0",
     "python-dotenv>=1.0,<2.0",
+    "scikit-learn>=1.6,<2.0",
+    "sentence-transformers>=3.4,<4.0",
+    "urlextract>=1.9,<2.0",
     "uvicorn[standard]>=0.34,<1.0",
 ]
 

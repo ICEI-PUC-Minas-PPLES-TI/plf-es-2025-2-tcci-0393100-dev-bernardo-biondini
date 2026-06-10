@@ -92,6 +92,7 @@ class DemandService
         array $data,
         ?int $authenticatedUserId,
         ?int $createdByCitizenId = null,
+        array $historyContext = [],
     ): Demand
     {
         $demand = Demand::query()->create([
@@ -107,18 +108,24 @@ class DemandService
             'created_by_citizen_id' => $createdByCitizenId,
         ]);
 
+        $historyMetadata = [
+            'status' => $demand->status,
+            'service_area' => $demand->service_area,
+            'priority' => $demand->priority,
+            'responsible_user_id' => $demand->responsible_user_id,
+            'created_by_citizen_id' => $demand->created_by_citizen_id,
+        ];
+
+        if (isset($historyContext['metadata']) && is_array($historyContext['metadata'])) {
+            $historyMetadata = array_merge($historyMetadata, $historyContext['metadata']);
+        }
+
         $this->demandHistoryService->logDemandChange(
             $demand->id,
             $authenticatedUserId,
             'created',
-            'Demanda criada.',
-            [
-                'status' => $demand->status,
-                'service_area' => $demand->service_area,
-                'priority' => $demand->priority,
-                'responsible_user_id' => $demand->responsible_user_id,
-                'created_by_citizen_id' => $demand->created_by_citizen_id,
-            ],
+            $historyContext['description'] ?? 'Demanda criada.',
+            $historyMetadata,
         );
 
         return $this->findById($demand->id);
@@ -232,6 +239,7 @@ class DemandService
             'under_review' => 'Em análise',
             'in_progress' => 'Em andamento',
             'completed' => 'Concluída',
+            'discarded' => 'Descartada',
             default => $status,
         };
     }

@@ -12,6 +12,7 @@ from app.models.whatsapp import IncomingWhatsAppMessage
 from app.services.backend_api import BackendApiClient
 from app.services.chatbot import ChatbotService
 from app.services.demo_backend_api import DemoBackendApiClient
+from app.services.demand_validation import build_default_demand_validation_service
 from app.services.whatsapp import SignatureValidationError, WhatsAppClient
 
 
@@ -64,10 +65,14 @@ def get_demo_backend_api_client() -> DemoBackendApiClient:
 @lru_cache
 def get_chatbot_service() -> ChatbotService:
     settings = get_settings()
+    backend_api_client = get_backend_api_client()
     return ChatbotService(
         settings=settings,
         whatsapp_client=get_whatsapp_client(),
-        backend_api_client=get_backend_api_client(),
+        backend_api_client=backend_api_client,
+        demand_validation_service=build_default_demand_validation_service(
+            backend_api_client
+        ),
     )
 
 

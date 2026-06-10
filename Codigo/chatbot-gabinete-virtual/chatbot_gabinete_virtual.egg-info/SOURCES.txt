@@ -18,5 +18,6 @@ chatbot_gabinete_virtual.egg-info/dependency_links.txt
 chatbot_gabinete_virtual.egg-info/requires.txt
 chatbot_gabinete_virtual.egg-info/top_level.txt
 tests/test_chatbot_service.py
+tests/test_config.py
 tests/test_demo_chat.py
 tests/test_health.py

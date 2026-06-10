@@ -41,6 +41,20 @@ class Demand extends Model
 {
 	protected $table = 'demands';
 
+	public const STATUSES = [
+		'open',
+		'under_review',
+		'in_progress',
+		'completed',
+		'discarded',
+	];
+
+	public const ACTIVE_STATUSES = [
+		'open',
+		'under_review',
+		'in_progress',
+	];
+
 	protected $casts = [
 		'responsible_user_id' => 'int',
 		'city_id' => 'int',

@@ -32,7 +32,10 @@ Route::get('/site-projects', [SiteProjectController::class, 'publicIndex']);
 
 Route::prefix('chatbot')->middleware('chatbot.internal')->group(function () {
     Route::get('/demand-options', [ChatbotDemandController::class, 'options']);
+    Route::get('/cities', [ChatbotDemandController::class, 'searchCities']);
+    Route::get('/cities/{city}/institutions', [ChatbotDemandController::class, 'cityInstitutions']);
     Route::post('/demands', [ChatbotDemandController::class, 'store']);
+    Route::get('/demands/open', [ChatbotDemandController::class, 'openDemands']);
     Route::get('/demands/{id}/status', [ChatbotDemandController::class, 'status']);
 });
 
