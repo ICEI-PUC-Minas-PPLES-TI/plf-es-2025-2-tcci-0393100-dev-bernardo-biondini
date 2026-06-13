@@ -3,7 +3,17 @@ from functools import lru_cache
 from typing import Any, Literal
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
@@ -13,6 +23,7 @@ from app.services.backend_api import BackendApiClient
 from app.services.chatbot import ChatbotService
 from app.services.demo_backend_api import DemoBackendApiClient
 from app.services.demand_validation import build_default_demand_validation_service
+from app.services.realtime_alerts import RealtimeAlertBroker
 from app.services.whatsapp import SignatureValidationError, WhatsAppClient
 
 
@@ -47,6 +58,21 @@ class DemoChatResponse(BaseModel):
     session_data: dict[str, Any]
 
 
+class InternalChatbotMessageRequest(BaseModel):
+    phone: str = Field(..., min_length=8)
+    message: str = Field(..., min_length=1)
+
+
+class InternalWebSocketAlertRequest(BaseModel):
+    user_id: int
+    alert_id: int
+    type: Literal["agenda_reminder", "demand_alert"] = "demand_alert"
+    demand_id: int | None = None
+    event_id: int | None = None
+    title: str = Field(..., min_length=1)
+    message: str = Field(..., min_length=1)
+
+
 @lru_cache
 def get_whatsapp_client() -> WhatsAppClient:
     return WhatsAppClient(get_settings())
@@ -76,6 +102,24 @@ def get_chatbot_service() -> ChatbotService:
     )
 
 
+@lru_cache
+def get_realtime_alert_broker() -> RealtimeAlertBroker:
+    return RealtimeAlertBroker()
+
+
+def _validate_internal_token(
+    provided_token: str | None,
+    settings: Settings,
+) -> None:
+    expected_token = settings.internal_api_token or settings.backend_api_token
+
+    if not expected_token or provided_token != expected_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid internal token.",
+        )
+
+
 @router.get("/health")
 async def healthcheck() -> dict[str, str]:
     return {"status": "ok"}
@@ -98,8 +142,6 @@ def get_mock_chatbot_service() -> ChatbotService:
 )
 async def demo_chat(
     payload: DemoChatRequest,
-    chatbot_service: ChatbotService = Depends(get_chatbot_service),
-    mock_chatbot_service: ChatbotService = Depends(get_mock_chatbot_service),
 ) -> DemoChatResponse:
     if get_settings().app_env.lower() == "production":
         raise HTTPException(
@@ -107,7 +149,11 @@ async def demo_chat(
             detail="Demo local indisponivel em producao.",
         )
 
-    service = mock_chatbot_service if payload.mode == "mock" else chatbot_service
+    service = (
+        get_mock_chatbot_service()
+        if payload.mode == "mock"
+        else get_chatbot_service()
+    )
 
     if payload.reset_session:
         service.sessions.pop(payload.sender, None)
@@ -186,3 +232,79 @@ async def receive_whatsapp_event(
 
     logger.info("WhatsApp webhook processed successfully.")
     return JSONResponse({"status": "received"})
+
+
+@router.post("/internal/notifications/chatbot-message")
+async def send_internal_chatbot_message(
+    payload: InternalChatbotMessageRequest,
+    settings: Settings = Depends(get_settings),
+    whatsapp_client: WhatsAppClient = Depends(get_whatsapp_client),
+    internal_token: str | None = Header(default=None, alias="X-Internal-Token"),
+) -> JSONResponse:
+    _validate_internal_token(internal_token, settings)
+
+    await whatsapp_client.send_text_message(payload.phone, payload.message)
+
+    return JSONResponse({"status": "sent"})
+
+
+@router.post("/internal/notifications/websocket-alert")
+async def publish_internal_websocket_alert(
+    payload: InternalWebSocketAlertRequest,
+    settings: Settings = Depends(get_settings),
+    broker: RealtimeAlertBroker = Depends(get_realtime_alert_broker),
+    internal_token: str | None = Header(default=None, alias="X-Internal-Token"),
+) -> JSONResponse:
+    _validate_internal_token(internal_token, settings)
+
+    delivered = await broker.publish_to_user(
+        payload.user_id,
+        {
+            "type": payload.type,
+            "alert": {
+                "id": payload.alert_id,
+                "demand_id": payload.demand_id,
+                "event_id": payload.event_id,
+                "title": payload.title,
+                "message": payload.message,
+            },
+        },
+    )
+
+    return JSONResponse(
+        {
+            "status": "published",
+            "delivered_connections": delivered,
+        }
+    )
+
+
+@router.websocket("/ws/alerts")
+async def alerts_websocket(
+    websocket: WebSocket,
+    broker: RealtimeAlertBroker = Depends(get_realtime_alert_broker),
+    backend_api_client: BackendApiClient = Depends(get_backend_api_client),
+) -> None:
+    token = websocket.query_params.get("token")
+
+    if not token:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    user = await backend_api_client.get_authenticated_user(token)
+
+    if not user or "id" not in user:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    user_id = int(user["id"])
+
+    await websocket.accept()
+    await broker.connect(user_id, websocket)
+    await websocket.send_json({"type": "connected", "user_id": user_id})
+
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        await broker.disconnect(user_id, websocket)

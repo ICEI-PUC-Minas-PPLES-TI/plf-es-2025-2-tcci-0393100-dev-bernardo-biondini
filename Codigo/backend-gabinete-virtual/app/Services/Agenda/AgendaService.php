@@ -6,12 +6,15 @@ use App\Exceptions\AgendaConflictException;
 use App\Models\City;
 use App\Models\Demand;
 use App\Models\Event;
-use App\Models\EventAlert;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class AgendaService
 {
+    public function __construct(private readonly AgendaReminderService $agendaReminderService)
+    {
+    }
+
     public function listEvents(int $perPage = 10, array $filters = []): LengthAwarePaginator
     {
         $search = trim((string) ($filters['search'] ?? ''));
@@ -84,6 +87,7 @@ class AgendaService
         ]);
 
         $event->demands()->sync($data['demand_ids'] ?? []);
+        $this->agendaReminderService->syncAutomaticRemindersForEvent($event->fresh());
 
         return $this->findEventById($event->id);
     }
@@ -112,6 +116,7 @@ class AgendaService
         ]);
 
         $event->demands()->sync($data['demand_ids'] ?? []);
+        $this->agendaReminderService->syncAutomaticRemindersForEvent($event->fresh());
 
         return $this->findEventById($event->id);
     }
@@ -119,55 +124,8 @@ class AgendaService
     public function deleteEvent(int $id): void
     {
         $event = Event::query()->findOrFail($id);
+        $this->agendaReminderService->deleteAutomaticRemindersForEvent($event->id);
         $event->delete();
-    }
-
-    public function listAlerts(int $perPage = 10, array $filters = []): LengthAwarePaginator
-    {
-        $search = trim((string) ($filters['search'] ?? ''));
-        $eventId = $filters['event_id'] ?? null;
-        $alertFrom = $filters['alert_from'] ?? null;
-        $alertTo = $filters['alert_to'] ?? null;
-
-        return EventAlert::query()
-            ->with('event:id,title,starts_at,ends_at,location')
-            ->when($search !== '', function ($query) use ($search) {
-                $query->where(function ($subQuery) use ($search) {
-                    $subQuery->where('title', 'like', "%{$search}%")
-                        ->orWhere('message', 'like', "%{$search}%");
-                });
-            })
-            ->when($eventId, function ($query) use ($eventId) {
-                $query->where('event_id', $eventId);
-            })
-            ->when($alertFrom, function ($query) use ($alertFrom) {
-                $query->where('alert_at', '>=', $alertFrom);
-            })
-            ->when($alertTo, function ($query) use ($alertTo) {
-                $query->where('alert_at', '<=', $alertTo);
-            })
-            ->orderBy('alert_at', 'asc')
-            ->paginate($perPage)
-            ->withQueryString();
-    }
-
-    public function createAlert(array $data): EventAlert
-    {
-        return EventAlert::query()->create([
-            'event_id' => $data['event_id'] ?? null,
-            'title' => $data['title'],
-            'message' => $data['message'] ?? null,
-            'alert_at' => Carbon::parse($data['alert_at']),
-            'lead_time_minutes' => $data['lead_time_minutes'] ?? null,
-            'channel' => $data['channel'],
-            'is_recurring' => (bool) ($data['is_recurring'] ?? false),
-        ])->load('event:id,title,starts_at,ends_at,location');
-    }
-
-    public function deleteAlert(int $id): void
-    {
-        $alert = EventAlert::query()->findOrFail($id);
-        $alert->delete();
     }
 
     public function options(): array

@@ -1,31 +1,39 @@
-from fastapi.testclient import TestClient
+import asyncio
+
+import httpx
 
 from app.main import app
-
-
-client = TestClient(app)
 
 
 def test_demo_chat_mock_flow() -> None:
     sender = "demo-video-user"
 
     def send(text: str, reset_session: bool = False) -> dict:
-        response = client.post(
-            "/demo/chat",
-            json={
-                "mode": "mock",
-                "sender": sender,
-                "text": text,
-                "reset_session": reset_session,
-            },
-        )
+        async def _send() -> httpx.Response:
+            transport = httpx.ASGITransport(app=app)
+            async with httpx.AsyncClient(
+                transport=transport,
+                base_url="http://testserver",
+            ) as client:
+                return await client.post(
+                    "/demo/chat",
+                    json={
+                        "mode": "mock",
+                        "sender": sender,
+                        "text": text,
+                        "reset_session": reset_session,
+                    },
+                )
+
+        response = asyncio.run(_send())
 
         assert response.status_code == 200
         return response.json()
 
     assert "1 - Abrir demanda" in send("oi", reset_session=True)["reply"]
     assert "nome completo" in send("1")["reply"]
-    assert "titulo curto" in send("Maria Silva")["reply"]
+    assert "receber atualizacoes" in send("Maria Silva")["reply"]
+    assert "titulo curto" in send("1")["reply"]
     assert "explique um pouco melhor" in send("Falta de atendimento")["reply"]
     assert "primeiras 2 letras da cidade" in send(
         "Preciso de ajuda com atendimento de saude no meu bairro."

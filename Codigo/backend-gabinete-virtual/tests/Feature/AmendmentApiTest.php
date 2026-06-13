@@ -29,7 +29,7 @@ class AmendmentApiTest extends TestCase
                 'amount' => 500000,
                 'status' => 'planned',
                 'city_id' => $city->id,
-                'application_area' => 'Reforma do hospital municipal',
+                'application_area' => 'health',
             ]);
 
         $amendmentId = $createResponse->json('data.id');
@@ -41,7 +41,8 @@ class AmendmentApiTest extends TestCase
         $this->withHeader('Authorization', "Bearer {$token}")
             ->getJson('/api/amendments/options')
             ->assertOk()
-            ->assertJsonStructure(['data' => ['statuses', 'cities']]);
+            ->assertJsonStructure(['data' => ['statuses', 'application_areas', 'cities']])
+            ->assertJsonPath('data.application_areas.0.value', 'health');
 
         $this->withHeader('Authorization', "Bearer {$token}")
             ->getJson('/api/amendments?search=E-45/2025')
@@ -49,16 +50,22 @@ class AmendmentApiTest extends TestCase
             ->assertJsonPath('data.data.0.number', 'E-45/2025');
 
         $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/amendments?application_area=health')
+            ->assertOk()
+            ->assertJsonPath('data.data.0.application_area', 'health');
+
+        $this->withHeader('Authorization', "Bearer {$token}")
             ->putJson("/api/amendments/{$amendmentId}", [
                 'number' => 'E-45/2025',
                 'amount' => 650000,
                 'status' => 'in_execution',
                 'city_id' => $city->id,
-                'application_area' => 'Ampliação da unidade de saúde',
+                'application_area' => 'education',
             ])
             ->assertOk()
             ->assertJsonPath('data.amount', 650000)
-            ->assertJsonPath('data.status', 'in_execution');
+            ->assertJsonPath('data.status', 'in_execution')
+            ->assertJsonPath('data.application_area', 'education');
 
         $this->withHeader('Authorization', "Bearer {$token}")
             ->putJson("/api/amendments/{$amendmentId}/status", [

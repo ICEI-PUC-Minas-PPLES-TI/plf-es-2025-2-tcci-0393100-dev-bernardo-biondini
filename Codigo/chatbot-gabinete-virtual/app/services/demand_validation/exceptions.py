@@ -46,7 +46,7 @@ class ProfanityDetectedError(DemandValidationException):
         super().__init__(
             reason="profanity_detected",
             backend_message=(
-                "Foi identificado xingamento devido as palavras "
+                "Foi identificado xingamento devido aos termos "
                 f"{words}."
             ),
             reply_message=(
@@ -70,6 +70,41 @@ class HateSpeechDetectedError(DemandValidationException):
             reply_message=(
                 "A mensagem foi identificada como discurso de odio "
                 f"({categories_text}{score_text})."
+            ),
+        )
+
+
+class AggressiveToneDetectedError(DemandValidationException):
+    def __init__(
+        self,
+        sentiment_label: str,
+        sentiment_score: float | None = None,
+        emotions: list[str] | None = None,
+        emotion_score: float | None = None,
+    ) -> None:
+        sentiment_text = sentiment_label
+
+        if sentiment_score is not None:
+            sentiment_text += f" com confianca de {sentiment_score:.2f}"
+
+        emotions = emotions or []
+        emotion_text = ""
+
+        if emotions:
+            emotion_text = f" e emocao de {_join_items(emotions)}"
+
+            if emotion_score is not None:
+                emotion_text += f" com intensidade de {emotion_score:.2f}"
+
+        super().__init__(
+            reason="aggressive_tone_detected",
+            backend_message=(
+                "Foi identificado tom agressivo na mensagem com "
+                f"sentimento {sentiment_text}{emotion_text}."
+            ),
+            reply_message=(
+                "A mensagem foi identificada com tom agressivo e foi marcada "
+                f"como descartada ({sentiment_text}{emotion_text})."
             ),
         )
 

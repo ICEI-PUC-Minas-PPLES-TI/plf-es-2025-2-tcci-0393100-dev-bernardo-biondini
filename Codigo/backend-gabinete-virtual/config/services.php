@@ -36,7 +36,9 @@ return [
     ],
 
     'chatbot' => [
+        'service_url' => env('CHATBOT_SERVICE_URL', 'http://localhost:8001'),
         'internal_token' => env('CHATBOT_INTERNAL_TOKEN', ''),
+        'service_token' => env('CHATBOT_SERVICE_TOKEN', env('CHATBOT_INTERNAL_TOKEN', '')),
     ],
 
 ];

@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\User\ListUserRequest;
 use App\Http\Requests\User\StoreUserRequest;
 use App\Services\User\UserService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
@@ -14,7 +14,7 @@ class UserController extends Controller
     {
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(ListUserRequest $request): JsonResponse
     {
         $perPage = max(1, min((int) $request->integer('per_page', 10), 100));
 

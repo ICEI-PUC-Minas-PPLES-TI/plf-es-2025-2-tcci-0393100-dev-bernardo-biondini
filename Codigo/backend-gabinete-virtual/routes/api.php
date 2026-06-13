@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChatbotDemandController;
 use App\Http\Controllers\Api\DemandController;
+use App\Http\Controllers\Api\DemandAlertController;
 use App\Http\Controllers\Api\DemandHistoryController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\PermissionController;
@@ -34,6 +35,8 @@ Route::prefix('chatbot')->middleware('chatbot.internal')->group(function () {
     Route::get('/demand-options', [ChatbotDemandController::class, 'options']);
     Route::get('/cities', [ChatbotDemandController::class, 'searchCities']);
     Route::get('/cities/{city}/institutions', [ChatbotDemandController::class, 'cityInstitutions']);
+    Route::get('/citizens/lookup', [ChatbotDemandController::class, 'lookupCitizen']);
+    Route::post('/citizens', [ChatbotDemandController::class, 'storeCitizen']);
     Route::post('/demands', [ChatbotDemandController::class, 'store']);
     Route::get('/demands/open', [ChatbotDemandController::class, 'openDemands']);
     Route::get('/demands/{id}/status', [ChatbotDemandController::class, 'status']);
@@ -41,12 +44,14 @@ Route::prefix('chatbot')->middleware('chatbot.internal')->group(function () {
 
 Route::middleware('auth:api')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'show']);
+    Route::get('/alerts', [DemandAlertController::class, 'index']);
+    Route::post('/alerts/{id}/read', [DemandAlertController::class, 'markAsRead']);
 
     Route::get('/permissions', [PermissionController::class, 'index'])
         ->middleware('permission:'.PermissionCodes::ROLES_VIEW);
 
     Route::prefix('roles')->group(function () {
-        Route::get('/', [AccessProfileController::class, 'index'])
+        Route::get('/', [AccessProfileController::class, 'adminIndex'])
             ->middleware('permission:'.PermissionCodes::ROLES_VIEW);
         Route::post('/', [AccessProfileController::class, 'store'])
             ->middleware('permission:'.PermissionCodes::ROLES_CREATE);
@@ -66,20 +71,14 @@ Route::middleware('auth:api')->group(function () {
     });
 
     Route::prefix('demands')->group(function () {
-        Route::get('/', [DemandController::class, 'index'])
-            ->middleware('permission:'.PermissionCodes::DEMANDS_MANAGE);
-        Route::get('/options', [DemandController::class, 'options'])
-            ->middleware('permission:'.PermissionCodes::DEMANDS_MANAGE);
-        Route::get('/{id}/histories', [DemandHistoryController::class, 'indexByDemand'])
-            ->middleware('permission:'.PermissionCodes::DEMANDS_MANAGE);
-        Route::post('/', [DemandController::class, 'store'])
-            ->middleware('permission:'.PermissionCodes::DEMANDS_MANAGE);
-        Route::get('/{id}', [DemandController::class, 'show'])
-            ->middleware('permission:'.PermissionCodes::DEMANDS_MANAGE);
-        Route::put('/{id}', [DemandController::class, 'update'])
-            ->middleware('permission:'.PermissionCodes::DEMANDS_MANAGE);
-        Route::delete('/{id}', [DemandController::class, 'destroy'])
-            ->middleware('permission:'.PermissionCodes::DEMANDS_MANAGE);
+        Route::get('/', [DemandController::class, 'index']);
+        Route::get('/options', [DemandController::class, 'options']);
+        Route::get('/{id}/histories', [DemandHistoryController::class, 'indexByDemand']);
+        Route::get('/{id}/oficio/download', [DemandController::class, 'downloadOficio']);
+        Route::post('/', [DemandController::class, 'store']);
+        Route::get('/{id}', [DemandController::class, 'show']);
+        Route::put('/{id}', [DemandController::class, 'update']);
+        Route::delete('/{id}', [DemandController::class, 'destroy']);
     });
 
     Route::prefix('amendments')->group(function () {
@@ -130,12 +129,11 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('/events/{id}', [AgendaController::class, 'destroy'])
             ->middleware('permission:'.PermissionCodes::AGENDA_MANAGE);
 
-        Route::get('/alerts', [AgendaController::class, 'listAlerts'])
-            ->middleware('permission:'.PermissionCodes::AGENDA_MANAGE);
+        Route::get('/alerts', [AgendaController::class, 'listAlerts']);
+        Route::post('/alerts/{id}/read', [AgendaController::class, 'markAlertAsRead']);
         Route::post('/alerts', [AgendaController::class, 'storeAlert'])
             ->middleware('permission:'.PermissionCodes::AGENDA_MANAGE);
-        Route::delete('/alerts/{id}', [AgendaController::class, 'destroyAlert'])
-            ->middleware('permission:'.PermissionCodes::AGENDA_MANAGE);
+        Route::delete('/alerts/{id}', [AgendaController::class, 'destroyAlert']);
     });
 
     Route::prefix('cms')->middleware('permission:'.PermissionCodes::CMS_MANAGE)->group(function () {

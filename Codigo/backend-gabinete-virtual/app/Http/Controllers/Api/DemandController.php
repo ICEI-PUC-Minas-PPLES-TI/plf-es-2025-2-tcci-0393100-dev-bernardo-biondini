@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Demand\DeleteDemandRequest;
+use App\Http\Requests\Demand\ListDemandRequest;
+use App\Http\Requests\Demand\ShowDemandRequest;
 use App\Http\Requests\Demand\StoreDemandRequest;
 use App\Http\Requests\Demand\UpdateDemandRequest;
 use App\Services\Demand\DemandService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DemandController extends Controller
 {
@@ -15,11 +18,14 @@ class DemandController extends Controller
     {
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(ListDemandRequest $request): JsonResponse
     {
         $perPage = max(1, min((int) $request->integer('per_page', 10), 100));
         $filters = [
             'search' => $request->string('search')->toString(),
+            'status' => $request->filled('status')
+                ? $request->string('status')->toString()
+                : null,
             'responsible_user_id' => $request->filled('responsible_user_id')
                 ? $request->integer('responsible_user_id')
                 : null,
@@ -44,15 +50,20 @@ class DemandController extends Controller
     public function options(): JsonResponse
     {
         return response()->json([
-            'data' => $this->demandService->options(),
+            'data' => $this->demandService->options(request()->user()),
         ]);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(ShowDemandRequest $request, int $id): JsonResponse
     {
         return response()->json([
             'data' => $this->demandService->findById($id),
         ]);
+    }
+
+    public function downloadOficio(ShowDemandRequest $request, int $id): StreamedResponse
+    {
+        return $this->demandService->downloadOficio($id);
     }
 
     public function store(StoreDemandRequest $request): JsonResponse
@@ -82,7 +93,7 @@ class DemandController extends Controller
         ]);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(DeleteDemandRequest $request, int $id): JsonResponse
     {
         $this->demandService->delete($id, request()->user()?->id);
 

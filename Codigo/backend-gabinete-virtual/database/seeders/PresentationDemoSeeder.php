@@ -7,6 +7,7 @@ use App\Models\Amendment;
 use App\Models\Attachment;
 use App\Models\ChatbotSession;
 use App\Models\Citizen;
+use App\Models\CitizenPhone;
 use App\Models\City;
 use App\Models\CmsSection;
 use App\Models\ContentPreference;
@@ -22,6 +23,7 @@ use App\Models\Permission;
 use App\Models\ProjectLaw;
 use App\Models\SiteProject;
 use App\Models\User;
+use App\Support\AmendmentApplicationAreas;
 use App\Support\PermissionCodes;
 use Carbon\Carbon;
 use Faker\Factory as FakerFactory;
@@ -70,6 +72,7 @@ class PresentationDemoSeeder extends Seeder
     {
         foreach ([
             'event_alerts',
+            'demand_alerts',
             'demand_event',
             'notifications',
             'attachments',
@@ -299,16 +302,25 @@ class PresentationDemoSeeder extends Seeder
         $citizens = collect();
 
         for ($index = 1; $index <= 32; $index++) {
+            $phone = '+55319'.str_pad((string) (90000000 + $index), 8, '0', STR_PAD_LEFT);
+            $receiveDemandUpdates = $index % 4 !== 0;
             $citizen = Citizen::query()->create([
                 'name' => $faker->name(),
                 'cpf' => str_pad((string) (10000000000 + $index), 11, '0', STR_PAD_LEFT),
                 'birth_date' => Carbon::instance($faker->dateTimeBetween('-70 years', '-18 years'))->toDateString(),
-                'phone' => '+55319'.str_pad((string) (90000000 + $index), 8, '0', STR_PAD_LEFT),
+                'phone' => $phone,
+                'receive_demand_updates' => $receiveDemandUpdates,
+            ]);
+
+            CitizenPhone::query()->create([
+                'citizen_id' => $citizen->id,
+                'phone' => $phone,
+                'normalized_phone' => substr((string) preg_replace('/\D+/', '', $phone), 2),
             ]);
 
             ContentPreference::query()->create([
                 'citizen_id' => $citizen->id,
-                'receive_content' => $index % 4 !== 0,
+                'receive_content' => $receiveDemandUpdates,
             ]);
 
             if ($index % 2 === 0) {
@@ -753,14 +765,7 @@ class PresentationDemoSeeder extends Seeder
      */
     private function seedAmendments(Collection $cities): void
     {
-        $areas = [
-            'Saude',
-            'Educacao',
-            'Infraestrutura',
-            'Assistencia social',
-            'Seguranca publica',
-            'Esporte e lazer',
-        ];
+        $areas = AmendmentApplicationAreas::values();
 
         for ($index = 1; $index <= 24; $index++) {
             $city = $cities[($index - 1) % $cities->count()];

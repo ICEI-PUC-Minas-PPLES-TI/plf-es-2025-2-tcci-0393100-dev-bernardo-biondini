@@ -18,6 +18,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $description
  * @property string|null $service_area
  * @property string $status
+ * @property string|null $discard_message
+ * @property string|null $oficio_original_name
+ * @property string|null $oficio_mime_type
  * @property string|null $priority
  * @property int|null $responsible_user_id
  * @property int $city_id
@@ -34,6 +37,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property Collection|Event[] $events
  * @property Collection|DemandHistory[] $histories
  * @property Collection|Notification[] $notifications
+ * @property Collection|DemandAlert[] $alerts
  *
  * @package App\Models
  */
@@ -63,11 +67,19 @@ class Demand extends Model
 		'created_by_citizen_id' => 'int'
 	];
 
+	protected $hidden = [
+		'oficio_path',
+	];
+
 	protected $fillable = [
 		'title',
 		'description',
 		'service_area',
 		'status',
+		'discard_message',
+		'oficio_path',
+		'oficio_original_name',
+		'oficio_mime_type',
 		'priority',
 		'responsible_user_id',
 		'city_id',
@@ -109,5 +121,10 @@ class Demand extends Model
 	public function notifications()
 	{
 		return $this->hasMany(Notification::class);
+	}
+
+	public function alerts()
+	{
+		return $this->hasMany(DemandAlert::class);
 	}
 }

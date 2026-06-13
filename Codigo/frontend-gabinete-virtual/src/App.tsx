@@ -13,6 +13,7 @@ import { DemandsPage } from "./pages/demands-page";
 import { HomePage } from "./pages/home-page";
 import { LoginPage } from "./pages/login-page";
 import { ProjectLawsPage } from "./pages/project-laws-page";
+import { RemindersPage } from "./pages/reminders-page";
 import { RolesPage } from "./pages/roles-page";
 import { UsersPage } from "./pages/users-page";
 
@@ -59,96 +60,72 @@ export default function App() {
         path="/painel"
         element={
           <ProtectedRoute>
-            <AppLayout>
-              <DashboardPage />
-            </AppLayout>
+            <AppLayout />
           </ProtectedRoute>
         }
-      />
-      <Route
-        path="/painel/papeis"
-        element={
-          <ProtectedRoute>
+      >
+        <Route index element={<DashboardPage />} />
+        <Route
+          path="lembretes"
+          element={<RemindersPage />}
+        />
+        <Route
+          path="papeis"
+          element={
             <PermissionRoute permission={PERMISSION_CODES.ROLES_VIEW}>
-              <AppLayout>
-                <RolesPage />
-              </AppLayout>
+              <RolesPage />
             </PermissionRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/painel/usuarios"
-        element={
-          <ProtectedRoute>
+          }
+        />
+        <Route
+          path="usuarios"
+          element={
             <PermissionRoute permission={PERMISSION_CODES.USERS_VIEW}>
-              <AppLayout>
-                <UsersPage />
-              </AppLayout>
+              <UsersPage />
             </PermissionRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/painel/demandas"
-        element={
-          <ProtectedRoute>
+          }
+        />
+        <Route
+          path="demandas"
+          element={
             <PermissionRoute permission={PERMISSION_CODES.DEMANDS_MANAGE}>
-              <AppLayout>
-                <DemandsPage />
-              </AppLayout>
+              <DemandsPage />
             </PermissionRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/painel/emendas"
-        element={
-          <ProtectedRoute>
+          }
+        />
+        <Route
+          path="emendas"
+          element={
             <PermissionRoute permission={PERMISSION_CODES.AMENDMENTS_MANAGE}>
-              <AppLayout>
-                <AmendmentsPage />
-              </AppLayout>
+              <AmendmentsPage />
             </PermissionRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/painel/projetos-de-lei"
-        element={
-          <ProtectedRoute>
+          }
+        />
+        <Route
+          path="projetos-de-lei"
+          element={
             <PermissionRoute permission={PERMISSION_CODES.PROJECT_LAWS_MANAGE}>
-              <AppLayout>
-                <ProjectLawsPage />
-              </AppLayout>
+              <ProjectLawsPage />
             </PermissionRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/painel/agenda"
-        element={
-          <ProtectedRoute>
+          }
+        />
+        <Route
+          path="agenda"
+          element={
             <PermissionRoute permission={PERMISSION_CODES.AGENDA_MANAGE}>
-              <AppLayout>
-                <AgendaPage />
-              </AppLayout>
+              <AgendaPage />
             </PermissionRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/painel/cms"
-        element={
-          <ProtectedRoute>
+          }
+        />
+        <Route
+          path="cms"
+          element={
             <PermissionRoute permission={PERMISSION_CODES.CMS_MANAGE}>
-              <AppLayout>
-                <CmsPage />
-              </AppLayout>
+              <CmsPage />
             </PermissionRoute>
-          </ProtectedRoute>
-        }
-      />
+          }
+        />
+      </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

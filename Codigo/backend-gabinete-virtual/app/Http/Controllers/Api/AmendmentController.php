@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Amendment\ManageAmendmentRequest;
 use App\Http\Requests\Amendment\StoreAmendmentRequest;
 use App\Http\Requests\Amendment\UpdateAmendmentRequest;
 use App\Http\Requests\Amendment\UpdateAmendmentStatusRequest;
 use App\Services\Amendment\AmendmentService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class AmendmentController extends Controller
 {
@@ -16,7 +16,7 @@ class AmendmentController extends Controller
     {
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(ManageAmendmentRequest $request): JsonResponse
     {
         $perPage = max(1, min((int) $request->integer('per_page', 10), 100));
         $filters = [
@@ -24,6 +24,9 @@ class AmendmentController extends Controller
             'status' => $request->query('status'),
             'city_id' => $request->filled('city_id')
                 ? $request->integer('city_id')
+                : null,
+            'application_area' => $request->filled('application_area')
+                ? $request->string('application_area')->toString()
                 : null,
             'sort_by' => $request->query('sort_by', 'created_at'),
             'sort_direction' => $request->query('sort_direction', 'desc'),
@@ -34,14 +37,14 @@ class AmendmentController extends Controller
         ]);
     }
 
-    public function options(): JsonResponse
+    public function options(ManageAmendmentRequest $request): JsonResponse
     {
         return response()->json([
             'data' => $this->amendmentService->options(),
         ]);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(ManageAmendmentRequest $request, int $id): JsonResponse
     {
         return response()->json([
             'data' => $this->amendmentService->findById($id),
@@ -78,7 +81,7 @@ class AmendmentController extends Controller
         ]);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(ManageAmendmentRequest $request, int $id): JsonResponse
     {
         $this->amendmentService->delete($id);
 

@@ -4,21 +4,26 @@ namespace App\Http\Controllers\Api;
 
 use App\Exceptions\AgendaConflictException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Agenda\ListAgendaReminderRequest;
+use App\Http\Requests\Agenda\ManageAgendaRequest;
+use App\Http\Requests\Agenda\MarkAgendaReminderReadRequest;
 use App\Http\Requests\Agenda\StoreAgendaAlertRequest;
 use App\Http\Requests\Agenda\StoreAgendaEventRequest;
 use App\Http\Requests\Agenda\UpdateAgendaEventRequest;
 use App\Services\Agenda\AgendaService;
+use App\Services\Agenda\AgendaReminderService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class AgendaController extends Controller
 {
-    public function __construct(private readonly AgendaService $agendaService)
-    {
+    public function __construct(
+        private readonly AgendaService $agendaService,
+        private readonly AgendaReminderService $agendaReminderService,
+    ) {
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(ManageAgendaRequest $request): JsonResponse
     {
         $perPage = max(1, min((int) $request->integer('per_page', 10), 100));
         $month = $request->integer('month');
@@ -46,14 +51,14 @@ class AgendaController extends Controller
         ]);
     }
 
-    public function options(): JsonResponse
+    public function options(ManageAgendaRequest $request): JsonResponse
     {
         return response()->json([
             'data' => $this->agendaService->options(),
         ]);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(ManageAgendaRequest $request, int $id): JsonResponse
     {
         return response()->json([
             'data' => $this->agendaService->findEventById($id),
@@ -94,7 +99,7 @@ class AgendaController extends Controller
         ]);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(ManageAgendaRequest $request, int $id): JsonResponse
     {
         $this->agendaService->deleteEvent($id);
 
@@ -103,7 +108,7 @@ class AgendaController extends Controller
         ]);
     }
 
-    public function listAlerts(Request $request): JsonResponse
+    public function listAlerts(ListAgendaReminderRequest $request): JsonResponse
     {
         $perPage = max(1, min((int) $request->integer('per_page', 10), 100));
         $month = $request->integer('month');
@@ -118,18 +123,19 @@ class AgendaController extends Controller
         }
 
         return response()->json([
-            'data' => $this->agendaService->listAlerts($perPage, [
+            'data' => $this->agendaReminderService->listUserReminders($request->user(), $perPage, [
                 'search' => $request->string('search')->toString(),
                 'event_id' => $request->filled('event_id') ? $request->integer('event_id') : null,
                 'alert_from' => $alertFrom,
                 'alert_to' => $alertTo,
+                'status' => $request->query('status', 'all'),
             ]),
         ]);
     }
 
     public function storeAlert(StoreAgendaAlertRequest $request): JsonResponse
     {
-        $alert = $this->agendaService->createAlert($request->validated());
+        $alert = $this->agendaReminderService->createUserAlert($request->validated(), $request->user());
 
         return response()->json([
             'message' => 'Alerta criado com sucesso.',
@@ -137,12 +143,22 @@ class AgendaController extends Controller
         ], 201);
     }
 
-    public function destroyAlert(int $id): JsonResponse
+    public function markAlertAsRead(MarkAgendaReminderReadRequest $request, int $id): JsonResponse
     {
-        $this->agendaService->deleteAlert($id);
+        $alert = $this->agendaReminderService->markAsRead($id, $request->user());
 
         return response()->json([
-            'message' => 'Alerta removido com sucesso.',
+            'message' => 'Lembrete marcado como lido.',
+            'data' => $alert,
+        ]);
+    }
+
+    public function destroyAlert(ListAgendaReminderRequest $request, int $id): JsonResponse
+    {
+        $this->agendaReminderService->deleteAlertForUser($id, $request->user());
+
+        return response()->json([
+            'message' => 'Lembrete removido com sucesso.',
         ]);
     }
 }

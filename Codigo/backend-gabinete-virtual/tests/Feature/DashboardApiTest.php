@@ -75,6 +75,17 @@ class DashboardApiTest extends TestCase
             'institution_id' => $regionalInstitution->id,
             'created_by_user_id' => $user->id,
         ]);
+        $discardedDemand = Demand::query()->create([
+            'title' => 'Pedido descartado',
+            'description' => 'Mensagem invalidada automaticamente.',
+            'service_area' => 'health',
+            'status' => 'discarded',
+            'priority' => 'low',
+            'responsible_user_id' => $responsibleUser->id,
+            'city_id' => $metropolitanCity->id,
+            'institution_id' => $metropolitanInstitution->id,
+            'created_by_user_id' => $user->id,
+        ]);
 
         DemandHistory::query()->create([
             'demand_id' => $openDemand->id,
@@ -97,6 +108,18 @@ class DashboardApiTest extends TestCase
             'metadata' => ['status' => ['from' => 'in_progress', 'to' => 'completed']],
             'created_at' => Carbon::parse('2026-05-07 09:30:00'),
             'updated_at' => Carbon::parse('2026-05-07 09:30:00'),
+        ]);
+        DemandHistory::query()->create([
+            'demand_id' => $discardedDemand->id,
+            'user_id' => $user->id,
+            'action' => 'created',
+            'description' => 'Demanda descartada automaticamente pelo chatbot.',
+            'metadata' => [
+                'status' => 'discarded',
+                'service_area' => 'health',
+            ],
+            'created_at' => Carbon::parse('2026-05-07 09:55:00'),
+            'updated_at' => Carbon::parse('2026-05-07 09:55:00'),
         ]);
 
         ProjectLaw::query()->create([
@@ -163,10 +186,14 @@ class DashboardApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.summary.active_demands', 1)
             ->assertJsonPath('data.summary.completed_demands', 1)
+            ->assertJsonCount(2, 'data.charts.demands_by_status')
+            ->assertJsonCount(2, 'data.charts.demands_by_service_area')
             ->assertJsonPath('data.summary.project_laws_total', 1)
             ->assertJsonPath('data.summary.amendments', 2)
             ->assertJsonPath('data.summary.events_this_month', 2)
-            ->assertJsonPath('data.options.regions.0', 'Metropolitana');
+            ->assertJsonPath('data.options.regions.0', 'Metropolitana')
+            ->assertJsonMissing(['label' => 'Descartada'])
+            ->assertJsonMissing(['title' => 'Nova demanda: Pedido descartado']);
 
         $this->withHeader('Authorization', "Bearer {$token}")
             ->getJson('/api/dashboard?region=Metropolitana')

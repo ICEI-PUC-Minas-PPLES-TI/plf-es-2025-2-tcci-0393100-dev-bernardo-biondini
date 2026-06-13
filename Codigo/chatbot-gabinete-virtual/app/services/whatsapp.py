@@ -11,6 +11,18 @@ class SignatureValidationError(Exception):
     """Raised when the webhook signature is invalid."""
 
 
+class WhatsAppApiError(Exception):
+    """Raised when the WhatsApp Cloud API rejects a request."""
+
+    def __init__(self, status_code: int, response_text: str) -> None:
+        self.status_code = status_code
+        self.response_text = response_text
+        super().__init__(
+            f"WhatsApp Cloud API request failed with status {status_code}: "
+            f"{response_text}"
+        )
+
+
 class WhatsAppClient:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
@@ -63,5 +75,11 @@ class WhatsAppClient:
                 headers=headers,
                 json=payload,
             )
-            response.raise_for_status()
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                raise WhatsAppApiError(
+                    status_code=exc.response.status_code,
+                    response_text=exc.response.text,
+                ) from exc
             return response.json()

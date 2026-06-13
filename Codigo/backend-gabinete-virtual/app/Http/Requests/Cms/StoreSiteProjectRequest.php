@@ -2,16 +2,20 @@
 
 namespace App\Http\Requests\Cms;
 
+use App\Http\Requests\Concerns\AuthorizesPermission;
 use App\Models\SiteProject;
+use App\Support\PermissionCodes;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 
 class StoreSiteProjectRequest extends FormRequest
 {
+    use AuthorizesPermission;
+
     public function authorize(): bool
     {
-        return true;
+        return $this->authorizePermission(PermissionCodes::CMS_MANAGE);
     }
 
     public function rules(): array

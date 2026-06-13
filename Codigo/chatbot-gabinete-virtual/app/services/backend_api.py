@@ -24,6 +24,24 @@ class BackendApiClient:
             "X-Chatbot-Token": self.settings.backend_api_token,
         }
 
+    async def get_authenticated_user(self, token: str) -> dict[str, Any] | None:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.get(
+                f"{self.base_url}/api/auth/me",
+                headers={
+                    "Accept": "application/json",
+                    "Authorization": f"Bearer {token}",
+                },
+            )
+
+            if response.status_code == 401:
+                return None
+
+            response.raise_for_status()
+            payload = response.json()
+
+        return payload.get("user")
+
     async def get_demand_options(self) -> dict[str, Any]:
         async with httpx.AsyncClient(timeout=20.0) as client:
             response = await client.get(
@@ -67,6 +85,43 @@ class BackendApiClient:
             payload = response.json()
 
         return payload.get("data", [])
+
+    async def find_citizen_by_phone(
+        self,
+        phone: str,
+    ) -> dict[str, Any] | None:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.get(
+                f"{self.base_url}/api/chatbot/citizens/lookup",
+                headers=self._headers(),
+                params={"phone": phone},
+            )
+            response.raise_for_status()
+            payload = response.json()
+
+        return payload.get("data")
+
+    async def register_citizen(
+        self,
+        *,
+        name: str,
+        phone: str,
+        receive_demand_updates: bool,
+    ) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.post(
+                f"{self.base_url}/api/chatbot/citizens",
+                headers=self._headers(),
+                json={
+                    "name": name,
+                    "phone": phone,
+                    "receive_demand_updates": receive_demand_updates,
+                },
+            )
+            response.raise_for_status()
+            payload = response.json()
+
+        return payload.get("data", {})
 
     async def create_demand(self, payload: dict[str, Any]) -> dict[str, Any]:
         async with httpx.AsyncClient(timeout=20.0) as client:

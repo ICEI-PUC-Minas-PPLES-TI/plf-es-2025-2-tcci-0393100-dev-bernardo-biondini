@@ -2,8 +2,11 @@
 
 namespace App\Providers;
 
+use App\Contracts\DemandAlertChannel;
 use App\Exceptions\Handler as AppExceptionHandler;
 use App\Services\Auth\AuthService;
+use App\Services\Notification\Channels\ChatbotDemandAlertChannel;
+use App\Services\Notification\Channels\WebSocketDemandAlertChannel;
 use Dedoc\Scramble\OpenApiContext;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
@@ -22,6 +25,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(ExceptionHandler::class, AppExceptionHandler::class);
+        $this->app->bind(ChatbotDemandAlertChannel::class);
+        $this->app->bind(WebSocketDemandAlertChannel::class);
     }
 
     /**

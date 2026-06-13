@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Chatbot\SearchChatbotCitiesRequest;
 use App\Http\Requests\Chatbot\ListRecentChatbotDemandsRequest;
+use App\Http\Requests\Chatbot\LookupChatbotCitizenRequest;
+use App\Http\Requests\Chatbot\SearchChatbotCitiesRequest;
+use App\Http\Requests\Chatbot\StoreChatbotCitizenRequest;
 use App\Http\Requests\Chatbot\StoreChatbotDemandRequest;
 use App\Models\City;
 use App\Services\Demand\ChatbotDemandService;
@@ -38,6 +40,23 @@ class ChatbotDemandController extends Controller
         return response()->json([
             'data' => $this->chatbotDemandService->institutionsByCity($city->id),
         ]);
+    }
+
+    public function lookupCitizen(LookupChatbotCitizenRequest $request): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->chatbotDemandService->findCitizenByPhone(
+                $request->string('phone')->toString(),
+            ),
+        ]);
+    }
+
+    public function storeCitizen(StoreChatbotCitizenRequest $request): JsonResponse
+    {
+        return response()->json([
+            'message' => 'Cidadao identificado com sucesso.',
+            'data' => $this->chatbotDemandService->registerCitizen($request->validated()),
+        ], 201);
     }
 
     public function store(StoreChatbotDemandRequest $request): JsonResponse

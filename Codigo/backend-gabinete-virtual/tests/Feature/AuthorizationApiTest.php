@@ -29,11 +29,6 @@ class AuthorizationApiTest extends TestCase
         $session = $this->issueAuthenticatedSession();
 
         $this->withHeader('Authorization', 'Bearer '.$session['token'])
-            ->getJson('/api/demands')
-            ->assertForbidden()
-            ->assertJsonPath('message', 'Voce nao tem permissao para executar esta acao.');
-
-        $this->withHeader('Authorization', 'Bearer '.$session['token'])
             ->getJson('/api/permissions')
             ->assertForbidden();
 

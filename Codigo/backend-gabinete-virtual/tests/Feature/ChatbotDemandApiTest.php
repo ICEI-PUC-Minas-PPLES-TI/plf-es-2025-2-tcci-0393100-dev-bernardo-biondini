@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Citizen;
+use App\Models\CitizenPhone;
 use App\Models\City;
 use App\Models\Demand;
 use App\Models\Institution;
@@ -13,6 +14,47 @@ use Tests\TestCase;
 class ChatbotDemandApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_chatbot_can_lookup_and_register_citizen_by_phone(): void
+    {
+        config(['services.chatbot.internal_token' => 'chatbot-secret']);
+
+        $citizen = Citizen::query()->create([
+            'name' => 'Carlos Silva',
+            'cpf' => null,
+            'birth_date' => null,
+            'phone' => '(31) 99999-1111',
+            'receive_demand_updates' => true,
+        ]);
+
+        CitizenPhone::query()->create([
+            'citizen_id' => $citizen->id,
+            'phone' => '(31) 99999-1111',
+            'normalized_phone' => '31999991111',
+        ]);
+
+        $this->withHeader('X-Chatbot-Token', 'chatbot-secret')
+            ->getJson('/api/chatbot/citizens/lookup?phone=55 31 99999-1111')
+            ->assertOk()
+            ->assertJsonPath('data.id', $citizen->id)
+            ->assertJsonPath('data.name', 'Carlos Silva')
+            ->assertJsonPath('data.receive_demand_updates', true);
+
+        $this->withHeader('X-Chatbot-Token', 'chatbot-secret')
+            ->postJson('/api/chatbot/citizens', [
+                'name' => 'Ana Souza',
+                'phone' => '(31) 98888-2222',
+                'receive_demand_updates' => false,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.name', 'Ana Souza')
+            ->assertJsonPath('data.receive_demand_updates', false);
+
+        $this->assertDatabaseHas('citizen_phones', [
+            'phone' => '(31) 98888-2222',
+            'normalized_phone' => '31988882222',
+        ]);
+    }
 
     public function test_chatbot_can_list_options_and_create_demand(): void
     {
@@ -62,14 +104,22 @@ class ChatbotDemandApiTest extends TestCase
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $secondInstitution->id);
 
+        $citizenResponse = $this->withHeader('X-Chatbot-Token', 'chatbot-secret')
+            ->postJson('/api/chatbot/citizens', [
+                'name' => 'Carlos Silva',
+                'phone' => '(31) 99999-1111',
+                'receive_demand_updates' => true,
+            ]);
+
+        $citizenId = (int) $citizenResponse->json('data.id');
+
         $response = $this->withHeader('X-Chatbot-Token', 'chatbot-secret')
             ->postJson('/api/chatbot/demands', [
                 'can_create' => true,
                 'reason' => null,
                 'message' => null,
                 'demanda' => [
-                    'citizen_name' => 'Carlos Silva',
-                    'phone' => '(31) 99999-1111',
+                    'citizen_id' => $citizenId,
                     'title' => 'Pedido de manutencao da rua',
                     'description' => 'Necessidade de reparo urgente em via publica.',
                     'service_area' => 'infrastructure',
@@ -78,8 +128,6 @@ class ChatbotDemandApiTest extends TestCase
                     'institution_id' => $institution->id,
                 ],
             ]);
-
-        $citizenId = (int) Citizen::query()->where('phone', '(31) 99999-1111')->value('id');
 
         $response->assertCreated()
             ->assertJsonPath('data.title', 'Pedido de manutencao da rua')
@@ -103,14 +151,27 @@ class ChatbotDemandApiTest extends TestCase
             'city_id' => $city->id,
         ]);
 
+        $citizen = Citizen::query()->create([
+            'name' => 'Ana Souza',
+            'cpf' => null,
+            'birth_date' => null,
+            'phone' => '(31) 98888-2222',
+            'receive_demand_updates' => false,
+        ]);
+
+        CitizenPhone::query()->create([
+            'citizen_id' => $citizen->id,
+            'phone' => '(31) 98888-2222',
+            'normalized_phone' => '31988882222',
+        ]);
+
         $response = $this->withHeader('X-Chatbot-Token', 'chatbot-secret')
             ->postJson('/api/chatbot/demands', [
                 'can_create' => false,
                 'reason' => 'invalid_language',
                 'message' => 'Idioma identificado nao e portugues, mas Ingles.',
                 'demanda' => [
-                    'citizen_name' => 'Ana Souza',
-                    'phone' => '(31) 98888-2222',
+                    'citizen_id' => $citizen->id,
                     'title' => 'Need help',
                     'description' => 'Need help with healthcare support.',
                     'service_area' => 'health',
@@ -121,13 +182,15 @@ class ChatbotDemandApiTest extends TestCase
             ]);
 
         $response->assertCreated()
-            ->assertJsonPath('data.status', 'discarded');
+            ->assertJsonPath('data.status', 'discarded')
+            ->assertJsonPath('data.discard_message', 'Idioma identificado nao e portugues, mas Ingles.');
 
         $this->assertDatabaseHas('demands', [
             'title' => 'Need help',
             'status' => 'discarded',
             'city_id' => $city->id,
             'institution_id' => $institution->id,
+            'discard_message' => 'Idioma identificado nao e portugues, mas Ingles.',
         ]);
 
         $this->assertDatabaseHas('demand_histories', [
@@ -146,14 +209,27 @@ class ChatbotDemandApiTest extends TestCase
             'region' => 'Metropolitana',
         ]);
 
+        $citizen = Citizen::query()->create([
+            'name' => 'Bruna Lima',
+            'cpf' => null,
+            'birth_date' => null,
+            'phone' => '(31) 97777-1111',
+            'receive_demand_updates' => true,
+        ]);
+
+        CitizenPhone::query()->create([
+            'citizen_id' => $citizen->id,
+            'phone' => '(31) 97777-1111',
+            'normalized_phone' => '31977771111',
+        ]);
+
         $response = $this->withHeader('X-Chatbot-Token', 'chatbot-secret')
             ->postJson('/api/chatbot/demands', [
                 'can_create' => true,
                 'reason' => null,
                 'message' => null,
                 'demanda' => [
-                    'citizen_name' => 'Bruna Lima',
-                    'phone' => '(31) 97777-1111',
+                    'citizen_id' => $citizen->id,
                     'title' => 'Demanda sem instituicao',
                     'description' => 'Registro feito apenas com a cidade informada.',
                     'service_area' => 'social_assistance',
@@ -237,7 +313,7 @@ class ChatbotDemandApiTest extends TestCase
         $this->withHeader('X-Chatbot-Token', 'chatbot-secret')
             ->getJson("/api/chatbot/demands/open?city_id={$city->id}&months=3")
             ->assertOk()
-            ->assertJsonCount(1, 'data')
+            ->assertJsonCount(2, 'data')
             ->assertJsonPath('data.0.title', 'Buraco na rua principal')
             ->assertJsonPath('data.0.status', 'open');
     }

@@ -55,6 +55,16 @@ class User extends Authenticatable
         return $this->hasMany(News::class, 'author_id');
     }
 
+    public function demandAlerts()
+    {
+        return $this->hasMany(DemandAlert::class);
+    }
+
+    public function eventAlerts()
+    {
+        return $this->hasMany(EventAlert::class);
+    }
+
     public function siteProjects()
     {
         return $this->hasMany(SiteProject::class, 'author_id');

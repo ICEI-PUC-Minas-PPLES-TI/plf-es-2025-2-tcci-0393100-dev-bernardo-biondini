@@ -4,11 +4,15 @@ from types import SimpleNamespace
 import pytest
 
 from app.services.demand_validation.exceptions import (
+    AggressiveToneDetectedError,
     HateSpeechDetectedError,
+    ProfanityDetectedError,
     SimilarDemandFoundError,
 )
 from app.services.demand_validation.hate_speech_validator import HateSpeechValidator
+from app.services.demand_validation.profanity_validator import ProfanityValidator
 from app.services.demand_validation.similarity_validator import SimilarDemandValidator
+from app.services.demand_validation.tone_validator import AggressiveToneValidator
 
 
 class FakeSimilarityBackendApiClient:
@@ -87,6 +91,128 @@ def test_hate_speech_validator_allows_safe_message(monkeypatch) -> None:
     demand = {
         "title": "Pedido de ajuda",
         "description": "Solicito reparo na unidade de saude do bairro.",
+    }
+
+    _run(validator.validate(demand))
+
+
+def test_hate_speech_validator_ignores_low_confidence_hateful_label(monkeypatch) -> None:
+    fake_result = SimpleNamespace(
+        output="sexism",
+        probas={
+            "sexism": 0.00,
+            "none": 1.00,
+        },
+    )
+    fake_analyzer = SimpleNamespace(predict=lambda text: fake_result)
+
+    monkeypatch.setattr(
+        "app.services.demand_validation.hate_speech_validator._get_hate_speech_analyzer",
+        lambda: fake_analyzer,
+    )
+
+    validator = HateSpeechValidator()
+    demand = {
+        "title": "Pedido de ajuda",
+        "description": "Solicito reparo na unidade de saude do bairro.",
+    }
+
+    _run(validator.validate(demand))
+
+
+def test_profanity_validator_detects_offensive_phrase() -> None:
+    validator = ProfanityValidator()
+    demand = {
+        "title": "Reclamacao",
+        "description": (
+            "Cansei de tanta burocracia. Nada que pedimos resolve, "
+            "sempre a mesma palhacada."
+        ),
+    }
+
+    with pytest.raises(ProfanityDetectedError) as exc_info:
+        _run(validator.validate(demand))
+
+    assert exc_info.value.reason == "profanity_detected"
+    assert "palhacada" in exc_info.value.backend_message
+
+
+def test_aggressive_tone_validator_detects_hostile_negative_message(monkeypatch) -> None:
+    fake_sentiment_result = SimpleNamespace(
+        output="NEG",
+        probas={
+            "NEG": 0.96,
+            "NEU": 0.03,
+            "POS": 0.01,
+        },
+    )
+    fake_emotion_result = SimpleNamespace(
+        output=["anger"],
+        probas={
+            "anger": 0.81,
+            "sadness": 0.14,
+            "joy": 0.05,
+        },
+    )
+    fake_sentiment_analyzer = SimpleNamespace(predict=lambda text: fake_sentiment_result)
+    fake_emotion_analyzer = SimpleNamespace(predict=lambda text: fake_emotion_result)
+
+    monkeypatch.setattr(
+        "app.services.demand_validation.tone_validator._get_sentiment_analyzer",
+        lambda: fake_sentiment_analyzer,
+    )
+    monkeypatch.setattr(
+        "app.services.demand_validation.tone_validator._get_emotion_analyzer",
+        lambda: fake_emotion_analyzer,
+    )
+
+    validator = AggressiveToneValidator()
+    demand = {
+        "title": "Reclamacao",
+        "description": "Estou revoltado com essa demora absurda e sem solucao.",
+    }
+
+    with pytest.raises(AggressiveToneDetectedError) as exc_info:
+        _run(validator.validate(demand))
+
+    assert exc_info.value.reason == "aggressive_tone_detected"
+    assert "sentimento negativo" in exc_info.value.backend_message
+    assert "raiva" in exc_info.value.backend_message
+
+
+def test_aggressive_tone_validator_allows_regular_negative_message(monkeypatch) -> None:
+    fake_sentiment_result = SimpleNamespace(
+        output="NEG",
+        probas={
+            "NEG": 0.72,
+            "NEU": 0.20,
+            "POS": 0.08,
+        },
+    )
+    fake_emotion_result = SimpleNamespace(
+        output=["sadness"],
+        probas={
+            "sadness": 0.64,
+            "anger": 0.18,
+            "joy": 0.04,
+        },
+    )
+    fake_sentiment_analyzer = SimpleNamespace(predict=lambda text: fake_sentiment_result)
+    fake_emotion_analyzer = SimpleNamespace(predict=lambda text: fake_emotion_result)
+
+    monkeypatch.setattr(
+        "app.services.demand_validation.tone_validator._get_sentiment_analyzer",
+        lambda: fake_sentiment_analyzer,
+    )
+    monkeypatch.setattr(
+        "app.services.demand_validation.tone_validator._get_emotion_analyzer",
+        lambda: fake_emotion_analyzer,
+    )
+
+    validator = AggressiveToneValidator()
+    demand = {
+        "title": "Reclamacao",
+        "description": "Estou insatisfeito com a demora no atendimento, mas aguardo retorno.",
     }
 
     _run(validator.validate(demand))

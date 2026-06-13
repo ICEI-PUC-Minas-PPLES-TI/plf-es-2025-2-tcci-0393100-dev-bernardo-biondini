@@ -16,6 +16,7 @@ interface AmendmentListFilters {
   search?: string;
   status?: AmendmentType["status"] | null;
   cityId?: number | null;
+  applicationArea?: AmendmentType["application_area"] | null;
   sortBy?: "number" | "amount" | "created_at";
   sortDirection?: "asc" | "desc";
 }
@@ -79,6 +80,10 @@ export async function listAmendments(
     params.set("city_id", String(filters.cityId));
   }
 
+  if (filters.applicationArea) {
+    params.set("application_area", filters.applicationArea);
+  }
+
   const response = await authenticatedRequest<{
     data: {
       data: AmendmentType[];
@@ -102,6 +107,7 @@ export async function getAmendmentOptions(): Promise<AmendmentOptionsType> {
   return (
     response?.data ?? {
       statuses: [],
+      application_areas: [],
       cities: [],
     }
   );

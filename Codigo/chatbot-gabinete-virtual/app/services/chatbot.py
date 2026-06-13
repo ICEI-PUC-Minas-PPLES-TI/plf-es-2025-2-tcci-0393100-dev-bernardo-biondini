@@ -8,7 +8,7 @@ from app.config import Settings
 from app.models.whatsapp import IncomingWhatsAppMessage
 from app.services.backend_api import BackendApiClient
 from app.services.demand_validation import DemandValidationException, DemandValidationService
-from app.services.whatsapp import WhatsAppClient
+from app.services.whatsapp import WhatsAppApiError, WhatsAppClient
 
 
 logger = logging.getLogger(__name__)
@@ -39,8 +39,21 @@ class ChatbotService:
             logger.info("Incoming WhatsApp message from %s", message.sender)
 
             if self.settings.whatsapp_echo_enabled:
-                reply = await self.build_reply(message)
-                await self.whatsapp_client.send_text_message(message.sender, reply)
+                try:
+                    reply = await self.build_reply(message)
+                    await self.whatsapp_client.send_text_message(message.sender, reply)
+                except WhatsAppApiError as exc:
+                    logger.exception(
+                        "Failed to send WhatsApp reply to %s. Meta response: %s",
+                        message.sender,
+                        exc.response_text,
+                    )
+                except Exception:
+                    logger.exception(
+                        "Failed to process WhatsApp message %s from %s.",
+                        message.message_id,
+                        message.sender,
+                    )
 
     async def build_reply(self, message: IncomingWhatsAppMessage) -> str:
         normalized_text = self._normalize_text(message.text)
@@ -53,10 +66,21 @@ class ChatbotService:
             )
 
         if sender_session.state == "menu":
-            return self._handle_menu_selection(sender_session, normalized_text)
+            return await self._handle_menu_selection(
+                sender_session,
+                normalized_text,
+                message.sender,
+            )
 
         if sender_session.state == "waiting_name":
             return self._handle_name_step(sender_session, message.text)
+
+        if sender_session.state == "waiting_updates_preference":
+            return await self._handle_updates_preference_step(
+                sender_session,
+                normalized_text,
+                message.sender,
+            )
 
         if sender_session.state == "waiting_title":
             return self._handle_title_step(sender_session, message.text)
@@ -76,25 +100,21 @@ class ChatbotService:
         if sender_session.state == "waiting_confirmation":
             return await self._handle_confirmation_step(
                 sender_session,
-                message.sender,
                 normalized_text,
             )
 
         self.sessions[message.sender] = ConversationSession()
         return self._menu_message()
 
-    def _handle_menu_selection(
+    async def _handle_menu_selection(
         self,
         session: ConversationSession,
         normalized_text: str,
+        sender: str,
     ) -> str:
         if normalized_text in {"1", "abrir demanda", "demanda", "abrir"}:
-            session.state = "waiting_name"
             session.data = {}
-            return (
-                "Perfeito. Vamos abrir sua demanda.\n"
-                "Primeiro, me informe seu nome completo."
-            )
+            return await self._start_demand_flow(session, sender)
 
         return self._menu_message()
 
@@ -105,6 +125,46 @@ class ChatbotService:
             return "Preciso de um nome um pouco mais completo. Qual e o seu nome?"
 
         session.data["citizen_name"] = cleaned_text
+        session.state = "waiting_updates_preference"
+
+        return (
+            "Voce deseja receber atualizacoes sobre suas demandas?\n"
+            "Responda 1 para sim ou 2 para nao."
+        )
+
+    async def _handle_updates_preference_step(
+        self,
+        session: ConversationSession,
+        normalized_text: str,
+        sender: str,
+    ) -> str:
+        if normalized_text not in {"1", "2", "sim", "nao", "não"}:
+            return (
+                "Responda 1 para receber atualizacoes da demanda "
+                "ou 2 para nao receber."
+            )
+
+        receive_demand_updates = normalized_text in {"1", "sim"}
+
+        try:
+            citizen = await self.backend_api_client.register_citizen(
+                name=session.data["citizen_name"],
+                phone=sender,
+                receive_demand_updates=receive_demand_updates,
+            )
+        except Exception:
+            logger.exception("Failed to register citizen by phone %s.", sender)
+            return (
+                "Nao consegui concluir seu cadastro agora.\n"
+                "Responda 1 para tentar novamente ou cancelar para encerrar."
+            )
+
+        session.data["citizen_id"] = citizen["id"]
+        session.data["citizen_name"] = citizen["name"]
+        session.data["receive_demand_updates"] = citizen.get(
+            "receive_demand_updates",
+            receive_demand_updates,
+        )
         session.state = "waiting_title"
 
         return "Agora me diga um titulo curto para a demanda."
@@ -199,7 +259,6 @@ class ChatbotService:
     async def _handle_confirmation_step(
         self,
         session: ConversationSession,
-        sender: str,
         normalized_text: str,
     ) -> str:
         if normalized_text not in {"1", "sim", "confirmar"}:
@@ -214,7 +273,7 @@ class ChatbotService:
                 "Responda com 1 para confirmar a abertura da demanda ou 2 para editar."
             )
 
-        demand_payload = self._build_demand_payload(session, sender)
+        demand_payload = self._build_demand_payload(session)
 
         try:
             demand, validation_error = await self._submit_demand(demand_payload)
@@ -247,11 +306,9 @@ class ChatbotService:
     def _build_demand_payload(
         self,
         session: ConversationSession,
-        sender: str,
     ) -> dict[str, Any]:
         return {
-            "citizen_name": session.data["citizen_name"],
-            "phone": sender,
+            "citizen_id": session.data["citizen_id"],
             "title": session.data["title"],
             "description": session.data["description"],
             "priority": None,
@@ -418,6 +475,8 @@ class ChatbotService:
         return (
             "Confirme os dados da demanda:\n"
             f"Nome: {session.data['citizen_name']}\n"
+            "Receber atualizacoes: "
+            f"{'Sim' if session.data.get('receive_demand_updates') else 'Nao'}\n"
             f"Titulo: {session.data['title']}\n"
             f"Descricao: {session.data['description']}\n"
             f"Cidade: {session.data['city_name']}\n"
@@ -425,6 +484,42 @@ class ChatbotService:
             "Prioridade: A definir pelo gestor\n"
             "Status inicial: Em analise\n\n"
             "Responda 1 para confirmar ou 2 para editar o titulo."
+        )
+
+    async def _start_demand_flow(
+        self,
+        session: ConversationSession,
+        sender: str,
+    ) -> str:
+        try:
+            citizen = await self.backend_api_client.find_citizen_by_phone(sender)
+        except Exception:
+            logger.exception("Failed to lookup citizen by phone %s.", sender)
+            return (
+                "Nao consegui verificar seu cadastro agora.\n"
+                "Responda 1 para tentar novamente ou cancelar para encerrar."
+            )
+
+        if citizen is None:
+            session.state = "waiting_name"
+            return (
+                "Perfeito. Vamos abrir sua demanda.\n"
+                "Primeiro, me informe seu nome completo."
+            )
+
+        session.data.update(
+            {
+                "citizen_id": citizen["id"],
+                "citizen_name": citizen["name"],
+                "receive_demand_updates": citizen.get("receive_demand_updates", False),
+            }
+        )
+        session.state = "waiting_title"
+
+        return (
+            f"Identifiquei seu cadastro, {citizen['name']}.\n"
+            "Vamos seguir com a abertura da demanda.\n"
+            "Agora me diga um titulo curto para a demanda."
         )
 
     def _menu_message(self, prefix: str | None = None) -> str:

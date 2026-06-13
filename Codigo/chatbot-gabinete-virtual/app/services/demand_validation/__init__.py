@@ -1,4 +1,5 @@
 from app.services.demand_validation.exceptions import (
+    AggressiveToneDetectedError,
     DemandValidationConfigurationError,
     DemandValidationException,
     HateSpeechDetectedError,
@@ -13,6 +14,7 @@ from app.services.demand_validation.profanity_validator import ProfanityValidato
 from app.services.demand_validation.service import DemandValidationService
 from app.services.demand_validation.similarity_validator import SimilarDemandValidator
 from app.services.demand_validation.spam_validator import SpamValidator
+from app.services.demand_validation.tone_validator import AggressiveToneValidator
 
 
 def build_default_demand_validation_service(
@@ -23,6 +25,7 @@ def build_default_demand_validation_service(
             DemandLanguageValidator(),
             ProfanityValidator(),
             HateSpeechValidator(),
+            AggressiveToneValidator(),
             SpamValidator(),
             SimilarDemandValidator(backend_api_client=backend_api_client),
         ]
@@ -31,6 +34,8 @@ def build_default_demand_validation_service(
 
 __all__ = [
     "DemandLanguageValidator",
+    "AggressiveToneDetectedError",
+    "AggressiveToneValidator",
     "DemandValidationConfigurationError",
     "DemandValidationException",
     "DemandValidationService",

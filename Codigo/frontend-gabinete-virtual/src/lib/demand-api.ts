@@ -7,19 +7,9 @@ import type {
 } from "../types/demand/managed-demand-type";
 import type { PaginatedType } from "../types/paginated-type";
 
-interface DemandMutationPayload {
-  title: string;
-  description: string;
-  service_area: string;
-  status: "open" | "under_review" | "in_progress" | "completed" | "discarded";
-  priority: "low" | "medium" | "high";
-  responsible_user_id: number | null;
-  city_id: number;
-  institution_id: number;
-}
-
 interface DemandListFilters {
   search?: string;
+  status?: ManagedDemandType["status"] | null;
   responsibleUserId?: number | null;
   cityId?: number | null;
   region?: string | null;
@@ -38,14 +28,26 @@ async function authenticatedRequest<T>(
     throw new Error("Sessao expirada. Faca login novamente.");
   }
 
+  const isFormData = init?.body instanceof FormData;
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+
+  if (init?.headers) {
+    const extraHeaders = new Headers(init.headers);
+    extraHeaders.forEach((value, key) => {
+      headers[key] = value;
+    });
+  }
+
+  if (!isFormData) {
+    headers["Content-Type"] = "application/json";
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...(init?.headers ?? {}),
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -63,6 +65,21 @@ async function authenticatedRequest<T>(
   return (await response.json()) as T;
 }
 
+function withMethodOverride(
+  payload: FormData,
+  method: "PUT",
+): FormData {
+  const body = new FormData();
+
+  payload.forEach((value, key) => {
+    body.append(key, value);
+  });
+
+  body.set("_method", method);
+
+  return body;
+}
+
 export async function listDemands(
   page = 1,
   perPage = 10,
@@ -77,6 +94,10 @@ export async function listDemands(
 
   if (filters.search?.trim()) {
     params.set("search", filters.search.trim());
+  }
+
+  if (filters.status) {
+    params.set("status", filters.status);
   }
 
   if (filters.responsibleUserId) {
@@ -146,7 +167,7 @@ export async function listDemandHistories(
 }
 
 export async function createDemand(
-  payload: DemandMutationPayload,
+  payload: FormData,
 ): Promise<ManagedDemandType> {
   const response = await authenticatedRequest<{
     message: string;
@@ -155,7 +176,7 @@ export async function createDemand(
     "/demands",
     {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: payload,
     },
   );
 
@@ -168,7 +189,7 @@ export async function createDemand(
 
 export async function updateDemand(
   demandId: number,
-  payload: DemandMutationPayload,
+  payload: FormData,
 ): Promise<ManagedDemandType> {
   const response = await authenticatedRequest<{
     message: string;
@@ -176,8 +197,8 @@ export async function updateDemand(
   }>(
     `/demands/${demandId}`,
     {
-      method: "PUT",
-      body: JSON.stringify(payload),
+      method: "POST",
+      body: withMethodOverride(payload, "PUT"),
     },
   );
 
@@ -192,6 +213,46 @@ export async function removeDemand(demandId: number): Promise<void> {
   await authenticatedRequest<{ message: string }>(`/demands/${demandId}`, {
     method: "DELETE",
   });
+}
+
+export async function downloadDemandOficio(
+  demandId: number,
+  fileName?: string | null,
+): Promise<void> {
+  const token = getStoredToken();
+
+  if (!token) {
+    throw new Error("Sessao expirada. Faca login novamente.");
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/demands/${demandId}/oficio/download`,
+    {
+      headers: {
+        Accept: "*/*",
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as
+      | { message?: string }
+      | null;
+
+    throw new Error(payload?.message ?? "Nao foi possivel baixar o oficio.");
+  }
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = objectUrl;
+  link.download = fileName?.trim() || `oficio-demanda-${demandId}`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
 }
 
 export function toApiError(error: unknown, fallback: string): string {

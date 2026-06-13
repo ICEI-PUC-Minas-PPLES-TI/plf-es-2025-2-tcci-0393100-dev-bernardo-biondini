@@ -24,6 +24,7 @@ class Settings(BaseSettings):
 
     backend_api_url: str = "http://localhost:8000"
     backend_api_token: str = ""
+    internal_api_token: str = ""
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",

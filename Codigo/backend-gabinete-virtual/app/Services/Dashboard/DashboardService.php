@@ -247,6 +247,7 @@ class DashboardService
         return DemandHistory::query()
             ->with('demand:id,title,status,service_area,city_id')
             ->whereHas('demand', function (Builder $query) use ($filters) {
+                $query->where('status', '!=', 'discarded');
                 $this->applyGeographicFilters($query, $filters, 'demands');
             })
             ->orderByDesc('created_at')
@@ -396,7 +397,8 @@ class DashboardService
 
     private function filteredDemandQuery(array $filters): Builder
     {
-        $query = Demand::query();
+        $query = Demand::query()
+            ->where('status', '!=', 'discarded');
         $this->applyGeographicFilters($query, $filters, 'demands');
 
         return $query;

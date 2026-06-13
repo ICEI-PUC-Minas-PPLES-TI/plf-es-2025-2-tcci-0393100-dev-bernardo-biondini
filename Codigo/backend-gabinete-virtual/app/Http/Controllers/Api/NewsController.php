@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Cms\ManageCmsRequest;
 use App\Http\Requests\Cms\StoreNewsRequest;
 use App\Http\Requests\Cms\UpdateNewsRequest;
 use App\Services\Cms\NewsService;
@@ -29,7 +30,7 @@ class NewsController extends Controller
         ]);
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(ManageCmsRequest $request): JsonResponse
     {
         $perPage = max(1, min((int) $request->integer('per_page', 10), 100));
         $filters = [
@@ -43,7 +44,7 @@ class NewsController extends Controller
         ]);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(ManageCmsRequest $request, int $id): JsonResponse
     {
         return response()->json([
             'data' => $this->newsService->findById($id),
@@ -73,7 +74,7 @@ class NewsController extends Controller
         ]);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(ManageCmsRequest $request, int $id): JsonResponse
     {
         $this->newsService->delete($id);
 

@@ -1,7 +1,13 @@
+better-profanity<1.0,>=0.7
 fastapi<1.0,>=0.115
 httpx<1.0,>=0.28
+lingua-language-detector<3.0,>=2.0
 pydantic-settings<3.0,>=2.8
+pysentimiento<1.0,>=0.7
 python-dotenv<2.0,>=1.0
+scikit-learn<2.0,>=1.6
+sentence-transformers<4.0,>=3.4
+urlextract<2.0,>=1.9
 uvicorn[standard]<1.0,>=0.34
 
 [dev]

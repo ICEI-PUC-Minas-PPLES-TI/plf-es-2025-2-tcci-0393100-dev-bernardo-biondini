@@ -12,6 +12,7 @@ export interface DemandType {
   description: string;
   service_area: string | null;
   status: DemandStatusType;
+  discard_message: string | null;
   priority: DemandPriorityType | null;
   responsible_user_id: number | null;
   city_id: number;

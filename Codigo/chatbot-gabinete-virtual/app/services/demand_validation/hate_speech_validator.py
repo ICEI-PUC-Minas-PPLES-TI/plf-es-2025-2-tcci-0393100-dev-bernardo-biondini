@@ -1,11 +1,11 @@
 from functools import lru_cache
-from typing import Any
 
 from app.services.demand_validation.base import DemandData, demand_text
 from app.services.demand_validation.exceptions import (
     DemandValidationConfigurationError,
     HateSpeechDetectedError,
 )
+from app.services.demand_validation.pysentimiento_utils import normalize_label, normalize_scores
 
 
 SAFE_OUTPUT_LABELS = {
@@ -28,48 +28,33 @@ def _get_hate_speech_analyzer() -> object:
         ) from exc
 
     return create_analyzer(task="hate_speech", lang="pt")
-
-
-def _normalize_scores(probas: Any) -> dict[str, float]:
-    if not isinstance(probas, dict):
-        return {}
-
-    normalized_scores: dict[str, float] = {}
-
-    for label, score in probas.items():
-        try:
-            normalized_scores[str(label).lower().strip()] = float(score)
-        except (TypeError, ValueError):
-            continue
-
-    return normalized_scores
-
-
 class HateSpeechValidator:
-    def __init__(self, threshold: float = 0.75) -> None:
+    def __init__(self, threshold: float = 0.80) -> None:
         self.threshold = threshold
 
     async def validate(self, demand: DemandData) -> None:
         analyzer = _get_hate_speech_analyzer()
         result = analyzer.predict(demand_text(demand))
-        output = str(getattr(result, "output", "")).lower().strip()
-        scores = _normalize_scores(getattr(result, "probas", {}))
+        output = normalize_label(getattr(result, "output", ""))
+        scores = normalize_scores(getattr(result, "probas", {}))
+        hateful_scores = {
+            label: score
+            for label, score in scores.items()
+            if label not in SAFE_OUTPUT_LABELS
+        }
+
+        if not hateful_scores:
+            return
+
+        top_label, top_score = max(hateful_scores.items(), key=lambda item: item[1])
+
+        if top_score <= self.threshold:
+            return
 
         flagged_labels = [
             label.replace("_", " ")
-            for label, score in scores.items()
-            if score >= self.threshold and label not in SAFE_OUTPUT_LABELS
+            for label, score in hateful_scores.items()
+            if score > self.threshold
         ]
-
-        if not flagged_labels and output in SAFE_OUTPUT_LABELS:
-            return
-
-        top_label = output or "hate_speech"
-        top_score = scores.get(output)
-
-        if top_score is None and scores:
-            top_label, top_score = max(scores.items(), key=lambda item: item[1])
-            top_label = top_label.replace("_", " ")
-
         categories = flagged_labels or [top_label.replace("_", " ")]
         raise HateSpeechDetectedError(categories=categories, score=top_score)

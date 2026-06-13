@@ -4,6 +4,8 @@ from typing import Any
 class DemoBackendApiClient:
     def __init__(self) -> None:
         self._next_demand_id = 9000
+        self._next_citizen_id = 100
+        self._citizens_by_phone: dict[str, dict[str, Any]] = {}
 
     async def get_demand_options(self) -> dict[str, Any]:
         return {
@@ -70,6 +72,40 @@ class DemoBackendApiClient:
             for institution in institutions
             if institution.get("city_id") == city_id
         ]
+
+    async def find_citizen_by_phone(
+        self,
+        phone: str,
+    ) -> dict[str, Any] | None:
+        return self._citizens_by_phone.get(phone)
+
+    async def register_citizen(
+        self,
+        *,
+        name: str,
+        phone: str,
+        receive_demand_updates: bool,
+    ) -> dict[str, Any]:
+        citizen = self._citizens_by_phone.get(phone)
+
+        if citizen is None:
+            self._next_citizen_id += 1
+            citizen = {
+                "id": self._next_citizen_id,
+                "name": name,
+                "phone": phone,
+                "receive_demand_updates": receive_demand_updates,
+            }
+            self._citizens_by_phone[phone] = citizen
+        else:
+            citizen.update(
+                {
+                    "name": name,
+                    "receive_demand_updates": receive_demand_updates,
+                }
+            )
+
+        return dict(citizen)
 
     async def create_demand(self, payload: dict[str, Any]) -> dict[str, Any]:
         self._next_demand_id += 1

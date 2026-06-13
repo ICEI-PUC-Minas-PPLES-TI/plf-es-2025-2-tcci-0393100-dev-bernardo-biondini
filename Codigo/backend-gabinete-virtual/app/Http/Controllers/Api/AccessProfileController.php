@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AccessProfile\DeleteAccessProfileRequest;
 use App\Http\Requests\AccessProfile\StoreAccessProfileRequest;
 use App\Http\Requests\AccessProfile\UpdateAccessProfileRequest;
+use App\Http\Requests\AccessProfile\ViewAccessProfileRequest;
 use App\Services\Auth\AccessProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,6 +19,16 @@ class AccessProfileController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        return $this->list($request);
+    }
+
+    public function adminIndex(ViewAccessProfileRequest $request): JsonResponse
+    {
+        return $this->list($request);
+    }
+
+    private function list(Request $request): JsonResponse
+    {
         $perPage = max(1, min((int) $request->integer('per_page', 10), 100));
 
         return response()->json([
@@ -24,7 +36,7 @@ class AccessProfileController extends Controller
         ]);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(ViewAccessProfileRequest $request, int $id): JsonResponse
     {
         return response()->json([
             'data' => $this->accessProfileService->findById($id),
@@ -51,7 +63,7 @@ class AccessProfileController extends Controller
         ]);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(DeleteAccessProfileRequest $request, int $id): JsonResponse
     {
         $this->accessProfileService->delete($id);
 

@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
@@ -49,6 +50,16 @@ class Handler extends ExceptionHandler
             return $this->errorResponse($e->getMessage(), 422, $e, [
                 'errors' => $e->errors(),
             ]);
+        }
+
+        if ($e instanceof AuthorizationException) {
+            return $this->errorResponse(
+                $e->getMessage() !== 'This action is unauthorized.'
+                    ? $e->getMessage()
+                    : 'Voce nao tem permissao para executar esta acao.',
+                403,
+                $e,
+            );
         }
 
         // Handle Eloquent ModelNotFoundException

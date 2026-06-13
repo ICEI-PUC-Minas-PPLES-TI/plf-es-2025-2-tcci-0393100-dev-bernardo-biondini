@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Cms\ManageCmsRequest;
 use App\Http\Requests\Cms\UpdateCmsSectionRequest;
 use App\Services\Cms\CmsSectionService;
 use App\Services\Cms\NewsService;
@@ -36,14 +37,14 @@ class CmsController extends Controller
         ]);
     }
 
-    public function index(): JsonResponse
+    public function index(ManageCmsRequest $request): JsonResponse
     {
         return response()->json([
             'data' => $this->cmsSectionService->all(),
         ]);
     }
 
-    public function options(): JsonResponse
+    public function options(ManageCmsRequest $request): JsonResponse
     {
         return response()->json([
             'data' => $this->siteProjectService->options(),

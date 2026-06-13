@@ -3,10 +3,12 @@
 namespace App\Services\Demand;
 
 use App\Models\Citizen;
+use App\Models\CitizenPhone;
 use App\Models\City;
 use App\Models\Demand;
 use App\Models\Institution;
 use App\Support\DemandServiceAreas;
+use Illuminate\Support\Facades\DB;
 
 class ChatbotDemandService
 {
@@ -64,26 +66,75 @@ class ChatbotDemandService
             ->all();
     }
 
+    public function findCitizenByPhone(string $phone): ?array
+    {
+        $normalizedPhone = $this->normalizePhone($phone);
+
+        if ($normalizedPhone === '') {
+            return null;
+        }
+
+        $citizenPhone = CitizenPhone::query()
+            ->with('citizen')
+            ->where('normalized_phone', $normalizedPhone)
+            ->first();
+
+        if (! $citizenPhone || ! $citizenPhone->citizen) {
+            return null;
+        }
+
+        return $this->formatCitizen($citizenPhone->citizen, $citizenPhone);
+    }
+
+    public function registerCitizen(array $data): array
+    {
+        $normalizedPhone = $this->normalizePhone($data['phone']);
+
+        return DB::transaction(function () use ($data, $normalizedPhone) {
+            $citizenPhone = CitizenPhone::query()
+                ->with('citizen')
+                ->lockForUpdate()
+                ->where('normalized_phone', $normalizedPhone)
+                ->first();
+
+            $citizen = $citizenPhone?->citizen;
+
+            if (! $citizen) {
+                $citizen = Citizen::query()->create([
+                    'name' => $data['name'],
+                    'cpf' => null,
+                    'birth_date' => null,
+                    'phone' => $data['phone'],
+                    'receive_demand_updates' => (bool) $data['receive_demand_updates'],
+                ]);
+
+                $citizenPhone = CitizenPhone::query()->create([
+                    'citizen_id' => $citizen->id,
+                    'phone' => $data['phone'],
+                    'normalized_phone' => $normalizedPhone,
+                ]);
+            } else {
+                $citizen->fill([
+                    'name' => $data['name'],
+                    'receive_demand_updates' => (bool) $data['receive_demand_updates'],
+                    'phone' => $data['phone'],
+                ]);
+                $citizen->save();
+
+                $citizenPhone->fill([
+                    'phone' => $data['phone'],
+                ]);
+                $citizenPhone->save();
+            }
+
+            return $this->formatCitizen($citizen, $citizenPhone);
+        });
+    }
+
     public function create(array $data): Demand
     {
         $demandData = $data['demanda'];
-        $citizen = Citizen::query()
-            ->where('phone', $demandData['phone'])
-            ->first();
-
-        if (! $citizen) {
-            $citizen = Citizen::query()->create([
-                'name' => $demandData['citizen_name'],
-                'cpf' => null,
-                'birth_date' => null,
-                'phone' => $demandData['phone'],
-            ]);
-        } else {
-            $citizen->fill([
-                'name' => $demandData['citizen_name'],
-            ]);
-            $citizen->save();
-        }
+        $citizen = Citizen::query()->findOrFail($demandData['citizen_id']);
 
         $canCreate = (bool) $data['can_create'];
 
@@ -92,6 +143,7 @@ class ChatbotDemandService
             'description' => $demandData['description'],
             'service_area' => $demandData['service_area'] ?? null,
             'status' => $canCreate ? 'under_review' : 'discarded',
+            'discard_message' => $canCreate ? null : ($data['message'] ?? null),
             'priority' => $demandData['priority'] ?? null,
             'responsible_user_id' => null,
             'city_id' => $demandData['city_id'],
@@ -109,6 +161,27 @@ class ChatbotDemandService
                 ],
             ],
         ]);
+    }
+
+    private function formatCitizen(Citizen $citizen, ?CitizenPhone $citizenPhone = null): array
+    {
+        return [
+            'id' => $citizen->id,
+            'name' => $citizen->name,
+            'phone' => $citizenPhone?->phone ?? $citizen->phone,
+            'receive_demand_updates' => (bool) $citizen->receive_demand_updates,
+        ];
+    }
+
+    private function normalizePhone(string $phone): string
+    {
+        $digits = preg_replace('/\D+/', '', $phone) ?? '';
+
+        if (str_starts_with($digits, '55') && strlen($digits) > 11) {
+            return substr($digits, 2);
+        }
+
+        return $digits;
     }
 
     public function status(int $id): array

@@ -4,6 +4,7 @@ namespace App\Services\Amendment;
 
 use App\Models\Amendment;
 use App\Models\City;
+use App\Support\AmendmentApplicationAreas;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class AmendmentService
@@ -13,6 +14,7 @@ class AmendmentService
         $search = trim((string) ($filters['search'] ?? ''));
         $status = $filters['status'] ?? null;
         $cityId = $filters['city_id'] ?? null;
+        $applicationArea = $filters['application_area'] ?? null;
         $sortBy = in_array($filters['sort_by'] ?? null, ['number', 'amount', 'created_at'], true)
             ? $filters['sort_by']
             : 'created_at';
@@ -34,6 +36,9 @@ class AmendmentService
             ->when($cityId, function ($query) use ($cityId) {
                 $query->where('city_id', $cityId);
             })
+            ->when($applicationArea, function ($query) use ($applicationArea) {
+                $query->where('application_area', $applicationArea);
+            })
             ->orderBy($sortBy, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
@@ -43,6 +48,7 @@ class AmendmentService
     {
         return [
             'statuses' => $this->statusOptions(),
+            'application_areas' => AmendmentApplicationAreas::options(),
             'cities' => City::query()
                 ->orderBy('name')
                 ->get(['id', 'name', 'region']),

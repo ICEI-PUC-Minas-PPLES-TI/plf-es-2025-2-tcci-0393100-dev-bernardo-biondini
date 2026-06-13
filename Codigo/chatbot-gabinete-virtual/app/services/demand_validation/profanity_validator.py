@@ -20,11 +20,31 @@ DEFAULT_PROFANITY_WORDS = tuple(
             "imbecil",
             "merda",
             "otario",
+            "palhacada",
             "porra",
             "puta",
             "putaria",
             "retardado",
+            "ridicula",
+            "ridiculo",
             "vagabundo",
+        }
+    )
+)
+
+DEFAULT_OFFENSIVE_PHRASES = tuple(
+    sorted(
+        {
+            "e uma piada",
+            "isso e ridiculo",
+            "isso e uma palhacada",
+            "isso e uma vergonha",
+            "que palhacada",
+            "que ridicula",
+            "que ridiculo",
+            "que vergonha",
+            "sempre a mesma palhacada",
+            "uma vergonha",
         }
     )
 )
@@ -45,12 +65,20 @@ def _get_profanity_detector(words: tuple[str, ...]) -> object:
 
 
 class ProfanityValidator:
-    def __init__(self, blocked_words: tuple[str, ...] = DEFAULT_PROFANITY_WORDS) -> None:
+    def __init__(
+        self,
+        blocked_words: tuple[str, ...] = DEFAULT_PROFANITY_WORDS,
+        blocked_phrases: tuple[str, ...] = DEFAULT_OFFENSIVE_PHRASES,
+    ) -> None:
         self.blocked_words = tuple(sorted({normalize_text(word) for word in blocked_words}))
+        self.blocked_phrases = tuple(
+            sorted({normalize_text(phrase) for phrase in blocked_phrases})
+        )
 
     async def validate(self, demand: DemandData) -> None:
         text = demand_text(demand)
         normalized_text = normalize_text(text)
+        normalized_token_text = " ".join(tokenize(text))
         detector = _get_profanity_detector(self.blocked_words)
         detected_words = sorted(
             {
@@ -59,6 +87,15 @@ class ProfanityValidator:
                 if token in self.blocked_words
             }
         )
+        detected_phrases = sorted(
+            {
+                phrase
+                for phrase in self.blocked_phrases
+                if phrase in normalized_token_text
+            }
+        )
 
-        if detected_words or detector.contains_profanity(normalized_text):
-            raise ProfanityDetectedError(detected_words or ["termos ofensivos"])
+        detected_terms = sorted(set(detected_words + detected_phrases))
+
+        if detected_terms or detector.contains_profanity(normalized_text):
+            raise ProfanityDetectedError(detected_terms or ["termos ofensivos"])

@@ -46,6 +46,7 @@ interface AgendaAlertListFilters {
   eventId?: number | null;
   month?: number;
   year?: number;
+  status?: "all" | "pending" | "unread";
 }
 
 async function authenticatedRequest<T>(
@@ -116,6 +117,10 @@ export async function listAgendaEvents(
 
   if (filters.year) {
     params.set("year", String(filters.year));
+  }
+
+  if (filters.status && filters.status !== "all") {
+    params.set("status", filters.status);
   }
 
   const response = await authenticatedRequest<{
@@ -253,6 +258,21 @@ export async function removeAgendaAlert(alertId: number): Promise<void> {
   await authenticatedRequest<{ message: string }>(`/agenda/alerts/${alertId}`, {
     method: "DELETE",
   });
+}
+
+export async function markAgendaAlertAsRead(alertId: number): Promise<EventAlertType> {
+  const response = await authenticatedRequest<{
+    message: string;
+    data: EventAlertType;
+  }>(`/agenda/alerts/${alertId}/read`, {
+    method: "POST",
+  });
+
+  if (!response?.data) {
+    throw new Error("Resposta invalida ao marcar o lembrete como lido.");
+  }
+
+  return response.data;
 }
 
 export function extractAgendaConflicts(error: unknown): Array<Record<string, unknown>> {

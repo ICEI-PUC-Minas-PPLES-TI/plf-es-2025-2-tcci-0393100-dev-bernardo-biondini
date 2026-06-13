@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Demand\ListDemandHistoriesRequest;
 use App\Services\Demand\DemandHistoryService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class DemandHistoryController extends Controller
 {
@@ -13,7 +13,7 @@ class DemandHistoryController extends Controller
     {
     }
 
-    public function indexByDemand(Request $request, int $demandId): JsonResponse
+    public function indexByDemand(ListDemandHistoriesRequest $request, int $demandId): JsonResponse
     {
         $perPage = max(1, min((int) $request->integer('per_page', 10), 100));
 

@@ -40,6 +40,9 @@ export interface ManagedDemandType {
   description: string;
   service_area: string | null;
   status: "open" | "under_review" | "in_progress" | "completed" | "discarded";
+  discard_message: string | null;
+  oficio_original_name: string | null;
+  oficio_mime_type: string | null;
   priority: "low" | "medium" | "high" | null;
   responsible_user_id: number | null;
   city_id: number;

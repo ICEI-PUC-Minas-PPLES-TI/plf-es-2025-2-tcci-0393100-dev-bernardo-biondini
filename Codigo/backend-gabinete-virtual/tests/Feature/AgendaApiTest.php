@@ -7,6 +7,7 @@ use App\Models\City;
 use App\Models\Permission;
 use App\Models\User;
 use App\Support\PermissionCodes;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -18,6 +19,8 @@ class AgendaApiTest extends TestCase
     public function test_user_can_manage_agenda_events_and_alerts_with_conflict_detection(): void
     {
         $token = $this->issueTokenForPermission(PermissionCodes::AGENDA_MANAGE);
+        $startsAt = Carbon::now()->addDays(20)->setTime(9, 0, 0);
+        $endsAt = $startsAt->copy()->addHour();
         $city = City::query()->create([
             'name' => 'Curvelo',
             'region' => 'Central Mineira',
@@ -27,8 +30,8 @@ class AgendaApiTest extends TestCase
             ->postJson('/api/agenda/events', [
                 'title' => 'Audiência com lideranças',
                 'type' => 'audience',
-                'starts_at' => '2026-04-14 09:00:00',
-                'ends_at' => '2026-04-14 10:00:00',
+                'starts_at' => $startsAt->toDateTimeString(),
+                'ends_at' => $endsAt->toDateTimeString(),
                 'location' => 'Gabinete Regional',
                 'description' => 'Discussão de prioridades do semestre.',
                 'participants_expected' => 12,
@@ -56,7 +59,11 @@ class AgendaApiTest extends TestCase
             ]);
 
         $this->withHeader('Authorization', "Bearer {$token}")
-            ->getJson('/api/agenda/events?month=4&year=2026')
+            ->getJson(sprintf(
+                '/api/agenda/events?month=%d&year=%d',
+                $startsAt->month,
+                $startsAt->year,
+            ))
             ->assertOk()
             ->assertJsonPath('data.data.0.id', $eventId);
 
@@ -64,8 +71,8 @@ class AgendaApiTest extends TestCase
             ->postJson('/api/agenda/events', [
                 'title' => 'Reunião em conflito',
                 'type' => 'meeting',
-                'starts_at' => '2026-04-14 09:30:00',
-                'ends_at' => '2026-04-14 10:30:00',
+                'starts_at' => $startsAt->copy()->addMinutes(30)->toDateTimeString(),
+                'ends_at' => $endsAt->copy()->addMinutes(30)->toDateTimeString(),
                 'location' => 'Sede',
                 'description' => 'Teste de conflito.',
                 'demand_ids' => [],
@@ -78,7 +85,7 @@ class AgendaApiTest extends TestCase
                 'event_id' => $eventId,
                 'title' => 'Lembrete da audiência',
                 'message' => 'Levar pauta e lista de presença.',
-                'alert_at' => '2026-04-14 08:00:00',
+                'alert_at' => $startsAt->copy()->subHour()->toDateTimeString(),
                 'lead_time_minutes' => 60,
                 'channel' => 'system',
                 'is_recurring' => false,
@@ -90,6 +97,8 @@ class AgendaApiTest extends TestCase
             ->assertJsonPath('data.event_id', $eventId)
             ->assertJsonPath('data.title', 'Lembrete da audiência');
 
+        $this->assertDatabaseCount('event_alerts', 4);
+
         $this->withHeader('Authorization', "Bearer {$token}")
             ->getJson("/api/agenda/events/{$eventId}")
             ->assertOk()
@@ -100,8 +109,8 @@ class AgendaApiTest extends TestCase
             ->putJson("/api/agenda/events/{$eventId}", [
                 'title' => 'Audiência com lideranças comunitárias',
                 'type' => 'meeting',
-                'starts_at' => '2026-04-14 11:00:00',
-                'ends_at' => '2026-04-14 12:00:00',
+                'starts_at' => $startsAt->copy()->addHours(2)->toDateTimeString(),
+                'ends_at' => $endsAt->copy()->addHours(2)->toDateTimeString(),
                 'location' => 'Gabinete Regional',
                 'description' => 'Ajuste da agenda do dia.',
                 'participants_expected' => 14,
@@ -114,14 +123,14 @@ class AgendaApiTest extends TestCase
             ->assertJsonPath('data.title', 'Audiência com lideranças comunitárias');
 
         $this->withHeader('Authorization', "Bearer {$token}")
-            ->getJson('/api/agenda/alerts?month=4&year=2026')
+            ->getJson('/api/agenda/alerts')
             ->assertOk()
-            ->assertJsonPath('data.data.0.id', $alertId);
+            ->assertJsonCount(4, 'data.data');
 
         $this->withHeader('Authorization', "Bearer {$token}")
             ->deleteJson("/api/agenda/alerts/{$alertId}")
             ->assertOk()
-            ->assertJsonPath('message', 'Alerta removido com sucesso.');
+            ->assertJsonPath('message', 'Lembrete removido com sucesso.');
 
         $this->withHeader('Authorization', "Bearer {$token}")
             ->deleteJson("/api/agenda/events/{$eventId}")

@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ProjectLaw\ManageProjectLawRequest;
 use App\Http\Requests\ProjectLaw\StoreProjectLawRequest;
 use App\Http\Requests\ProjectLaw\UpdateProjectLawRequest;
 use App\Http\Requests\ProjectLaw\UpdateProjectLawStatusRequest;
 use App\Services\ProjectLaw\ProjectLawService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class ProjectLawController extends Controller
 {
@@ -16,7 +16,7 @@ class ProjectLawController extends Controller
     {
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(ManageProjectLawRequest $request): JsonResponse
     {
         $perPage = max(1, min((int) $request->integer('per_page', 10), 100));
         $filters = [
@@ -31,14 +31,14 @@ class ProjectLawController extends Controller
         ]);
     }
 
-    public function options(): JsonResponse
+    public function options(ManageProjectLawRequest $request): JsonResponse
     {
         return response()->json([
             'data' => $this->projectLawService->options(),
         ]);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(ManageProjectLawRequest $request, int $id): JsonResponse
     {
         return response()->json([
             'data' => $this->projectLawService->findById($id),
@@ -75,7 +75,7 @@ class ProjectLawController extends Controller
         ]);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(ManageProjectLawRequest $request, int $id): JsonResponse
     {
         $this->projectLawService->delete($id);
 

@@ -1,21 +1,17 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { FormEvent, useEffect, useState } from "react";
+import { Link, Navigate } from "react-router-dom";
 import { getAuthenticatedUserByToken, getStoredToken } from "../lib/auth";
 import { hasPermission, PERMISSION_CODES } from "../lib/permission-codes";
 import {
-  createAgendaAlert,
   createAgendaEvent,
   extractAgendaConflicts,
   getAgendaOptions,
-  listAgendaAlerts,
   listAgendaEvents,
-  removeAgendaAlert,
   removeAgendaEvent,
   toApiError,
   updateAgendaEvent,
 } from "../lib/agenda-api";
 import type { AgendaOptionsType } from "../types/event/agenda-options-type";
-import type { EventAlertType } from "../types/event/event-alert-type";
 import type { EventType } from "../types/event/event-type";
 
 interface AgendaEventFormState {
@@ -39,16 +35,6 @@ interface AgendaFilterState {
   sortDirection: "asc" | "desc";
 }
 
-interface AgendaAlertFormState {
-  eventId: string;
-  title: string;
-  message: string;
-  alertAt: string;
-  leadTimeMinutes: string;
-  channel: "email" | "system";
-  isRecurring: boolean;
-}
-
 const now = new Date();
 
 const EMPTY_EVENT_FORM: AgendaEventFormState = {
@@ -70,16 +56,6 @@ const DEFAULT_FILTERS: AgendaFilterState = {
   search: "",
   cityId: "",
   sortDirection: "asc",
-};
-
-const EMPTY_ALERT_FORM: AgendaAlertFormState = {
-  eventId: "",
-  title: "",
-  message: "",
-  alertAt: "",
-  leadTimeMinutes: "",
-  channel: "system",
-  isRecurring: false,
 };
 
 function toDateTimeLocal(value: string | null | undefined): string {
@@ -124,7 +100,6 @@ function formatEventType(type: EventType["type"]): string {
 export function AgendaPage() {
   const perPage = 10;
   const [events, setEvents] = useState<EventType[]>([]);
-  const [alerts, setAlerts] = useState<EventAlertType[]>([]);
   const [options, setOptions] = useState<AgendaOptionsType>({
     types: [],
     cities: [],
@@ -133,14 +108,12 @@ export function AgendaPage() {
   const [permissionCodes, setPermissionCodes] = useState<string[]>([]);
   const [filters, setFilters] = useState<AgendaFilterState>(DEFAULT_FILTERS);
   const [eventForm, setEventForm] = useState<AgendaEventFormState>(EMPTY_EVENT_FORM);
-  const [alertForm, setAlertForm] = useState<AgendaAlertFormState>(EMPTY_ALERT_FORM);
   const [editingEventId, setEditingEventId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [totalEvents, setTotalEvents] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmittingEvent, setIsSubmittingEvent] = useState(false);
-  const [isSubmittingAlert, setIsSubmittingAlert] = useState(false);
   const [hasForbiddenAccess, setHasForbiddenAccess] = useState(false);
   const [hasInvalidSession, setHasInvalidSession] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -149,11 +122,6 @@ export function AgendaPage() {
 
   const month = Number(filters.month);
   const year = Number(filters.year);
-
-  const sortedEventOptions = useMemo(
-    () => [...events].sort((left, right) => left.title.localeCompare(right.title)),
-    [events],
-  );
 
   useEffect(() => {
     async function loadData() {
@@ -180,7 +148,7 @@ export function AgendaPage() {
           return;
         }
 
-        const [eventsResponse, alertsResponse, optionsResponse] = await Promise.all([
+        const [eventsResponse, optionsResponse] = await Promise.all([
           listAgendaEvents(1, perPage, {
             month,
             year,
@@ -188,7 +156,6 @@ export function AgendaPage() {
             cityId: filters.cityId ? Number(filters.cityId) : null,
             sortDirection: filters.sortDirection,
           }),
-          listAgendaAlerts(1, 10, { month, year }),
           getAgendaOptions(),
         ]);
 
@@ -196,7 +163,6 @@ export function AgendaPage() {
         setCurrentPage(eventsResponse.meta.current_page);
         setLastPage(eventsResponse.meta.last_page);
         setTotalEvents(eventsResponse.meta.total);
-        setAlerts(alertsResponse.data);
         setOptions(optionsResponse);
       } catch (requestError) {
         setError(toApiError(requestError, "Nao foi possivel carregar a agenda."));
@@ -221,15 +187,6 @@ export function AgendaPage() {
     setCurrentPage(response.meta.current_page);
     setLastPage(response.meta.last_page);
     setTotalEvents(response.meta.total);
-  }
-
-  async function refreshAlerts(activeFilters = filters) {
-    const response = await listAgendaAlerts(1, 10, {
-      month: Number(activeFilters.month),
-      year: Number(activeFilters.year),
-    });
-
-    setAlerts(response.data);
   }
 
   function handleResetEventForm() {
@@ -265,7 +222,7 @@ export function AgendaPage() {
     setSuccess(null);
 
     try {
-      await Promise.all([refreshEvents(1, filters), refreshAlerts(filters)]);
+      await refreshEvents(1, filters);
     } catch (requestError) {
       setError(toApiError(requestError, "Nao foi possivel aplicar os filtros da agenda."));
     }
@@ -342,7 +299,6 @@ export function AgendaPage() {
       const targetPage = events.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
 
       await refreshEvents(targetPage);
-      await refreshAlerts();
 
       if (editingEventId === eventItem.id) {
         handleResetEventForm();
@@ -351,59 +307,6 @@ export function AgendaPage() {
       setSuccess("Evento removido com sucesso.");
     } catch (deleteError) {
       setError(toApiError(deleteError, "Nao foi possivel remover o evento."));
-    }
-  }
-
-  async function handleSubmitAlert(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setIsSubmittingAlert(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      if (!alertForm.title.trim() || !alertForm.alertAt) {
-        setError("Informe titulo e data/hora do alerta.");
-        return;
-      }
-
-      await createAgendaAlert({
-        event_id: alertForm.eventId ? Number(alertForm.eventId) : null,
-        title: alertForm.title.trim(),
-        message: alertForm.message.trim() || null,
-        alert_at: alertForm.alertAt,
-        lead_time_minutes: alertForm.leadTimeMinutes
-          ? Number(alertForm.leadTimeMinutes)
-          : null,
-        channel: alertForm.channel,
-        is_recurring: alertForm.isRecurring,
-      });
-
-      setAlertForm(EMPTY_ALERT_FORM);
-      await refreshAlerts();
-      setSuccess("Alerta criado com sucesso.");
-    } catch (alertError) {
-      setError(toApiError(alertError, "Nao foi possivel salvar o alerta."));
-    } finally {
-      setIsSubmittingAlert(false);
-    }
-  }
-
-  async function handleDeleteAlert(alert: EventAlertType) {
-    const shouldDelete = window.confirm(`Deseja remover o alerta "${alert.title}"?`);
-
-    if (!shouldDelete) {
-      return;
-    }
-
-    setError(null);
-    setSuccess(null);
-
-    try {
-      await removeAgendaAlert(alert.id);
-      await refreshAlerts();
-      setSuccess("Alerta removido com sucesso.");
-    } catch (alertError) {
-      setError(toApiError(alertError, "Nao foi possivel remover o alerta."));
     }
   }
 
@@ -824,152 +727,33 @@ export function AgendaPage() {
       </section>
 
       <section className="card-surface rounded-[32px] p-8">
-        <p className="text-sm font-semibold tracking-[0.22em] uppercase text-muted">Alertas</p>
+        <p className="text-sm font-semibold tracking-[0.22em] uppercase text-muted">
+          Lembretes
+        </p>
         <h2 className="section-title mt-4 text-4xl font-semibold text-foreground">
-          Lembretes da agenda
+          Alertas automáticos da agenda
         </h2>
+        <p className="mt-3 text-sm leading-7 text-muted">
+          Cada evento gera lembretes para todos os usuários com 10 dias, 1 dia e 1
+          hora de antecedência. O acompanhamento acontece em uma seção dedicada.
+        </p>
 
-        <form className="mt-8 grid gap-4" onSubmit={handleSubmitAlert}>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-[1.2fr_1fr_1fr_1fr]">
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-foreground">Título do alerta</span>
-              <input
-                value={alertForm.title}
-                onChange={(event) =>
-                  setAlertForm((current) => ({ ...current, title: event.target.value }))
-                }
-                required
-              />
-            </label>
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-foreground">Evento vinculado</span>
-              <select
-                value={alertForm.eventId}
-                onChange={(event) =>
-                  setAlertForm((current) => ({ ...current, eventId: event.target.value }))
-                }
-              >
-                <option value="">Sem vínculo</option>
-                {sortedEventOptions.map((eventItem) => (
-                  <option key={eventItem.id} value={eventItem.id}>
-                    {eventItem.title}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-foreground">Data/Hora do alerta</span>
-              <input
-                type="datetime-local"
-                value={alertForm.alertAt}
-                onChange={(event) =>
-                  setAlertForm((current) => ({ ...current, alertAt: event.target.value }))
-                }
-                required
-              />
-            </label>
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-foreground">Canal</span>
-              <select
-                value={alertForm.channel}
-                onChange={(event) =>
-                  setAlertForm((current) => ({
-                    ...current,
-                    channel: event.target.value as AgendaAlertFormState["channel"],
-                  }))
-                }
-              >
-                <option value="system">Notificação no sistema</option>
-                <option value="email">E-mail</option>
-              </select>
-            </label>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr]">
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-foreground">Antecedência (min)</span>
-              <input
-                type="number"
-                min="0"
-                value={alertForm.leadTimeMinutes}
-                onChange={(event) =>
-                  setAlertForm((current) => ({
-                    ...current,
-                    leadTimeMinutes: event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-foreground">Mensagem</span>
-              <input
-                value={alertForm.message}
-                onChange={(event) =>
-                  setAlertForm((current) => ({ ...current, message: event.target.value }))
-                }
-                placeholder="Mensagem personalizada"
-              />
-            </label>
-            <label className="mt-8 inline-flex items-center gap-2 text-sm text-foreground">
-              <input
-                type="checkbox"
-                checked={alertForm.isRecurring}
-                onChange={(event) =>
-                  setAlertForm((current) => ({ ...current, isRecurring: event.target.checked }))
-                }
-              />
-              Alerta periódico
-            </label>
-          </div>
-
-          <div className="mt-2 flex flex-wrap gap-3">
-            <button
-              type="submit"
-              disabled={isSubmittingAlert}
-              className="rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-strong disabled:cursor-not-allowed disabled:opacity-70"
+        <div className="mt-8 rounded-[28px] border border-border bg-background/70 p-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-2">
+              <p className="text-base font-semibold text-foreground">Seção de lembretes</p>
+              <p className="text-sm leading-7 text-muted">
+                Abra a página específica para acompanhar somente os lembretes do seu
+                usuário e marcar os avisos como lidos.
+              </p>
+            </div>
+            <Link
+              to="/painel/lembretes"
+              className="inline-flex rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-strong"
             >
-              {isSubmittingAlert ? "Salvando..." : "Criar alerta"}
-            </button>
+              Abrir lembretes
+            </Link>
           </div>
-        </form>
-
-        <div className="mt-6 grid gap-4">
-          {alerts.length > 0 ? (
-            alerts.map((alert) => (
-              <article
-                key={alert.id}
-                className="rounded-3xl border border-border bg-surface-strong p-5"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-base font-semibold text-foreground">{alert.title}</h3>
-                    <p className="mt-1 text-sm leading-7 text-muted">
-                      {alert.event ? `Evento: ${alert.event.title}` : "Sem evento vinculado"}
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary-strong">
-                    {alert.channel === "email" ? "E-mail" : "Sistema"}
-                  </span>
-                </div>
-
-                <p className="mt-3 text-sm leading-7 text-muted">
-                  <strong className="text-foreground">Disparo:</strong> {formatDateTime(alert.alert_at)}
-                </p>
-
-                <div className="mt-4 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteAlert(alert)}
-                    className="rounded-xl border border-danger/35 bg-danger/8 px-3 py-2 text-xs font-semibold text-danger transition hover:bg-danger/15"
-                  >
-                    Excluir
-                  </button>
-                </div>
-              </article>
-            ))
-          ) : (
-            <p className="text-sm leading-7 text-muted">Nenhum alerta cadastrado no período.</p>
-          )}
         </div>
       </section>
     </main>

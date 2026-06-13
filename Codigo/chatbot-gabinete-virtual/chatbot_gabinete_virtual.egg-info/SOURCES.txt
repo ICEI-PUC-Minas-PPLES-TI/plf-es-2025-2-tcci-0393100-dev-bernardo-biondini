@@ -11,7 +11,19 @@ app/services/__init__.py
 app/services/backend_api.py
 app/services/chatbot.py
 app/services/demo_backend_api.py
+app/services/realtime_alerts.py
 app/services/whatsapp.py
+app/services/demand_validation/__init__.py
+app/services/demand_validation/base.py
+app/services/demand_validation/exceptions.py
+app/services/demand_validation/hate_speech_validator.py
+app/services/demand_validation/language_validator.py
+app/services/demand_validation/profanity_validator.py
+app/services/demand_validation/pysentimiento_utils.py
+app/services/demand_validation/service.py
+app/services/demand_validation/similarity_validator.py
+app/services/demand_validation/spam_validator.py
+app/services/demand_validation/tone_validator.py
 chatbot_gabinete_virtual.egg-info/PKG-INFO
 chatbot_gabinete_virtual.egg-info/SOURCES.txt
 chatbot_gabinete_virtual.egg-info/dependency_links.txt
@@ -19,5 +31,7 @@ chatbot_gabinete_virtual.egg-info/requires.txt
 chatbot_gabinete_virtual.egg-info/top_level.txt
 tests/test_chatbot_service.py
 tests/test_config.py
+tests/test_demand_validation.py
 tests/test_demo_chat.py
 tests/test_health.py
+tests/test_internal_notifications.py

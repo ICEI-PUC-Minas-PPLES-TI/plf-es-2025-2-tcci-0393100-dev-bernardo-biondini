@@ -11,7 +11,11 @@ import {
   updateAmendment,
 } from "../lib/amendment-api";
 import type { AmendmentOptionsType } from "../types/amendment/amendment-options-type";
-import type { AmendmentStatusType, AmendmentType } from "../types/amendment/amendment-type";
+import type {
+  AmendmentApplicationAreaType,
+  AmendmentStatusType,
+  AmendmentType,
+} from "../types/amendment/amendment-type";
 
 interface AmendmentFormState {
   number: string;
@@ -25,6 +29,7 @@ interface AmendmentFilterState {
   search: string;
   status: "" | AmendmentStatusType;
   cityId: string;
+  applicationArea: "" | AmendmentApplicationAreaType;
   sortBy: "created_at" | "number" | "amount";
   sortDirection: "asc" | "desc";
 }
@@ -41,6 +46,7 @@ const DEFAULT_FILTERS: AmendmentFilterState = {
   search: "",
   status: "",
   cityId: "",
+  applicationArea: "",
   sortBy: "created_at",
   sortDirection: "desc",
 };
@@ -62,6 +68,19 @@ function formatStatusLabel(status: AmendmentStatusType): string {
   return labels[status];
 }
 
+function formatApplicationAreaLabel(area: AmendmentApplicationAreaType): string {
+  const labels: Record<AmendmentApplicationAreaType, string> = {
+    health: "Saúde",
+    education: "Educação",
+    infrastructure: "Infraestrutura",
+    social_assistance: "Assistência social",
+    public_security: "Segurança pública",
+    sport: "Esporte e lazer",
+  };
+
+  return labels[area];
+}
+
 function formatCityLabel(amendment: AmendmentType): string {
   if (amendment.city) {
     return `${amendment.city.name} - ${amendment.city.region}`;
@@ -75,6 +94,7 @@ export function AmendmentsPage() {
   const [amendments, setAmendments] = useState<AmendmentType[]>([]);
   const [options, setOptions] = useState<AmendmentOptionsType>({
     statuses: [],
+    application_areas: [],
     cities: [],
   });
   const [permissionCodes, setPermissionCodes] = useState<string[]>([]);
@@ -146,6 +166,7 @@ export function AmendmentsPage() {
       ...activeFilters,
       status: activeFilters.status || null,
       cityId: activeFilters.cityId ? Number(activeFilters.cityId) : null,
+      applicationArea: activeFilters.applicationArea || null,
     });
 
     setAmendments(response.data);
@@ -194,10 +215,9 @@ export function AmendmentsPage() {
 
     try {
       const number = form.number.trim();
-      const applicationArea = form.applicationArea.trim();
       const amount = Number(form.amount.replace(",", "."));
 
-      if (!number || !applicationArea) {
+      if (!number || !form.applicationArea) {
         setError("Informe numero e area de aplicacao.");
         return;
       }
@@ -217,7 +237,7 @@ export function AmendmentsPage() {
         amount,
         status: form.status,
         city_id: Number(form.cityId),
-        application_area: applicationArea,
+        application_area: form.applicationArea as AmendmentApplicationAreaType,
       };
 
       if (editingAmendmentId) {
@@ -390,7 +410,7 @@ export function AmendmentsPage() {
               <span className="text-sm font-medium text-foreground">
                 Area de aplicacao
               </span>
-              <input
+              <select
                 value={form.applicationArea}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -398,9 +418,15 @@ export function AmendmentsPage() {
                     applicationArea: event.target.value,
                   }))
                 }
-                placeholder="Ex.: Reforma da unidade de saude"
                 required
-              />
+              >
+                <option value="">Selecione uma area</option>
+                {options.application_areas.map((area) => (
+                  <option key={area.value} value={area.value}>
+                    {area.label}
+                  </option>
+                ))}
+              </select>
             </label>
 
             {error ? (
@@ -473,7 +499,7 @@ export function AmendmentsPage() {
               Listagem de emendas cadastradas
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
-              Use os filtros para localizar emendas por numero, status ou cidade.
+              Use os filtros para localizar emendas por numero, status, cidade ou area.
             </p>
           </div>
         </div>
@@ -482,7 +508,7 @@ export function AmendmentsPage() {
           className="mt-8 grid gap-4 rounded-[28px] border border-border bg-background/70 p-5"
           onSubmit={handleApplyFilters}
         >
-          <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr_1fr_0.9fr_0.9fr]">
+          <div className="grid gap-4 xl:grid-cols-[1.2fr_1fr_1fr_1fr_0.9fr_0.9fr]">
             <label className="block space-y-2">
               <span className="text-sm font-medium text-foreground">Buscar</span>
               <input
@@ -490,7 +516,7 @@ export function AmendmentsPage() {
                 onChange={(event) =>
                   setFilters((current) => ({ ...current, search: event.target.value }))
                 }
-                placeholder="Numero ou area de aplicacao"
+                placeholder="Numero da emenda"
               />
             </label>
 
@@ -533,6 +559,26 @@ export function AmendmentsPage() {
                 {options.cities.map((city) => (
                   <option key={city.id} value={city.id}>
                     {city.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-foreground">Area</span>
+              <select
+                value={filters.applicationArea}
+                onChange={(event) =>
+                  setFilters((current) => ({
+                    ...current,
+                    applicationArea: event.target.value as AmendmentFilterState["applicationArea"],
+                  }))
+                }
+              >
+                <option value="">Todas as areas</option>
+                {options.application_areas.map((area) => (
+                  <option key={area.value} value={area.value}>
+                    {area.label}
                   </option>
                 ))}
               </select>
@@ -606,7 +652,7 @@ export function AmendmentsPage() {
                       {amendment.number}
                     </h3>
                     <p className="mt-1 text-sm leading-7 text-muted">
-                      {amendment.application_area}
+                      {formatApplicationAreaLabel(amendment.application_area)}
                     </p>
                   </div>
                   <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary-strong">

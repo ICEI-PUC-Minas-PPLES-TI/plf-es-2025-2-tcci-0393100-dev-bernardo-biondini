@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { getAuthenticatedUserByToken, getStoredToken } from "../lib/auth";
 import {
   createDemand,
+  downloadDemandOficio,
   getDemandOptions,
   listDemandHistories,
   listDemands,
@@ -28,6 +29,7 @@ interface DemandFormState {
 
 interface DemandFilterState {
   search: string;
+  status: "" | ManagedDemandType["status"];
   responsibleUserId: string;
   sortBy: "created_at" | "title";
   sortDirection: "asc" | "desc";
@@ -50,6 +52,7 @@ const EMPTY_FORM: DemandFormState = {
 const HISTORY_PER_PAGE = 5;
 const DEFAULT_FILTERS: DemandFilterState = {
   search: "",
+  status: "",
   responsibleUserId: "",
   sortBy: "created_at",
   sortDirection: "desc",
@@ -97,6 +100,7 @@ function formatFieldLabel(field: string): string {
     title: "Titulo",
     description: "Descricao",
     service_area: "Area atendida",
+    oficio_original_name: "Oficio",
     status: "Status",
     priority: "Prioridade",
     responsible_user_id: "Responsavel",
@@ -190,6 +194,8 @@ export function DemandsPage() {
   const [filters, setFilters] = useState<DemandFilterState>(DEFAULT_FILTERS);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [form, setForm] = useState<DemandFormState>(EMPTY_FORM);
+  const [oficioFile, setOficioFile] = useState<File | null>(null);
+  const [removeOficio, setRemoveOficio] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshingList, setIsRefreshingList] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -198,6 +204,8 @@ export function DemandsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>("create");
   const [activeDemand, setActiveDemand] = useState<ManagedDemandType | null>(null);
+  const [discardReasonDemand, setDiscardReasonDemand] =
+    useState<ManagedDemandType | null>(null);
   const [demandHistories, setDemandHistories] = useState<ManagedDemandHistoryType[]>(
     [],
   );
@@ -276,6 +284,7 @@ export function DemandsPage() {
   function toDemandListFilters(activeFilters: DemandFilterState) {
     return {
       search: activeFilters.search,
+      status: activeFilters.status || null,
       responsibleUserId: activeFilters.responsibleUserId
         ? Number(activeFilters.responsibleUserId)
         : null,
@@ -393,13 +402,21 @@ export function DemandsPage() {
     setModalMode("create");
     setActiveDemand(null);
     setForm(EMPTY_FORM);
+    setOficioFile(null);
+    setRemoveOficio(false);
     resetHistoryState();
+  }
+
+  function closeDiscardReasonModal() {
+    setDiscardReasonDemand(null);
   }
 
   function openCreateModal() {
     setModalMode("create");
     setActiveDemand(null);
     setForm(EMPTY_FORM);
+    setOficioFile(null);
+    setRemoveOficio(false);
     resetHistoryState();
     setError(null);
     setSuccess(null);
@@ -421,6 +438,8 @@ export function DemandsPage() {
       cityId: String(demand.city_id),
       institutionId: String(demand.institution_id),
     });
+    setOficioFile(null);
+    setRemoveOficio(false);
     setHistoryCurrentPage(1);
     setDemandHistories([]);
     setHistoryLastPage(1);
@@ -430,6 +449,24 @@ export function DemandsPage() {
     setSuccess(null);
     setIsModalOpen(true);
     void loadDemandHistory(demand.id, 1);
+  }
+
+  function openDiscardReasonModal(demand: ManagedDemandType) {
+    setDiscardReasonDemand(demand);
+  }
+
+  async function handleDownloadOficio(demand: ManagedDemandType) {
+    if (!demand.oficio_original_name) {
+      return;
+    }
+
+    try {
+      await downloadDemandOficio(demand.id, demand.oficio_original_name);
+    } catch (downloadError) {
+      setError(
+        toApiError(downloadError, "Nao foi possivel baixar o oficio da demanda."),
+      );
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -462,23 +499,36 @@ export function DemandsPage() {
         return;
       }
 
-      const payload = {
-        title,
-        description,
-        service_area: form.serviceArea,
-        status: form.status,
-        priority: form.priority,
-        responsible_user_id: form.responsibleUserId
-          ? Number(form.responsibleUserId)
-          : null,
-        city_id: Number(form.cityId),
-        institution_id: Number(form.institutionId),
-      };
+      const payload = new FormData();
+      payload.set("title", title);
+      payload.set("description", description);
+      payload.set("service_area", form.serviceArea);
+      payload.set("status", form.status);
+      payload.set("priority", form.priority);
+      payload.set("city_id", String(Number(form.cityId)));
+      payload.set("institution_id", String(Number(form.institutionId)));
+
+      if (form.responsibleUserId) {
+        payload.set(
+          "responsible_user_id",
+          String(Number(form.responsibleUserId)),
+        );
+      }
+
+      if (oficioFile) {
+        payload.set("oficio", oficioFile);
+      }
+
+      if (modalMode === "edit" && removeOficio) {
+        payload.set("remove_oficio", "1");
+      }
 
       if (modalMode === "edit" && activeDemand) {
         const updatedDemand = await updateDemand(activeDemand.id, payload);
         await refreshDemands(currentPage);
         setActiveDemand(updatedDemand);
+        setOficioFile(null);
+        setRemoveOficio(false);
         await loadDemandHistory(updatedDemand.id, 1);
         setSuccess("Demanda atualizada com sucesso.");
       } else {
@@ -581,7 +631,7 @@ export function DemandsPage() {
             className="mt-8 grid gap-4 rounded-[28px] border border-border bg-background/70 p-5"
             onSubmit={handleApplyFilters}
           >
-            <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr_0.9fr_0.9fr]">
+            <div className="grid gap-4 xl:grid-cols-[1.35fr_0.95fr_0.9fr_0.9fr_0.9fr]">
               <label className="block space-y-2">
                 <span className="text-sm font-medium text-foreground">
                   Buscar por titulo
@@ -620,6 +670,26 @@ export function DemandsPage() {
                       {user.name}
                     </option>
                   ))}
+                </select>
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-sm font-medium text-foreground">Status</span>
+                <select
+                  value={filters.status}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      status: event.target.value as DemandFilterState["status"],
+                    }))
+                  }
+                >
+                  <option value="">Todos os status</option>
+                  <option value="open">Aberta</option>
+                  <option value="under_review">Em analise</option>
+                  <option value="in_progress">Em andamento</option>
+                  <option value="completed">Concluida</option>
+                  <option value="discarded">Descartada</option>
                 </select>
               </label>
 
@@ -724,11 +794,32 @@ export function DemandsPage() {
                         <span>
                           Area atendida: {formatServiceAreaLabel(demand.service_area)}
                         </span>
+                        <span>
+                          Oficio: {demand.oficio_original_name ?? "Nao anexado"}
+                        </span>
                         <span>Abertura: {formatDateTime(demand.created_at)}</span>
                       </div>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
+                      {demand.oficio_original_name ? (
+                        <button
+                          type="button"
+                          onClick={() => void handleDownloadOficio(demand)}
+                          className="rounded-xl border border-sky-300/60 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-900 transition hover:bg-sky-100"
+                        >
+                          Baixar oficio
+                        </button>
+                      ) : null}
+                      {demand.status === "discarded" && demand.discard_message ? (
+                        <button
+                          type="button"
+                          onClick={() => openDiscardReasonModal(demand)}
+                          className="rounded-xl border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 transition hover:bg-amber-100"
+                        >
+                          Ver motivo
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => openEditModal(demand)}
@@ -977,6 +1068,82 @@ export function DemandsPage() {
                     </label>
                   </div>
 
+                  <div className="grid gap-3 rounded-2xl border border-border bg-background/60 p-4">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Oficio vinculado</p>
+                        <p className="text-xs leading-6 text-muted">
+                          Aceita PDF, imagem, DOC/DOCX e planilhas.
+                        </p>
+                      </div>
+
+                      {activeDemand?.oficio_original_name && !removeOficio ? (
+                        <button
+                          type="button"
+                          onClick={() => void handleDownloadOficio(activeDemand)}
+                          className="rounded-xl border border-sky-300/60 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-900 transition hover:bg-sky-100"
+                        >
+                          Baixar oficio atual
+                        </button>
+                      ) : null}
+                    </div>
+
+                    {activeDemand?.oficio_original_name ? (
+                      <p className="text-sm leading-6 text-muted">
+                        Atual: <strong className="text-foreground">{activeDemand.oficio_original_name}</strong>
+                      </p>
+                    ) : (
+                      <p className="text-sm leading-6 text-muted">
+                        Nenhum oficio anexado a esta demanda.
+                      </p>
+                    )}
+
+                    <label className="block space-y-2">
+                      <span className="text-sm font-medium text-foreground">
+                        {activeDemand?.oficio_original_name
+                          ? "Substituir oficio"
+                          : "Anexar oficio"}
+                      </span>
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.ods,.csv"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0] ?? null;
+                          setOficioFile(file);
+
+                          if (file) {
+                            setRemoveOficio(false);
+                          }
+                        }}
+                      />
+                    </label>
+
+                    {oficioFile ? (
+                      <p className="text-sm leading-6 text-muted">
+                        Novo arquivo selecionado:{" "}
+                        <strong className="text-foreground">{oficioFile.name}</strong>
+                      </p>
+                    ) : null}
+
+                    {modalMode === "edit" && activeDemand?.oficio_original_name ? (
+                      <label className="flex items-center gap-3 text-sm text-foreground">
+                        <input
+                          type="checkbox"
+                          checked={removeOficio}
+                          onChange={(event) => {
+                            const shouldRemove = event.target.checked;
+                            setRemoveOficio(shouldRemove);
+
+                            if (shouldRemove) {
+                              setOficioFile(null);
+                            }
+                          }}
+                        />
+                        Remover oficio atual
+                      </label>
+                    ) : null}
+                  </div>
+
                   {error ? (
                     <div className="rounded-2xl border border-danger/20 bg-danger/8 px-4 py-3 text-sm text-danger">
                       {error}
@@ -1125,6 +1292,51 @@ export function DemandsPage() {
                   </>
                 ) : null}
               </aside>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {discardReasonDemand ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-foreground/40 px-4 py-6">
+          <div className="w-full max-w-2xl rounded-[28px] border border-border bg-surface shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-5">
+              <div>
+                <p className="text-sm font-semibold tracking-[0.22em] uppercase text-muted">
+                  Demanda descartada
+                </p>
+                <h3 className="mt-2 text-2xl font-semibold text-foreground">
+                  {discardReasonDemand.title}
+                </h3>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeDiscardReasonModal}
+                className="rounded-2xl border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-background-strong"
+              >
+                Fechar
+              </button>
+            </div>
+
+            <div className="grid gap-4 px-6 py-6">
+              <div className="rounded-3xl border border-amber-300/55 bg-amber-50 px-5 py-4">
+                <p className="text-sm font-semibold text-amber-900">
+                  Motivo do descarte
+                </p>
+                <p className="mt-3 text-sm leading-7 text-amber-950">
+                  {discardReasonDemand.discard_message}
+                </p>
+              </div>
+
+              <div className="grid gap-2 text-xs leading-6 text-muted sm:grid-cols-2">
+                <span>Status: {formatStatusLabel(discardReasonDemand.status)}</span>
+                <span>Prioridade: {formatPriorityLabel(discardReasonDemand.priority)}</span>
+                <span>Cidade: {discardReasonDemand.city?.name ?? "Nao informada"}</span>
+                <span>
+                  Abertura: {formatDateTime(discardReasonDemand.created_at)}
+                </span>
+              </div>
             </div>
           </div>
         </div>
