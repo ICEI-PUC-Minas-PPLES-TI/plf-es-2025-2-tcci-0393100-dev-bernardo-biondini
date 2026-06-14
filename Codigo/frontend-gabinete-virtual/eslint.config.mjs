@@ -25,12 +25,15 @@ export default defineConfig([
         sourceType: "module",
       },
       globals: {
+        React: "readonly",
         window: "readonly",
         document: "readonly",
         console: "readonly",
         fetch: "readonly",
         localStorage: "readonly",
         URL: "readonly",
+        WebSocket: "readonly",
+        process: "readonly",
       },
     },
     plugins: {

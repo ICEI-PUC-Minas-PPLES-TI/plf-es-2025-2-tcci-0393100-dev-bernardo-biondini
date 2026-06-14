@@ -1,4 +1,4 @@
-import type { AuthUserType } from "@/app/types/auth/auth-user-type";
+import type { AuthUserType } from "./auth-user-type";
 
 export interface AuthApiResponseType {
   message: string;

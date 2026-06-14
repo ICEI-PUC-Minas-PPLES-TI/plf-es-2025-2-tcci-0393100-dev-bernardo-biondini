@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "vite",
+    "dev:polling": "CHOKIDAR_USEPOLLING=1 vite",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint ."

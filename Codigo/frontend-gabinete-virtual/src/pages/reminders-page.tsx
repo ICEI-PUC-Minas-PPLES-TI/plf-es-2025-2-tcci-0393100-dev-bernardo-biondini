@@ -1,6 +1,7 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { getAuthenticatedUserByToken, getStoredToken } from "../lib/auth";
+import { Alert, Badge, Button, Card, Input, Select } from "../components/core";
 import {
   listAgendaAlerts,
   markAgendaAlertAsRead,
@@ -48,6 +49,20 @@ function formatReminderStatus(reminder: EventAlertType): string {
   return "Agendado";
 }
 
+function getReminderTone(
+  reminder: EventAlertType,
+): "neutral" | "primary" | "success" {
+  if (reminder.read_at) {
+    return "success";
+  }
+
+  if (reminder.sent_at) {
+    return "primary";
+  }
+
+  return "neutral";
+}
+
 export function RemindersPage() {
   const [filters, setFilters] = useState<ReminderFilterState>(DEFAULT_FILTERS);
   const [reminders, setReminders] = useState<EventAlertType[]>([]);
@@ -57,7 +72,7 @@ export function RemindersPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  async function loadReminders(activeFilters = filters) {
+  const loadReminders = useCallback(async (activeFilters: ReminderFilterState) => {
     const response = await listAgendaAlerts(1, 30, {
       month: Number(activeFilters.month),
       year: Number(activeFilters.year),
@@ -65,7 +80,7 @@ export function RemindersPage() {
     });
 
     setReminders(response.data);
-  }
+  }, []);
 
   useEffect(() => {
     async function loadInitialState() {
@@ -94,7 +109,7 @@ export function RemindersPage() {
     }
 
     void loadInitialState();
-  }, []);
+  }, [loadReminders]);
 
   async function handleApplyFilters(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -132,9 +147,9 @@ export function RemindersPage() {
   if (isLoading) {
     return (
       <main className="grid gap-6">
-        <section className="card-surface rounded-[32px] p-8">
+        <Card padding="lg">
           <p className="text-sm leading-7 text-muted">Carregando lembretes...</p>
-        </section>
+        </Card>
       </main>
     );
   }
@@ -145,7 +160,7 @@ export function RemindersPage() {
 
   return (
     <main className="grid gap-6">
-      <section className="card-surface rounded-[32px] p-8">
+      <Card padding="lg">
         <p className="text-sm font-semibold tracking-[0.22em] uppercase text-muted">
           Lembretes
         </p>
@@ -162,75 +177,77 @@ export function RemindersPage() {
           onSubmit={handleApplyFilters}
         >
           <div className="grid gap-4 md:grid-cols-3">
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-foreground">Mês</span>
-              <input
-                type="number"
-                min="1"
-                max="12"
-                value={filters.month}
-                onChange={(event) =>
-                  setFilters((current) => ({ ...current, month: event.target.value }))
-                }
-              />
-            </label>
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-foreground">Ano</span>
-              <input
-                type="number"
-                min="2020"
-                value={filters.year}
-                onChange={(event) =>
-                  setFilters((current) => ({ ...current, year: event.target.value }))
-                }
-              />
-            </label>
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-foreground">Status</span>
-              <select
-                value={filters.status}
-                onChange={(event) =>
-                  setFilters((current) => ({
-                    ...current,
-                    status: event.target.value as ReminderFilterState["status"],
-                  }))
-                }
-              >
-                <option value="all">Todos</option>
-                <option value="pending">Agendados</option>
-                <option value="unread">Enviados e não lidos</option>
-              </select>
-            </label>
+            <Input
+              type="number"
+              min="1"
+              max="12"
+              label="Mes"
+              value={filters.month}
+              onChange={(event) =>
+                setFilters((current) => ({ ...current, month: event.target.value }))
+              }
+            />
+            <Input
+              type="number"
+              min="2020"
+              label="Ano"
+              value={filters.year}
+              onChange={(event) =>
+                setFilters((current) => ({ ...current, year: event.target.value }))
+              }
+            />
+            <Select
+              label="Status"
+              value={filters.status}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  status: event.target.value as ReminderFilterState["status"],
+                }))
+              }
+              options={[
+                { value: "all", label: "Todos" },
+                { value: "pending", label: "Agendados" },
+                { value: "unread", label: "Enviados e nao lidos" },
+              ]}
+            />
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <button
-              type="submit"
-              className="rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-strong"
+            <Button type="submit">Aplicar filtros</Button>
+            <Button
+              type="button"
+              tone="neutral"
+              variant="outline"
+              onClick={() => {
+                setFilters(DEFAULT_FILTERS);
+                void loadReminders(DEFAULT_FILTERS);
+              }}
             >
-              Aplicar filtros
-            </button>
+              Limpar
+            </Button>
           </div>
         </form>
 
         {error ? (
-          <div className="mt-6 rounded-2xl border border-danger/20 bg-danger/8 px-4 py-3 text-sm text-danger">
+          <Alert tone="danger" className="mt-6">
             {error}
-          </div>
+          </Alert>
         ) : null}
 
         {success ? (
-          <div className="mt-6 rounded-2xl border border-primary/25 bg-primary-soft px-4 py-3 text-sm text-primary-strong">
+          <Alert tone="success" className="mt-6">
             {success}
-          </div>
+          </Alert>
         ) : null}
 
         <div className="mt-6 grid gap-4">
           {reminders.length > 0 ? (
             reminders.map((reminder) => (
-              <article
+              <Card
                 key={reminder.id}
-                className="rounded-3xl border border-border bg-surface-strong p-5"
+                className="rounded-3xl bg-surface-strong"
+                padding="sm"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -243,9 +260,9 @@ export function RemindersPage() {
                         : "Lembrete sem evento vinculado"}
                     </p>
                   </div>
-                  <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary-strong">
+                  <Badge tone={getReminderTone(reminder)}>
                     {formatReminderStatus(reminder)}
-                  </span>
+                  </Badge>
                 </div>
 
                 <div className="mt-4 grid gap-2 text-sm leading-7 text-muted">
@@ -262,23 +279,26 @@ export function RemindersPage() {
 
                 {!reminder.read_at && reminder.sent_at ? (
                   <div className="mt-4 flex gap-2">
-                    <button
+                    <Button
                       type="button"
                       onClick={() => void handleMarkAsRead(reminder.id)}
-                      disabled={isUpdating === reminder.id}
-                      className="rounded-xl border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground transition hover:bg-background-strong disabled:cursor-not-allowed disabled:opacity-70"
+                      tone="neutral"
+                      variant="outline"
+                      size="sm"
+                      isLoading={isUpdating === reminder.id}
+                      loadingText="Salvando..."
                     >
-                      {isUpdating === reminder.id ? "Salvando..." : "Marcar como lido"}
-                    </button>
+                      Marcar como lido
+                    </Button>
                   </div>
                 ) : null}
-              </article>
+              </Card>
             ))
           ) : (
             <p className="text-sm leading-7 text-muted">Nenhum lembrete encontrado.</p>
           )}
         </div>
-      </section>
+      </Card>
     </main>
   );
 }

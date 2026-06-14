@@ -35,8 +35,8 @@ interface AgendaAlertMutationPayload {
 interface AgendaEventListFilters {
   search?: string;
   cityId?: number | null;
-  month?: number;
-  year?: number;
+  startsFrom?: string | null;
+  endsTo?: string | null;
   sortBy?: "starts_at" | "title" | "created_at";
   sortDirection?: "asc" | "desc";
 }
@@ -111,16 +111,12 @@ export async function listAgendaEvents(
     params.set("city_id", String(filters.cityId));
   }
 
-  if (filters.month) {
-    params.set("month", String(filters.month));
+  if (filters.startsFrom) {
+    params.set("starts_from", filters.startsFrom);
   }
 
-  if (filters.year) {
-    params.set("year", String(filters.year));
-  }
-
-  if (filters.status && filters.status !== "all") {
-    params.set("status", filters.status);
+  if (filters.endsTo) {
+    params.set("ends_to", filters.endsTo);
   }
 
   const response = await authenticatedRequest<{

@@ -1,8 +1,27 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
+import {
+  DashboardGeographicFilters,
+  type DashboardFiltersState,
+} from "../components/domains/dashboard/dashboard-geographic-filters";
+import {
+  DashboardOverviewHero,
+} from "../components/domains/dashboard/dashboard-overview-hero";
+import {
+  DashboardQuickActions,
+  type DashboardQuickAction,
+} from "../components/domains/dashboard/dashboard-quick-actions";
+import {
+  DashboardRecentActivities,
+} from "../components/domains/dashboard/dashboard-recent-activities";
+import {
+  DashboardSummaryCards,
+  type DashboardSummaryCardItem,
+} from "../components/domains/dashboard/dashboard-summary-cards";
 import { DonutChart } from "../components/dashboard/donut-chart";
 import { HorizontalBarChart } from "../components/dashboard/horizontal-bar-chart";
 import { LogoutButton } from "../components/app/logout-button";
+import { Alert, Button, Card } from "../components/core";
 import {
   clearStoredToken,
   getAuthenticatedUserByToken,
@@ -17,26 +36,6 @@ import type {
   DashboardChartDatumType,
   DashboardOverviewType,
 } from "../types/dashboard/dashboard-overview-type";
-
-interface QuickAction {
-  label: string;
-  description: string;
-  to: string;
-  permission: string;
-}
-
-interface MetricCard {
-  label: string;
-  value: string;
-  detail: string;
-  accentClassName: string;
-  badge: string;
-}
-
-interface DashboardFiltersState {
-  region: string;
-  cityId: string;
-}
 
 const EMPTY_FILTERS: DashboardFiltersState = {
   region: "",
@@ -127,12 +126,12 @@ export function DashboardPage() {
   const [hasInvalidSession, setHasInvalidSession] = useState(!getStoredToken());
   const [error, setError] = useState<string | null>(null);
 
-  const quickActions = useMemo<QuickAction[]>(() => {
+  const quickActions = useMemo<DashboardQuickAction[]>(() => {
     if (!user) {
       return [];
     }
 
-    const actions: QuickAction[] = [
+    const actions: DashboardQuickAction[] = [
       {
         label: "Abrir nova demanda",
         description: "Registrar solicitações e classificar rapidamente a área atendida.",
@@ -190,7 +189,7 @@ export function DashboardPage() {
     );
   }, [dashboard, filters.region]);
 
-  const summaryCards = useMemo<MetricCard[]>(() => {
+  const summaryCards = useMemo<DashboardSummaryCardItem[]>(() => {
     if (!dashboard) {
       return [];
     }
@@ -366,15 +365,14 @@ export function DashboardPage() {
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">{error}</p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <button
+            <Button
               type="button"
               onClick={() => {
                 void loadDashboard(filters, "initial");
               }}
-              className="rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-strong"
             >
               Tentar novamente
-            </button>
+            </Button>
             <LogoutButton />
           </div>
         </section>
@@ -382,172 +380,37 @@ export function DashboardPage() {
     );
   }
 
+  if (!dashboard) {
+    return null;
+  }
+
   return (
     <main className="grid gap-6">
       {error ? (
-        <section className="rounded-[28px] border border-danger/20 bg-danger/8 px-5 py-4 text-sm text-danger">
+        <Alert tone="danger">
           {error}
-        </section>
+        </Alert>
       ) : null}
 
       <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-        <div className="card-surface rounded-[32px] p-8">
-          <p className="text-sm font-semibold tracking-[0.22em] uppercase text-muted">
-            Dashboard analítico
-          </p>
-          <h2 className="section-title mt-4 text-4xl font-semibold text-foreground">
-            Informacoes consolidadas para antecipar prioridades por cidade e regiao.
-          </h2>
-          <p className="mt-4 max-w-3xl text-base leading-8 text-muted">
-            O painel agora concentra indicadores geográficos, distribuição de
-            demandas por área atendida e um recorte rápido da agenda e das emendas
-            para apoiar visitas, reuniões e prestação de contas.
-          </p>
+        <DashboardOverviewHero
+          dashboard={dashboard}
+          user={user}
+          formatDateTime={formatDateTime}
+        />
 
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            <div className="rounded-[28px] border border-border bg-background/65 p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Recorte atual
-              </p>
-              <p className="mt-3 text-3xl font-semibold text-foreground">
-                {dashboard.scope.label}
-              </p>
-              <p className="mt-2 text-sm leading-7 text-muted">
-                {dashboard.scope.description}
-              </p>
-            </div>
-
-            <div className="rounded-[28px] border border-border bg-background/65 p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Perfil atual
-              </p>
-              <p className="mt-3 text-2xl font-semibold text-foreground">
-                {user.access_profile?.name ?? "Sem perfil"}
-              </p>
-              <p className="mt-2 text-sm leading-7 text-muted">
-                {user.access_profile?.description ??
-                  "Nenhuma descricao disponivel para este perfil."}
-              </p>
-              <p className="mt-4 text-xs tracking-[0.18em] uppercase text-muted">
-                Atualizado em {formatDateTime(dashboard.generated_at)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <section className="card-surface rounded-[32px] p-8">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold tracking-[0.22em] uppercase text-muted">
-                Filtros geograficos
-              </p>
-              <h3 className="section-title mt-4 text-3xl font-semibold text-foreground">
-                Monte o recorte da visita
-              </h3>
-              <p className="mt-3 text-sm leading-7 text-muted">
-                Filtre por região e cidade para ver demandas, emendas, agenda e
-                instituições associadas ao território analisado.
-              </p>
-            </div>
-            <LogoutButton />
-          </div>
-
-          <form className="mt-8 grid gap-4" onSubmit={handleApplyFilters}>
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-foreground">Regiao</span>
-              <select
-                value={filters.region}
-                onChange={(event) =>
-                  setFilters((current) => {
-                    const nextRegion = event.target.value;
-                    const selectedCityStillValid = dashboard.options.cities.some(
-                      (city) =>
-                        String(city.id) === current.cityId &&
-                        (nextRegion === "" || city.region === nextRegion),
-                    );
-
-                    return {
-                      region: nextRegion,
-                      cityId: selectedCityStillValid ? current.cityId : "",
-                    };
-                  })
-                }
-              >
-                <option value="">Todas as regioes</option>
-                {dashboard.options.regions.map((region) => (
-                  <option key={region} value={region}>
-                    {region}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-foreground">Cidade</span>
-              <select
-                value={filters.cityId}
-                onChange={(event) =>
-                  setFilters((current) => ({
-                    ...current,
-                    cityId: event.target.value,
-                  }))
-                }
-              >
-                <option value="">Todas as cidades</option>
-                {filteredCities.map((city) => (
-                  <option key={city.id} value={city.id}>
-                    {city.name} ({city.region})
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <div className="mt-2 flex flex-wrap gap-3">
-              <button
-                type="submit"
-                disabled={isRefreshing}
-                className="rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-strong disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isRefreshing ? "Atualizando..." : "Aplicar recorte"}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  void handleClearFilters();
-                }}
-                disabled={isRefreshing}
-                className="rounded-2xl border border-border bg-surface-strong px-5 py-3 text-sm font-semibold text-foreground transition hover:bg-background-strong disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                Limpar
-              </button>
-            </div>
-          </form>
-        </section>
+        <DashboardGeographicFilters
+          dashboard={dashboard}
+          filters={filters}
+          filteredCities={filteredCities}
+          isRefreshing={isRefreshing}
+          onChangeFilters={setFilters}
+          onSubmit={handleApplyFilters}
+          onClear={handleClearFilters}
+        />
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {summaryCards.map((card) => (
-          <article
-            key={card.label}
-            className="card-surface rounded-[28px] px-6 py-5"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold text-muted">{card.label}</p>
-                <p className="mt-3 text-3xl font-semibold text-foreground">
-                  {card.value}
-                </p>
-              </div>
-              <span
-                className={`inline-flex h-12 min-w-12 items-center justify-center rounded-2xl px-3 text-xs font-bold tracking-[0.18em] uppercase ${card.accentClassName}`}
-              >
-                {card.badge}
-              </span>
-            </div>
-            <p className="mt-4 text-sm leading-7 text-muted">{card.detail}</p>
-          </article>
-        ))}
-      </section>
+      <DashboardSummaryCards cards={summaryCards} />
 
       <section className="grid gap-6 xl:grid-cols-2">
         <article className="card-surface rounded-[32px] p-8">
@@ -620,87 +483,18 @@ export function DashboardPage() {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <article className="card-surface rounded-[32px] p-8">
-          <p className="text-sm font-semibold tracking-[0.22em] uppercase text-muted">
-            Atividades recentes
-          </p>
-          <h3 className="section-title mt-4 text-3xl font-semibold text-foreground">
-            Ultimas movimentacoes relevantes do gabinete
-          </h3>
-          <div className="mt-8 grid gap-4">
-            {dashboard.recent_activities.length > 0 ? (
-              dashboard.recent_activities.map((activity) => (
-                <Link
-                  key={activity.id}
-                  to={activity.link}
-                  className="rounded-[28px] border border-border bg-surface-strong px-5 py-4 transition hover:bg-background-strong"
-                >
-                  <div className="flex items-start gap-4">
-                    <span
-                      className={`inline-flex h-11 min-w-11 items-center justify-center rounded-2xl text-xs font-bold tracking-[0.18em] uppercase ${activityAccentClassName(activity.type)}`}
-                    >
-                      {activityBadge(activity.type)}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-foreground">
-                          {activity.title}
-                        </p>
-                        <span className="text-xs text-muted">
-                          {formatRelativeTime(activity.occurred_at)}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-sm leading-7 text-muted">
-                        {activity.description}
-                      </p>
-                      <p className="mt-2 text-xs text-muted">
-                        {formatDateTime(activity.occurred_at)}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              ))
-            ) : (
-              <p className="text-sm leading-7 text-muted">
-                Nenhuma atividade recente encontrada para o recorte selecionado.
-              </p>
-            )}
-          </div>
-        </article>
+        <DashboardRecentActivities
+          activities={dashboard.recent_activities}
+          activityAccentClassName={activityAccentClassName}
+          activityBadge={activityBadge}
+          formatRelativeTime={formatRelativeTime}
+          formatDateTime={formatDateTime}
+        />
 
         <div className="grid gap-6">
-          <section className="card-surface rounded-[32px] p-8">
-            <p className="text-sm font-semibold tracking-[0.22em] uppercase text-muted">
-              Acesso rapido
-            </p>
-            <h3 className="section-title mt-4 text-3xl font-semibold text-foreground">
-              Acoes mais usadas pela equipe
-            </h3>
-            <div className="mt-8 grid gap-3">
-              {quickActions.length > 0 ? (
-                quickActions.map((action) => (
-                  <Link
-                    key={action.label}
-                    to={action.to}
-                    className="rounded-[24px] border border-border bg-surface-strong px-5 py-4 transition hover:bg-background-strong"
-                  >
-                    <p className="text-sm font-semibold text-foreground">
-                      {action.label}
-                    </p>
-                    <p className="mt-1 text-sm leading-6 text-muted">
-                      {action.description}
-                    </p>
-                  </Link>
-                ))
-              ) : (
-                <p className="text-sm leading-7 text-muted">
-                  O perfil atual nao possui atalhos operacionais disponiveis.
-                </p>
-              )}
-            </div>
-          </section>
+          <DashboardQuickActions quickActions={quickActions} />
 
-          <section className="card-surface rounded-[32px] p-8">
+          <Card padding="lg">
             <p className="text-sm font-semibold tracking-[0.22em] uppercase text-muted">
               Permissoes ativas
             </p>
@@ -720,7 +514,7 @@ export function DashboardPage() {
                 </p>
               )}
             </div>
-          </section>
+          </Card>
         </div>
       </section>
     </main>

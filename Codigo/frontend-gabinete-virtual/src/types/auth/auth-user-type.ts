@@ -1,4 +1,4 @@
-import type { AccessProfileType } from "@/app/types/access-profile/access-profile-type";
+import type { AccessProfileType } from "../access-profile/access-profile-type";
 
 export interface AuthUserType {
   id: number;

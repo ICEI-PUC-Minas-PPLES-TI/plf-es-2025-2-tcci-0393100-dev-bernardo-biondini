@@ -26,16 +26,12 @@ class AgendaController extends Controller
     public function index(ManageAgendaRequest $request): JsonResponse
     {
         $perPage = max(1, min((int) $request->integer('per_page', 10), 100));
-        $month = $request->integer('month');
-        $year = $request->integer('year');
-
-        $startsFrom = null;
-        $endsTo = null;
-
-        if ($month && $year && $month >= 1 && $month <= 12) {
-            $startsFrom = Carbon::create($year, $month, 1)->startOfMonth()->toDateTimeString();
-            $endsTo = Carbon::create($year, $month, 1)->endOfMonth()->toDateTimeString();
-        }
+        $startsFrom = $request->filled('starts_from')
+            ? Carbon::parse($request->query('starts_from'))->startOfDay()->toDateTimeString()
+            : Carbon::yesterday()->startOfDay()->toDateTimeString();
+        $endsTo = $request->filled('ends_to')
+            ? Carbon::parse($request->query('ends_to'))->endOfDay()->toDateTimeString()
+            : null;
 
         $filters = [
             'search' => $request->string('search')->toString(),

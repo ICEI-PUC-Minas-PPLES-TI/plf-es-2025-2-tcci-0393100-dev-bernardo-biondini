@@ -1,18 +1,44 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6f1e7;
-  --background-strong: #efe6d7;
-  --surface: rgba(255, 252, 245, 0.88);
-  --surface-strong: #fffdf8;
-  --foreground: #1f2a24;
-  --muted: #56645c;
-  --border: rgba(58, 75, 65, 0.16);
-  --primary: #315f4a;
-  --primary-strong: #214535;
-  --primary-soft: #dce8df;
-  --danger: #9d3d2f;
-  --shadow: 0 24px 60px rgba(38, 44, 40, 0.12);
+  --palette-primary-900: #1f3263;
+  --palette-primary-700: #2e4b8c;
+  --palette-primary-500: #5b7ec5;
+  --palette-primary-200: #dce3f0;
+  --palette-primary-50: #f7f9fc;
+
+  --palette-danger-dark: #7a1e2e;
+  --palette-danger-base: #c0273d;
+  --palette-danger-light: #f2d0d5;
+
+  --palette-warning-dark: #7a4e0d;
+  --palette-warning-base: #d4890a;
+  --palette-warning-light: #f5e6c8;
+
+  --palette-success-dark: #1a4d35;
+  --palette-success-base: #22865a;
+  --palette-success-light: #c8edd8;
+
+  --background: #eef3fb;
+  --background-strong: #e6edf8;
+  --surface: rgba(255, 255, 255, 0.88);
+  --surface-strong: #ffffff;
+  --foreground: #18233d;
+  --muted: #5d6780;
+  --border: rgba(31, 50, 99, 0.14);
+  --primary: var(--palette-primary-700);
+  --primary-strong: var(--palette-primary-900);
+  --primary-soft: var(--palette-primary-200);
+  --danger: var(--palette-danger-base);
+  --danger-dark: var(--palette-danger-dark);
+  --danger-light: var(--palette-danger-light);
+  --warning: var(--palette-warning-base);
+  --warning-dark: var(--palette-warning-dark);
+  --warning-light: var(--palette-warning-light);
+  --success: var(--palette-success-base);
+  --success-dark: var(--palette-success-dark);
+  --success-light: var(--palette-success-light);
+  --shadow: 0 24px 60px rgba(31, 50, 99, 0.12);
   --font-sans:
     "Segoe UI", "Avenir Next", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-serif:
@@ -20,6 +46,20 @@
 }
 
 @theme inline {
+  --color-primary-900: var(--palette-primary-900);
+  --color-primary-700: var(--palette-primary-700);
+  --color-primary-500: var(--palette-primary-500);
+  --color-primary-200: var(--palette-primary-200);
+  --color-primary-50: var(--palette-primary-50);
+  --color-danger-dark: var(--palette-danger-dark);
+  --color-danger-base: var(--palette-danger-base);
+  --color-danger-light: var(--palette-danger-light);
+  --color-warning-dark: var(--palette-warning-dark);
+  --color-warning-base: var(--palette-warning-base);
+  --color-warning-light: var(--palette-warning-light);
+  --color-success-dark: var(--palette-success-dark);
+  --color-success-base: var(--palette-success-base);
+  --color-success-light: var(--palette-success-light);
   --color-background: var(--background);
   --color-background-strong: var(--background-strong);
   --color-surface: var(--surface);
@@ -31,6 +71,14 @@
   --color-primary-strong: var(--primary-strong);
   --color-primary-soft: var(--primary-soft);
   --color-danger: var(--danger);
+  --color-danger-dark: var(--danger-dark);
+  --color-danger-light: var(--danger-light);
+  --color-warning: var(--warning);
+  --color-warning-dark: var(--warning-dark);
+  --color-warning-light: var(--warning-light);
+  --color-success: var(--success);
+  --color-success-dark: var(--success-dark);
+  --color-success-light: var(--success-light);
   --font-sans: var(--font-sans);
   --font-serif: var(--font-serif);
 }
@@ -43,8 +91,9 @@ html {
   min-height: 100%;
   scroll-behavior: smooth;
   background:
-    radial-gradient(circle at top left, rgba(227, 216, 190, 0.8), transparent 34%),
-    linear-gradient(180deg, #f8f3eb 0%, #f1ebdf 100%);
+    radial-gradient(circle at top left, rgba(91, 126, 197, 0.22), transparent 34%),
+    radial-gradient(circle at top right, rgba(220, 227, 240, 0.9), transparent 28%),
+    linear-gradient(180deg, #f7f9fc 0%, #edf2fb 100%);
 }
 
 body {
@@ -77,7 +126,7 @@ textarea {
   width: 100%;
   border: 1px solid var(--border);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.92);
   padding: 0.9rem 1rem;
   color: var(--foreground);
   outline: none;
@@ -87,8 +136,8 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: rgba(49, 95, 74, 0.45);
-  box-shadow: 0 0 0 4px rgba(49, 95, 74, 0.12);
+  border-color: rgba(46, 75, 140, 0.42);
+  box-shadow: 0 0 0 4px rgba(46, 75, 140, 0.12);
 }
 
 textarea {
@@ -102,8 +151,9 @@ button {
 .app-shell {
   min-height: 100vh;
   background:
-    radial-gradient(circle at right top, rgba(139, 162, 137, 0.14), transparent 26%),
-    linear-gradient(180deg, rgba(255, 253, 248, 0.9), rgba(246, 241, 231, 0.95));
+    radial-gradient(circle at right top, rgba(91, 126, 197, 0.16), transparent 24%),
+    radial-gradient(circle at left bottom, rgba(220, 227, 240, 0.85), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(238, 243, 251, 0.96));
 }
 
 .card-surface {

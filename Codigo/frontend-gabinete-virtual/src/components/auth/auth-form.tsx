@@ -7,6 +7,7 @@ import {
   parseAuthResponse,
   storeToken,
 } from "../../lib/auth";
+import { Alert, Button, Card, Input, Select } from "../core";
 import type { AccessProfileType } from "../../types/access-profile";
 
 type AuthMode = "login" | "register";
@@ -82,7 +83,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   }
 
   return (
-    <div className="card-surface w-full rounded-[30px] p-8 md:p-10">
+    <Card className="w-full" padding="lg">
       <div className="space-y-3">
         <p className="text-sm font-semibold tracking-[0.22em] uppercase text-muted">
           {mode === "login" ? "Login" : "Cadastro"}
@@ -99,79 +100,73 @@ export function AuthForm({ mode }: AuthFormProps) {
 
       <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
         {mode === "register" ? (
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-foreground">Nome</span>
-            <input name="name" placeholder="Nome do usuario" required />
-          </label>
-        ) : null}
-
-        <label className="block space-y-2">
-          <span className="text-sm font-medium text-foreground">E-mail</span>
-          <input
-            name="email"
-            type="email"
-            placeholder="voce@dominio.com"
+          <Input
+            name="name"
+            label="Nome"
+            placeholder="Nome do usuario"
             required
           />
-        </label>
-
-        {mode === "register" ? (
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-foreground">
-              Perfil de acesso
-            </span>
-            <select name="access_profile_id" defaultValue="">
-              <option value="">Perfil padrao automatico</option>
-              {accessProfiles.map((profile) => (
-                <option key={profile.id} value={profile.id}>
-                  {profile.name}
-                </option>
-              ))}
-            </select>
-          </label>
         ) : null}
 
-        <label className="block space-y-2">
-          <span className="text-sm font-medium text-foreground">Senha</span>
-          <input
-            name="password"
+        <Input
+          name="email"
+          type="email"
+          label="E-mail"
+          placeholder="voce@dominio.com"
+          required
+        />
+
+        {mode === "register" ? (
+          <Select
+            name="access_profile_id"
+            label="Perfil de acesso"
+            defaultValue=""
+            options={[
+              {
+                value: "",
+                label: "Perfil padrao automatico",
+              },
+              ...accessProfiles.map((profile) => ({
+                value: profile.id,
+                label: profile.name,
+              })),
+            ]}
+          />
+        ) : null}
+
+        <Input
+          name="password"
+          type="password"
+          label="Senha"
+          placeholder="Digite sua senha"
+          required
+        />
+
+        {mode === "register" ? (
+          <Input
+            name="password_confirmation"
             type="password"
-            placeholder="Digite sua senha"
+            label="Confirmacao de senha"
+            placeholder="Repita sua senha"
             required
           />
-        </label>
-
-        {mode === "register" ? (
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-foreground">
-              Confirmacao de senha
-            </span>
-            <input
-              name="password_confirmation"
-              type="password"
-              placeholder="Repita sua senha"
-              required
-            />
-          </label>
         ) : null}
 
         {error ? (
-          <div className="rounded-2xl border border-danger/20 bg-danger/8 px-4 py-3 text-sm text-danger">
+          <Alert tone="danger">
             {error}
-          </div>
+          </Alert>
         ) : null}
 
-        <button
+        <Button
           type="submit"
-          disabled={isPending}
-          className="w-full rounded-2xl bg-primary px-5 py-4 text-sm font-semibold text-white transition hover:bg-primary-strong disabled:cursor-not-allowed disabled:opacity-70"
+          block
+          size="lg"
+          isLoading={isPending}
+          loadingText="Processando..."
         >
-          {isPending
-            ? "Processando..."
-            : mode === "login"
-              ? "Entrar"
-              : "Criar conta"}
-        </button>
+          {mode === "login" ? "Entrar" : "Criar conta"}
+        </Button>
       </form>
 
       <div className="mt-6 text-sm text-muted">
@@ -183,6 +178,6 @@ export function AuthForm({ mode }: AuthFormProps) {
           {mode === "login" ? "Cadastrar usuario" : "Fazer login"}
         </Link>
       </div>
-    </div>
+    </Card>
   );
 }

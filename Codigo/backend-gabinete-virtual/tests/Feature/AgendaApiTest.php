@@ -60,9 +60,9 @@ class AgendaApiTest extends TestCase
 
         $this->withHeader('Authorization', "Bearer {$token}")
             ->getJson(sprintf(
-                '/api/agenda/events?month=%d&year=%d',
-                $startsAt->month,
-                $startsAt->year,
+                '/api/agenda/events?starts_from=%s&ends_to=%s',
+                $startsAt->copy()->startOfMonth()->toDateString(),
+                $startsAt->copy()->endOfMonth()->toDateString(),
             ))
             ->assertOk()
             ->assertJsonPath('data.data.0.id', $eventId);
@@ -138,6 +138,44 @@ class AgendaApiTest extends TestCase
             ->assertJsonPath('message', 'Evento removido com sucesso.');
 
         $this->assertDatabaseMissing('events', ['id' => $eventId]);
+    }
+
+    public function test_event_listing_defaults_to_events_after_previous_day(): void
+    {
+        $token = $this->issueTokenForPermission(PermissionCodes::AGENDA_MANAGE);
+
+        $oldEvent = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/agenda/events', [
+                'title' => 'Evento antigo',
+                'type' => 'meeting',
+                'starts_at' => Carbon::yesterday()->subDay()->setTime(9, 0, 0)->toDateTimeString(),
+                'ends_at' => Carbon::yesterday()->subDay()->setTime(10, 0, 0)->toDateTimeString(),
+                'location' => 'Sala antiga',
+                'demand_ids' => [],
+            ])
+            ->assertCreated();
+
+        $recentEvent = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/agenda/events', [
+                'title' => 'Evento recente',
+                'type' => 'meeting',
+                'starts_at' => Carbon::today()->setTime(9, 0, 0)->toDateTimeString(),
+                'ends_at' => Carbon::today()->setTime(10, 0, 0)->toDateTimeString(),
+                'location' => 'Sala atual',
+                'demand_ids' => [],
+            ])
+            ->assertCreated();
+
+        $oldEventId = $oldEvent->json('data.id');
+        $recentEventId = $recentEvent->json('data.id');
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/agenda/events')
+            ->assertOk()
+            ->assertJsonPath('data.total', 1)
+            ->assertJsonPath('data.data.0.id', $recentEventId);
+
+        $this->assertNotSame($oldEventId, $recentEventId);
     }
 
     private function issueTokenForPermission(string $permissionCode): string

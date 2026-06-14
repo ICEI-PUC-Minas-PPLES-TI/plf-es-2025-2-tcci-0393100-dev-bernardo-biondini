@@ -126,7 +126,7 @@ class DemandService
             'priority' => $data['priority'],
             'responsible_user_id' => $data['responsible_user_id'] ?? null,
             'city_id' => $data['city_id'],
-            'institution_id' => $data['institution_id'],
+            'institution_id' => $data['institution_id'] ?? null,
             'created_by_user_id' => $authenticatedUserId,
             'created_by_citizen_id' => $createdByCitizenId,
         ]);
@@ -203,7 +203,7 @@ class DemandService
             'priority' => $data['priority'],
             'responsible_user_id' => $data['responsible_user_id'] ?? null,
             'city_id' => $data['city_id'],
-            'institution_id' => $data['institution_id'],
+            'institution_id' => $data['institution_id'] ?? null,
         ]);
 
         $changes = $this->registerUpdateHistory(

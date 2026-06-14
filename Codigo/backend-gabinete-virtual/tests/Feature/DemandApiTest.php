@@ -188,6 +188,36 @@ class DemandApiTest extends TestCase
         $this->assertDatabaseMissing('demands', ['id' => $demandId]);
     }
 
+    public function test_user_can_create_demand_without_institution(): void
+    {
+        $token = $this->issueTokenForPermission(PermissionCodes::DEMANDS_MANAGE);
+        $city = City::query()->create([
+            'name' => 'Betim',
+            'region' => 'Metropolitana',
+        ]);
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/demands', [
+                'title' => 'Demanda sem instituicao',
+                'description' => 'Registro criado sem instituicao vinculada.',
+                'service_area' => 'health',
+                'status' => 'open',
+                'priority' => 'medium',
+                'city_id' => $city->id,
+            ]);
+
+        $demandId = $response->json('data.id');
+
+        $response->assertCreated()
+            ->assertJsonPath('data.id', $demandId)
+            ->assertJsonPath('data.institution_id', null);
+
+        $this->assertDatabaseHas('demands', [
+            'id' => $demandId,
+            'institution_id' => null,
+        ]);
+    }
+
     public function test_authenticated_user_without_manage_can_list_demands_but_cannot_filter_by_another_responsible(): void
     {
         $session = $this->issueAuthenticatedSession();

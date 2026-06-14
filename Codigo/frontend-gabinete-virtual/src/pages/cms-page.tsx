@@ -422,7 +422,7 @@ export function CmsPage() {
   }
 
   async function handleSaveSection(key: CmsSectionKeyType) {
-    const content = sectionDrafts[key].trim();
+    const content = (sectionDrafts[key] ?? "").trim();
 
     if (!content) {
       setError("Informe um conteudo para a secao.");

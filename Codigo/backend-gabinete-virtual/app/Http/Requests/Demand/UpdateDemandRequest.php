@@ -29,7 +29,7 @@ class UpdateDemandRequest extends FormRequest
             'priority' => ['required', Rule::in(['low', 'medium', 'high'])],
             'responsible_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'city_id' => ['required', 'integer', Rule::exists('cities', 'id')],
-            'institution_id' => ['required', 'integer', Rule::exists('institutions', 'id')],
+            'institution_id' => ['nullable', 'integer', Rule::exists('institutions', 'id')],
             'oficio' => [
                 'nullable',
                 File::types(['pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx', 'xls', 'xlsx', 'ods', 'csv'])
