@@ -1,46 +1,78 @@
 @startuml
-title Diagrama de Implantação - Gabinete Inteligente
+title Diagrama de Implantação - Gabinete Virtual
 
 skinparam shadowing false
 
-node "Usuário" as User {
+node "Usuário Interno" as User {
   artifact "Navegador Web" as Browser
 }
 
-node "Cidadão" as Cidadao {
-  artifact "WhatsApp" as WhatsApp
+node "Cidadão" as Citizen {
+  artifact "WhatsApp" as WhatsAppClient
 }
 
-node "Hosting Frontend" as FEHost {
+cloud "Hospedagem Frontend" as FEHost {
   artifact "React App (SPA)" as ReactApp
 }
 
 node "Servidor de Aplicação" as AppSrv {
-  node "Nginx/Apache" as WebSrv
-  node "Container PHP-FPM" as PHP {
+  node "Proxy Reverso\nNginx/Apache" as ReverseProxy
+
+  node "Container Backend" as BackendNode {
     artifact "Laravel API" as Laravel
+    artifact "Worker de Filas" as Worker
+  }
+
+  node "Container Chatbot" as ChatbotNode {
+    artifact "FastAPI Chatbot" as FastAPI
+    artifact "Validadores\nidioma / toxicidade /\nsimilaridade" as Validators
+  }
+
+  node "Container Realtime" as RealtimeNode {
+    artifact "Servidor WebSocket" as WebSocket
   }
 }
 
-node "DB Server" as DBNode {
+node "Servidor de Banco de Dados" as DBNode {
   database "MySQL" as MySQL
 }
 
-node "File Storage" as FS {
-  folder "S3/Local" as S3Local
+node "Armazenamento de Arquivos" as FS {
+  folder "S3/Local" as FileStore
 }
 
-node "E-mail Service" as Mail {
-  artifact "SMTP/API" as SMTP
+cloud "Serviços Externos" as Ext {
+  artifact "WhatsApp Business API" as MetaWhatsApp
 }
 
 User -down-> FEHost : HTTPS
-FEHost -down-> AppSrv : HTTPS
-Cidadao -down-> AppSrv : Webhook / HTTPS
+Citizen -down-> MetaWhatsApp : mensagens
+FEHost -down-> ReverseProxy : HTTPS
+MetaWhatsApp -down-> ReverseProxy : webhook HTTPS
 
-WebSrv -down-> Laravel : FastCGI/Local
+ReverseProxy -down-> Laravel : HTTP/FastCGI
+ReverseProxy -down-> FastAPI : HTTP
+ReverseProxy -down-> WebSocket : WS/WSS
+
 Laravel -down-> MySQL : TCP 3306
-Laravel -down-> S3Local : SDK/API
-Laravel -down-> SMTP : SMTP/HTTPS
+Worker -down-> MySQL : leitura/escrita
+FastAPI -down-> MySQL : sessões e contexto
+WebSocket -down-> MySQL : tokens / leitura inicial
+
+Laravel -down-> FileStore : upload/download
+FastAPI -down-> MetaWhatsApp : API Graph / HTTPS
+Worker -down-> MetaWhatsApp : notificações a cidadãos
+Worker -down-> WebSocket : broadcast de alertas
+Laravel -down-> WebSocket : publicação de eventos
+FastAPI -down-> Laravel : REST interno
+ReactApp -down-> WebSocket : assinatura de alertas
+
+note right of AppSrv
+Componentes implantados:
+- backend REST principal
+- chatbot com webhook e validações
+- servidor realtime para alertas
+- worker para processamento assíncrono
+end note
 
 @enduml

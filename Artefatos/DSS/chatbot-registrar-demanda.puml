@@ -1,12 +1,36 @@
 @startuml
-actor Cidadão
-participant Chatbot
-participant Sistema
+title DSS - Registrar Demanda via Chatbot
 
-Cidadão -> Chatbot : enviarReclamacaoDemanda()
-Chatbot -> Cidadão : solicitarDescricao()
-Cidadão -> Chatbot : informarDescricao()
-Chatbot -> Sistema : registrarDemanda(dados)
-Sistema --> Chatbot : demandaRegistrada()
-Chatbot --> Cidadão : confirmarEnvio()
+actor Cidadao
+participant "Chatbot API" as chatbot
+participant "Validadores" as validators
+participant "Backend API" as api
+participant "ChatbotDemandService" as service
+participant "RepositorioCidadaos" as citizens
+participant "RepositorioDemandas" as demands
+
+Cidadao -> chatbot : enviarMensagem()
+chatbot -> chatbot : identificarTelefone()
+chatbot -> validators : validarMensagem(texto, cidade)
+validators --> chatbot : resultado
+
+alt demanda invalida ou similar
+  chatbot -> api : registrarDemanda(can_create=false)
+  api -> service : registrarDemandaDescartada(payload)
+  service -> citizens : localizarOuCriarCidadao()
+  service -> demands : salvar(status=discarded,\ndiscard_message)
+  demands --> service : demandaDescartada
+  service --> api : protocolo
+  api --> chatbot : retorno
+  chatbot --> Cidadao : informarDescarte()
+else demanda valida
+  chatbot -> api : registrarDemanda(can_create=true)
+  api -> service : registrarDemanda(payload)
+  service -> citizens : localizarOuCriarCidadao()
+  service -> demands : salvar(status=open)
+  demands --> service : demandaCriada
+  service --> api : protocolo
+  api --> chatbot : retorno
+  chatbot --> Cidadao : confirmarRegistro()
+end
 @enduml

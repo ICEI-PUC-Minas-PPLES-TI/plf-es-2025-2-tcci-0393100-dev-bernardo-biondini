@@ -20,12 +20,16 @@ node "Plataforma de Mensagens" as Msg {
 node "Infraestrutura" as Infra {
   node "Servidor de Aplicação" as AppSrv {
     component "API REST\nLaravel/PHP" as API
-    component "Chatbot API\n(Webhook Handler)" as Chatbot
+    component "Chatbot API\nFastAPI / Webhook Handler" as Chatbot
+    component "Servidor WebSocket\nBroadcast de alertas" as WebSocket
+    component "Worker de Filas\nJobs e Notificações" as Worker
     component "Módulo Autenticação\n(JWT/Guards)" as Auth
     component "Módulo Demandas" as Dem
     component "Módulo Emendas" as Eme
     component "Módulo Cidades\n& Instituições" as CidInst
     component "Módulo Agenda" as Agd
+    component "Módulo Alertas\nDemandas / Agenda" as Alerts
+    component "Módulo Chatbot\nSessões / Validação" as ChatbotCore
     component "Módulo Relatórios" as Rel
   }
 
@@ -36,22 +40,24 @@ node "Infraestrutura" as Infra {
   node "Armazenamento de Arquivos" as Files {
     folder "S3/Local" as S3Local
   }
-
-  node "Serviço de E-mail" as Mail {
-    component "SMTP/API" as SMTP
-  }
 }
 
 Frontend -[#blue]-> API : HTTPS (JSON)
+Frontend -[#purple]-> WebSocket : WebSocket / Eventos
 
 WhatsApp --> Chatbot : Webhook
 Chatbot --> API : REST/JSON
+Worker --> Chatbot : Envio de mensagens\nWhatsApp
+API --> Worker : Criação de jobs
+API --> WebSocket : Publicação de eventos
 
 API --> Auth
 API --> Dem
 API --> Eme
 API --> CidInst
 API --> Agd
+API --> Alerts
+API --> ChatbotCore
 API --> Rel
 
 Auth --> MySQL
@@ -59,12 +65,18 @@ Dem --> MySQL
 Eme --> MySQL
 CidInst --> MySQL
 Agd --> MySQL
+Alerts --> MySQL
+ChatbotCore --> MySQL
 Rel --> MySQL
 
 Dem --> S3Local
 Eme --> S3Local
 Rel --> S3Local
 
-API --> SMTP : Notificações
+Worker --> WebSocket : Notificações assíncronas
+Worker --> MySQL : Atualização de status\n(alertas / lembretes)
+Chatbot --> MySQL : Sessões e contexto
+WebSocket --> MySQL : Consulta inicial / tokens
+Alerts --> WebSocket : Configuração de canais
 
 @enduml

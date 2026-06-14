@@ -1,17 +1,25 @@
 @startuml
-title DSS – Criar Alerta / Lembrete
+title DSS - Criar Alerta / Lembrete
 
 actor Usuario as u
 participant "Sistema" as s
-participant "RepositorioEventos" as repo
-participant "ServicoNotificacao" as notif
+participant "RepositorioEventos" as events
+participant "RepositorioAlertasAgenda" as alerts
+participant "Fila" as queue
+participant "ProcessAgendaReminderJob" as job
+participant "ChatbotNotificationClient" as client
 
 u -> s : criarAlerta(idEvento, dados)
 s -> s : autenticarUsuario()
-s -> s : validarPermissao("CRIAR_ALERTA")
-s -> repo : salvarAlerta(idEvento, dados)
-repo --> s : alerta
-s -> notif : enviar(alerta)
-notif --> s : ok
+s -> s : validarPermissao("AGENDA_VIEW")
+s -> events : buscarEvento(idEvento)
+events --> s : evento
+s -> alerts : salvarLembrete(evento, dados)
+alerts --> s : alerta
 s --> u : sucesso
+
+... quando o horario for atingido ...
+s -> queue : dispatchDueReminders()
+queue -> job : processar(alerta)
+job -> client : publishSystemAlert(...)
 @enduml

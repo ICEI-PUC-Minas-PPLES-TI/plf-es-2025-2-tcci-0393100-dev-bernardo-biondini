@@ -1,170 +1,276 @@
 @startuml
-title Diagrama de Classes - Gabinete Inteligente
+title Diagrama de Classes - Gabinete Virtual
 
-' ================== PACOTES ==================
 package "Autorização" {
   class PerfilAcesso {
-    +id: UUID
-    +nome: PerfilEnum
+    +id: int
+    +nome: String
     +descricao: String
-    +permissoes(): List<Permissao>
-    +temPermissao(p: Permissao): bool
   }
 
   class Permissao {
-    +id: UUID
+    +id: int
     +codigo: String
     +descricao: String
   }
-}
 
-package "Pessoas" {
   class Usuario {
-    +id: UUID
+    +id: int
     +nome: String
     +email: String
-    +perfil: PerfilAcesso
     +ativo: bool
-    +autenticar(senha: String): bool
-    +temPermissao(cod: String): bool
+    +temPermissao(codigo: String): bool
   }
+}
 
-  class Lideranca {
-    +id: UUID
+package "Referências" {
+  class Cidade {
+    +id: int
     +nome: String
-    +cargo: String
-    +telefone: String
-    +municipio: Municipio
+    +regiao: String
   }
 
   class Instituicao {
-    +id: UUID
+    +id: int
     +nome: String
     +tipo: String
-    +municipio: Municipio
+  }
+
+  class Lideranca {
+    +id: int
+    +nome: String
+    +cargo: String
+  }
+}
+
+package "Chatbot e Cidadãos" {
+  class Cidadao {
+    +id: int
+    +nome: String
+    +cpf: String?
+    +dataNascimento: Date?
+    +telefoneLegado: String?
+    +receberAtualizacoesDemanda: bool
+  }
+
+  class TelefoneCidadao {
+    +id: int
+    +telefone: String
+    +telefoneNormalizado: String
+  }
+
+  class SessaoChatbot {
+    +id: int
+    +canal: String
+    +iniciadaEm: DateTime
+    +encerradaEm: DateTime?
+  }
+
+  class PreferenciaConteudo {
+    +id: int
+    +receberConteudo: bool
   }
 }
 
 package "Demandas" {
   class Demanda {
-    +id: UUID
+    +id: int
     +titulo: String
     +descricao: Text
+    +areaAtendimento: AreaAtendimento?
     +status: StatusDemanda
-    +prioridade: Prioridade
-    +dataAbertura: DateTime
-    +dataConclusao: DateTime
-    +criadaPor(): Usuario
-    +atribuirResponsavel(u: Usuario)
-    +atualizarStatus(novoStatus: StatusDemanda)
+    +mensagemDescarte: Text?
+    +oficioNomeOriginal: String?
+    +oficioMimeType: String?
+    +prioridade: Prioridade?
+    +atribuirResponsavel(usuario: Usuario)
+    +atualizarStatus(status: StatusDemanda)
   }
 
   class HistoricoDemanda {
-    +id: UUID
-    +mudanca: String
-    +data: DateTime
-    +autor: Usuario
+    +id: int
+    +acao: String
+    +descricao: Text
+    +metadata: Json?
+    +criadoEm: DateTime
   }
-}
 
-package "Cidades" {
-  class Municipio {
-    +id: UUID
-    +nome: String
-    +regiao: String
-    +populacao: int
+  class AlertaDemanda {
+    +id: int
+    +titulo: String
+    +mensagem: Text
+    +tipo: String
+    +canal: CanalAlertaDemanda
+    +status: StatusEnvioAlerta
+    +lidoEm: DateTime?
+    +enviadoEm: DateTime?
   }
 }
 
 package "Agenda" {
   class Evento {
-    +id: UUID
+    +id: int
     +titulo: String
-    +inicio: DateTime
-    +fim: DateTime
+    +tipo: String
+    +dataEvento: DateTime
+    +inicio: DateTime?
+    +fim: DateTime?
     +local: String
-    +descricao: Text
-    +vinculos(): List<VinculoContexto>
+    +contexto: Text
+    +descricao: Text?
+    +participantesEsperados: int?
+    +cor: String?
   }
 
-  class VinculoContexto {
-    +tipo: String
-    +referenciaId: UUID
+  class AlertaEvento {
+    +id: int
+    +titulo: String
+    +mensagem: Text?
+    +alertaEm: DateTime
+    +antecedenciaMinutos: int?
+    +canal: CanalAlertaEvento
+    +status: StatusEnvioAlerta
+    +automatico: bool
+    +recorrente: bool
+    +lidoEm: DateTime?
+    +enviadoEm: DateTime?
   }
 }
 
-package "Emendas" {
+package "Parlamentar" {
   class Emenda {
-    +id: UUID
+    +id: int
     +numero: String
     +valor: Decimal
-    +finalidade: String
-    +municipio: Municipio
     +status: StatusEmenda
+    +areaAplicacao: String
+  }
+
+  class ProjetoLei {
+    +id: int
+    +numero: String
+    +descricao: Text
+    +status: StatusProjetoLei
+    +dataProtocolo: Date
   }
 }
 
 package "CMS" {
+  class SecaoCms {
+    +id: int
+    +chave: String
+    +titulo: String
+    +conteudo: Text
+  }
+
   class Noticia {
-    +id: UUID
+    +id: int
     +titulo: String
     +conteudo: Text
     +publicadaEm: DateTime
-    +autor: Usuario
+  }
+
+  class ProjetoSite {
+    +id: int
+    +titulo: String
+    +descricao: Text
+    +status: StatusProjetoSite
   }
 }
-
-' ================== RELACIONAMENTOS ==================
 
 Usuario "1" -- "1" PerfilAcesso : possui >
 PerfilAcesso "1" -- "0..*" Permissao : agrega >
 
-Usuario "1" -- "0..*" Demanda : cria >
+Cidade "1" -- "0..*" Instituicao
+Instituicao "1" -- "0..*" Lideranca
+Cidade "1" -- "0..*" Emenda
+Cidade "1" -- "0..*" Evento
+Cidade "1" -- "0..*" ProjetoSite
+
+Cidadao "1" -- "0..*" TelefoneCidadao
+Cidadao "1" -- "0..*" SessaoChatbot
+Cidadao "1" -- "0..1" PreferenciaConteudo
+Cidadao "1" -- "0..*" Demanda : cria via chatbot >
+Cidadao "1" -- "0..*" AlertaDemanda : recebe >
+
 Usuario "0..1" -- "0..*" Demanda : responsável >
+Usuario "0..1" -- "0..*" HistoricoDemanda : registra >
+Usuario "0..1" -- "0..*" AlertaDemanda : recebe >
+Usuario "0..1" -- "0..*" AlertaEvento : recebe >
+Usuario "1" -- "0..*" Noticia : autor >
+Usuario "1" -- "0..*" ProjetoSite : autor >
 
-Demanda "1" -- "0..*" HistoricoDemanda : gera >
-Demanda "*" -- "1" Municipio
+Demanda "*" -- "1" Cidade
+Demanda "*" -- "0..1" Instituicao
+Demanda "1" -- "0..*" HistoricoDemanda
+Demanda "1" -- "0..*" AlertaDemanda
+Demanda "0..*" -- "0..*" Evento
 
-Lideranca "*" -- "1" Municipio
-Instituicao "*" -- "1" Municipio
-
-Evento "0..*" -- "0..*" VinculoContexto
-Emenda "*" -- "1" Municipio
-
-Noticia "*" -- "1" Usuario : autor
-
-
-' ================== ENUMS ==================
-
-enum PerfilEnum {
-  Deputada
-  ChefeDeGabinete
-  Gestora
-  GestoraDeDemandas
-  Atendimento
-  Funcionarios
-}
+Evento "1" -- "0..*" AlertaEvento
 
 enum StatusDemanda {
-  Aberta
-  EmAndamento
-  AguardandoInformacao
-  Concluida
-  Cancelada
+  open
+  under_review
+  in_progress
+  completed
+  discarded
 }
 
 enum Prioridade {
-  Baixa
-  Media
-  Alta
-  Critica
+  low
+  medium
+  high
+}
+
+enum AreaAtendimento {
+  saude
+  educacao
+  infraestrutura
+  seguranca
+  assistencia_social
+  transporte
+  habitacao
+  meio_ambiente
+  agricultura
+  cultura
+  esporte
+  outro
+}
+
+enum CanalAlertaDemanda {
+  system
+  chatbot
+}
+
+enum CanalAlertaEvento {
+  system
+  email
+}
+
+enum StatusEnvioAlerta {
+  pending
+  queued
+  sent
+  failed
 }
 
 enum StatusEmenda {
-  Planejada
-  Destinada
-  EmExecucao
-  Concluida
+  planned
+  in_execution
+  completed
+}
+
+enum StatusProjetoLei {
+  in_committee
+  in_voting
+  approved
+  sanctioned
+}
+
+enum StatusProjetoSite {
+  planned
+  in_progress
+  completed
 }
 
 @enduml

@@ -1,26 +1,33 @@
 @startuml
 skinparam linetype ortho
-title Comunicação – UC07 Criar Alerta/Lembrete
+title Comunicação - UC07 Criar Alerta / Lembrete
 
 rectangle Usuario
 rectangle Frontend
-rectangle AlertaController
-rectangle AlertaService
-rectangle EventoRepository
-rectangle NotificacaoService
+rectangle AgendaReminderController
+rectangle AgendaReminderService
+rectangle EventRepository
+rectangle EventAlertRepository
+rectangle Queue
+rectangle ProcessAgendaReminderJob
+rectangle ChatbotNotificationClient
+rectangle "Chatbot API" as ChatbotApi
+rectangle "Servidor WebSocket" as WebSocket
 
-Usuario --> Frontend : 1: escolherLembrete(eventoId, horário)
-Frontend --> AlertaController : 2: POST /eventos/{id}/alertas
-AlertaController --> AlertaService : 3: criarAlerta(id, dados)
+Usuario --> Frontend : 1: escolherLembrete(eventoId, horario)
+Frontend --> AgendaReminderController : 2: POST /agenda/reminders
+AgendaReminderController --> AgendaReminderService : 3: createUserAlert(dados)
 
-AlertaService --> EventoRepository : 4: buscarEvento(id)
-EventoRepository --> AlertaService : 5: eventoOK
-
-AlertaService --> NotificacaoService : 6: agendarLembrete()
-NotificacaoService --> AlertaService : 7: agendado
-
-AlertaService --> AlertaController : 8: sucesso()
-AlertaController --> Frontend : 9: respostaOK()
+AgendaReminderService --> EventRepository : 4: buscarEvento(id)
+EventRepository --> AgendaReminderService : 5: eventoOK
+AgendaReminderService --> EventAlertRepository : 6: salvarLembrete()
+EventAlertRepository --> AgendaReminderService : 7: alertaCriado
+AgendaReminderService --> AgendaReminderController : 8: sucesso()
+AgendaReminderController --> Frontend : 9: respostaOK()
 Frontend --> Usuario : 10: mensagem()
 
+Queue --> ProcessAgendaReminderJob : 11: processar quando devido
+ProcessAgendaReminderJob --> ChatbotNotificationClient : 12: publishSystemAlert()
+ChatbotNotificationClient --> ChatbotApi : 13: /internal/notifications/websocket-alert
+ChatbotApi --> WebSocket : 14: publicar lembrete
 @enduml

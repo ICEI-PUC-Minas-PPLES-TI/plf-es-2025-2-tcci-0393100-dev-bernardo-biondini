@@ -1,13 +1,46 @@
 @startuml
-participant DemandaService
-participant "Chatbot API" as API
-participant "WhatsApp" as WA
-actor Cidadao
+actor Gestora
+boundary Frontend as FE
+participant "Backend API" as API
+participant "DemandService" as DemandService
+participant "DemandAlertService" as AlertService
 database "Banco de Dados" as DB
+queue "Fila / Queue" as Queue
+participant "ProcessDemandAlertJob" as Job
+participant "ChannelFactory" as Factory
+participant "ChatbotNotificationClient" as Client
+participant "Chatbot API" as Chatbot
+participant "WhatsApp Business API" as WA
+participant "Servidor WebSocket" as WS
+actor Cidadao
 
-DemandaService -> DB : atualizar status demanda
-DB --> DemandaService : ok
-DemandaService -> API : notificarAtualizacao(demanda)
-API -> WA : enviar mensagem
-WA -> Cidadao : atualização de status
+Gestora -> FE : atualizar demanda
+FE -> API : PATCH /api/demands/{id}
+API -> DemandService : update(id, dados)
+DemandService -> DB : salvar demanda + historico
+DemandService -> AlertService : createDemandUpdatedAlerts(demanda, changes)
+
+AlertService -> DB : criar alertas system\n(gestores / responsavel)
+AlertService -> DB : criar alerta chatbot\n(cidadao opt-in)
+AlertService -> Queue : dispatch ProcessDemandAlertJob
+
+Queue -> Job : processar alerta
+Job -> DB : carregar demand_alert
+Job -> Factory : make(channel)
+
+alt canal = system
+  Factory -> Client : publishSystemAlert(...)
+  Client -> Chatbot : POST /internal/notifications/websocket-alert
+  Chatbot -> WS : publicar evento
+  WS -> FE : popup / lista de alertas
+else canal = chatbot
+  Factory -> Client : sendCitizenMessage(phone, message)
+  Client -> Chatbot : POST /internal/notifications/chatbot-message
+  Chatbot -> WA : enviar mensagem
+  WA -> Cidadao : atualizacao da demanda
+end
+
+Job -> DB : marcar alerta como sent ou failed
+API --> FE : respostaOK
+FE --> Gestora : confirmar atualizacao
 @enduml

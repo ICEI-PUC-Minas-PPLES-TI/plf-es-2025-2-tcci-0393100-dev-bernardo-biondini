@@ -1,16 +1,37 @@
 @startuml
 actor Cidadao
-participant "WhatsApp" as WA
-participant "Chatbot API" as API
-participant DemandaService
+participant "WhatsApp Business API" as WA
+participant "Chatbot API" as Chatbot
+participant "Validadores\nidioma / conteudo /\nsimilaridade" as Validators
+participant "Backend API" as API
+participant "ChatbotDemandService" as Service
 database "Banco de Dados" as DB
 
-Cidadao -> WA : enviar reclamação/demanda
-WA -> API : POST /webhook/mensagem
-API -> DemandaService : registrarDemanda(texto, cidadao)
-DemandaService -> DB : insert Demanda
-DB --> DemandaService : demandaCriada
-DemandaService --> API : sucesso
-API --> WA : mensagem confirmação
-WA --> Cidadao : demanda registrada
+Cidadao -> WA : enviar mensagem
+WA -> Chatbot : POST /webhook
+Chatbot -> Chatbot : identificar telefone\ncarregar sessao
+Chatbot -> Validators : validarMensagem(texto, cidade)
+Validators --> Chatbot : resultado
+
+alt mensagem invalida ou demanda similar
+  Chatbot -> API : POST /api/chatbot/demands\n(can_create=false, reason, message, demanda)
+  API -> Service : registrarDemandaDescartada(payload)
+  Service -> DB : upsert citizen / phone
+  Service -> DB : insert demanda(status=discarded,\ndiscard_message)
+  DB --> Service : demandaDescartada
+  Service --> API : protocolo interno
+  API --> Chatbot : resposta
+  Chatbot -> WA : enviar confirmacao com motivo\n e protocolo
+  WA --> Cidadao : demanda descartada
+else mensagem valida
+  Chatbot -> API : POST /api/chatbot/demands\n(can_create=true, citizen, city, institution, demanda)
+  API -> Service : registrarDemanda(payload)
+  Service -> DB : localizar/criar citizen
+  Service -> DB : persistir demanda
+  DB --> Service : demandaCriada
+  Service --> API : protocolo interno
+  API --> Chatbot : resposta
+  Chatbot -> WA : enviar confirmacao de registro
+  WA --> Cidadao : demanda registrada
+end
 @enduml

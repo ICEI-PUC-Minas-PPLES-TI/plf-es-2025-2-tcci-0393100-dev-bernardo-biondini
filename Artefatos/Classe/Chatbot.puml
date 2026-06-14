@@ -1,43 +1,77 @@
 @startuml
-title Diagrama de Classes por Pacotes - Chatbot do Gabinete Virtual
+title Diagrama de Classes - Chatbot do Gabinete Virtual
 
 package "Chatbot" {
-  class ChatbotSession {
-    id : UUID
-    canal : String
-    inicio : DateTime
+  class Cidadao {
+    +id: int
+    +nome: String
+    +cpf: String?
+    +dataNascimento: Date?
+    +telefoneLegado: String?
+    +receberAtualizacoesDemanda: bool
   }
 
-  class Cidadao {
-    id : UUID
-    nome : String
-    cpf : String
-    dataNascimento : Date
+  class TelefoneCidadao {
+    +id: int
+    +telefone: String
+    +telefoneNormalizado: String
+  }
+
+  class SessaoChatbot {
+    +id: int
+    +canal: String
+    +iniciadaEm: DateTime
+    +encerradaEm: DateTime?
   }
 
   class PreferenciaConteudo {
-    receberConteudos : bool
-  }
-
-  class Notificacao {
-    id : UUID
-    mensagem : String
-    dataEnvio : DateTime
+    +id: int
+    +receberConteudo: bool
   }
 }
 
 package "Demandas" {
-  class Demanda
+  class Demanda {
+    +id: int
+    +titulo: String
+    +descricao: Text
+    +status: StatusDemanda
+    +mensagemDescarte: Text?
+  }
+
+  class AlertaDemanda {
+    +id: int
+    +titulo: String
+    +mensagem: Text
+    +canal: CanalAlertaDemanda
+    +status: StatusEnvioAlerta
+  }
 }
 
-package "CMS" {
-  class Noticia
+Cidadao "1" --> "0..*" TelefoneCidadao
+Cidadao "1" --> "0..*" SessaoChatbot
+Cidadao "1" --> "0..1" PreferenciaConteudo
+Cidadao "1" --> "0..*" Demanda
+Cidadao "1" --> "0..*" AlertaDemanda
+Demanda "1" --> "0..*" AlertaDemanda
+
+enum StatusDemanda {
+  open
+  under_review
+  in_progress
+  completed
+  discarded
 }
 
-Cidadao --> ChatbotSession
-Cidadao --> PreferenciaConteudo
-Cidadao --> Demanda
-Notificacao --> Demanda
-Notificacao --> Cidadao
-Noticia --> Notificacao
+enum CanalAlertaDemanda {
+  system
+  chatbot
+}
+
+enum StatusEnvioAlerta {
+  pending
+  sent
+  failed
+}
+
 @enduml

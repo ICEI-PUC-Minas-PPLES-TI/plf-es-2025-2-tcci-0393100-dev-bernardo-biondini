@@ -1,29 +1,41 @@
 @startuml
 skinparam linetype ortho
-title Comunicação – UC06 Atualizar Status da Demanda
+title Comunicação - UC06 Atualizar Status da Demanda
 
 rectangle Usuario
 rectangle Frontend
-rectangle DemandaController
-rectangle DemandaService
-rectangle DemandaRepository
-rectangle NotificacaoService
+rectangle DemandController
+rectangle DemandService
+rectangle DemandRepository
+rectangle DemandHistoryService
+rectangle DemandAlertService
+rectangle Queue
+rectangle ProcessDemandAlertJob
+rectangle ChatbotNotificationClient
+rectangle "Chatbot API" as ChatbotApi
+rectangle "Servidor WebSocket" as WebSocket
 
 Usuario --> Frontend : 1: selecionarStatus()
-Frontend --> DemandaController : 2: PATCH /demandas/{id}/status
-DemandaController --> DemandaService : 3: atualizarStatus(id, status)
+Frontend --> DemandController : 2: PUT /demands/{id}/status
+DemandController --> DemandService : 3: atualizarStatus(id, status)
 
-DemandaService --> DemandaRepository : 4: buscarPorId(id)
-DemandaRepository --> DemandaService : 5: demandaEncontrada
+DemandService --> DemandRepository : 4: buscarPorId(id)
+DemandRepository --> DemandService : 5: demandaEncontrada
+DemandService --> DemandRepository : 6: persistirStatus()
+DemandRepository --> DemandService : 7: demandaAtualizada
+DemandService --> DemandHistoryService : 8: registrarHistorico()
+DemandHistoryService --> DemandService : 9: ok
 
-DemandaService --> DemandaRepository : 6: atualizarStatus()
-DemandaRepository --> DemandaService : 7: atualizado
+DemandService --> DemandAlertService : 10: createDemandUpdatedAlerts()
+DemandAlertService --> Queue : 11: dispatch(ProcessDemandAlertJob)
+Queue --> ProcessDemandAlertJob : 12: processar()
+ProcessDemandAlertJob --> ChatbotNotificationClient : 13: enviarPorCanal(alerta)
 
-DemandaService --> NotificacaoService : 8: enviarNotificacaoStatus()
-NotificacaoService --> DemandaService : 9: ok
+ChatbotNotificationClient --> ChatbotApi : 14a: /internal/notifications/chatbot-message
+ChatbotNotificationClient --> ChatbotApi : 14b: /internal/notifications/websocket-alert
+ChatbotApi --> WebSocket : 15: publicar alerta interno
 
-DemandaService --> DemandaController : 10: sucesso()
-DemandaController --> Frontend : 11: respostaOK()
-Frontend --> Usuario : 12: mostrarMensagem()
-
+DemandService --> DemandController : 16: sucesso()
+DemandController --> Frontend : 17: respostaOK()
+Frontend --> Usuario : 18: mostrarMensagem()
 @enduml

@@ -1,13 +1,11 @@
 @startuml
-title DER - Gabinete Inteligente (com Chatbot)
+title DER - Gabinete Virtual
 
 skinparam shadowing false
 skinparam class {
   BackgroundColor #ffffff
   BorderColor #2c3e50
 }
-
-' ===================== AUTORIZAÇÃO =====================
 
 entity PerfilAcesso {
   * id : INT <<PK>>
@@ -39,74 +37,6 @@ entity Usuario {
   atualizado_em : DATETIME
 }
 
-' ===================== CHATBOT =====================
-
-entity Cidadao {
-  * id : INT <<PK>>
-  --
-  nome : VARCHAR
-  cpf : VARCHAR
-  data_nascimento : DATE
-  telefone : VARCHAR
-  criado_em : DATETIME
-}
-
-entity ChatbotSessao {
-  * id : INT <<PK>>
-  --
-  cidadao_id : INT <<FK>>
-  canal : VARCHAR      'WhatsApp'
-  inicio : DATETIME
-  fim : DATETIME
-}
-
-entity PreferenciaConteudo {
-  * id : INT <<PK>>
-  --
-  cidadao_id : INT <<FK>>
-  receber_conteudos : BOOLEAN
-}
-
-entity Notificacao {
-  * id : INT <<PK>>
-  --
-  cidadao_id : INT <<FK>>
-  demanda_id : INT <<FK>>
-  mensagem : TEXT
-  enviada_em : DATETIME
-  tipo : VARCHAR       'status, noticia, alerta'
-}
-
-' ===================== DOMÍNIO DO SISTEMA =====================
-
-entity Demanda {
-  * id : INT <<PK>>
-  --
-  titulo : VARCHAR
-  descricao : TEXT
-  status : ENUM("ABERTA","EM_ANDAMENTO","CONCLUIDA")
-  prioridade : ENUM("BAIXA","MEDIA","ALTA")
-  responsavel_id : INT <<FK>>
-  cidade_id : INT <<FK>>
-  instituicao_id : INT <<FK>>
-  criado_por_usuario_id : INT <<FK>>
-  criado_por_cidadao_id : INT <<FK>>
-  criado_em : DATETIME
-  atualizado_em : DATETIME
-}
-
-entity Emenda {
-  * id : INT <<PK>>
-  --
-  numero : VARCHAR
-  valor : DECIMAL(14,2)
-  status : ENUM("PLANEJADA","EM_EXECUCAO","CONCLUIDA")
-  cidade_id : INT <<FK>>
-  area_aplicacao : VARCHAR
-  criado_em : DATETIME
-  atualizado_em : DATETIME
-}
-
 entity Cidade {
   * id : INT <<PK>>
   --
@@ -130,13 +60,128 @@ entity Lideranca {
   instituicao_id : INT <<FK>>
 }
 
+entity Cidadao {
+  * id : INT <<PK>>
+  --
+  nome : VARCHAR
+  cpf : VARCHAR NULL
+  data_nascimento : DATE NULL
+  telefone_legado : VARCHAR NULL
+  receber_atualizacoes_demanda : BOOLEAN
+  criado_em : DATETIME
+}
+
+entity TelefoneCidadao {
+  * id : INT <<PK>>
+  --
+  cidadao_id : INT <<FK>>
+  telefone : VARCHAR
+  telefone_normalizado : VARCHAR UNIQUE
+  criado_em : DATETIME
+}
+
+entity ChatbotSessao {
+  * id : INT <<PK>>
+  --
+  cidadao_id : INT <<FK>>
+  canal : VARCHAR
+  iniciada_em : DATETIME
+  encerrada_em : DATETIME NULL
+}
+
+entity PreferenciaConteudo {
+  * id : INT <<PK>>
+  --
+  cidadao_id : INT <<FK, UNIQUE>>
+  receber_conteudo : BOOLEAN
+}
+
+entity Demanda {
+  * id : INT <<PK>>
+  --
+  titulo : VARCHAR
+  descricao : TEXT
+  area_atendimento : VARCHAR NULL
+  status : ENUM("open","under_review","in_progress","completed","discarded")
+  mensagem_descarte : TEXT NULL
+  oficio_path : VARCHAR NULL
+  oficio_nome_original : VARCHAR NULL
+  oficio_mime_type : VARCHAR NULL
+  prioridade : ENUM("low","medium","high") NULL
+  responsavel_id : INT <<FK, NULL>>
+  cidade_id : INT <<FK>>
+  instituicao_id : INT <<FK, NULL>>
+  criado_por_usuario_id : INT <<FK, NULL>>
+  criado_por_cidadao_id : INT <<FK, NULL>>
+  criado_em : DATETIME
+  atualizado_em : DATETIME
+}
+
+entity HistoricoDemanda {
+  * id : INT <<PK>>
+  --
+  demanda_id : INT <<FK>>
+  usuario_id : INT <<FK, NULL>>
+  acao : VARCHAR
+  descricao : TEXT
+  metadata : JSON NULL
+  criado_em : DATETIME
+  atualizado_em : DATETIME
+}
+
+entity AlertaDemanda {
+  * id : INT <<PK>>
+  --
+  demanda_id : INT <<FK>>
+  usuario_id : INT <<FK, NULL>>
+  cidadao_id : INT <<FK, NULL>>
+  titulo : VARCHAR
+  mensagem : TEXT
+  tipo : VARCHAR
+  canal : VARCHAR
+  status : VARCHAR
+  metadata : JSON NULL
+  lido_em : DATETIME NULL
+  enviado_em : DATETIME NULL
+  erro_envio : TEXT NULL
+  criado_em : DATETIME
+  atualizado_em : DATETIME
+}
+
 entity Evento {
   * id : INT <<PK>>
   --
   titulo : VARCHAR
-  data_hora : DATETIME
+  tipo : VARCHAR
+  data_evento : DATETIME
+  inicio : DATETIME NULL
+  fim : DATETIME NULL
   local : VARCHAR
   contexto : TEXT
+  descricao : TEXT NULL
+  participantes_esperados : INT NULL
+  cor : VARCHAR NULL
+  cidade_id : INT <<FK, NULL>>
+  criado_em : DATETIME
+  atualizado_em : DATETIME
+}
+
+entity AlertaEvento {
+  * id : INT <<PK>>
+  --
+  evento_id : INT <<FK, NULL>>
+  usuario_id : INT <<FK, NULL>>
+  titulo : VARCHAR
+  mensagem : TEXT NULL
+  alerta_em : DATETIME
+  antecedencia_minutos : INT NULL
+  canal : ENUM("email","system")
+  status : VARCHAR
+  automatico : BOOLEAN
+  recorrente : BOOLEAN
+  enviado_em : DATETIME NULL
+  lido_em : DATETIME NULL
+  erro_envio : TEXT NULL
   criado_em : DATETIME
   atualizado_em : DATETIME
 }
@@ -146,49 +191,94 @@ entity DemandaEvento {
   * evento_id : INT <<FK>>
 }
 
-entity Anexo {
+entity Emenda {
   * id : INT <<PK>>
   --
-  tabela_ref : VARCHAR
-  id_ref : INT
-  caminho_arquivo : VARCHAR
+  numero : VARCHAR
+  valor : DECIMAL(14,2)
+  status : ENUM("planned","in_execution","completed")
+  cidade_id : INT <<FK>>
+  area_aplicacao : VARCHAR
   criado_em : DATETIME
+  atualizado_em : DATETIME
 }
 
-' ===================== RELACIONAMENTOS =====================
+entity ProjetoLei {
+  * id : INT <<PK>>
+  --
+  numero : VARCHAR UNIQUE
+  descricao : TEXT
+  status : ENUM("in_committee","in_voting","approved","sanctioned")
+  data_protocolo : DATE
+  criado_em : DATETIME
+  atualizado_em : DATETIME
+}
 
-' --- AUTORIZAÇÃO ---
+entity SecaoCms {
+  * id : INT <<PK>>
+  --
+  chave : VARCHAR UNIQUE
+  titulo : VARCHAR
+  conteudo : LONGTEXT
+  criado_em : DATETIME
+  atualizado_em : DATETIME
+}
+
+entity Noticia {
+  * id : INT <<PK>>
+  --
+  titulo : VARCHAR
+  conteudo : LONGTEXT
+  caminho_imagem : VARCHAR NULL
+  publicada_em : DATETIME
+  autor_id : INT <<FK>>
+  criado_em : DATETIME
+  atualizado_em : DATETIME
+}
+
+entity ProjetoSite {
+  * id : INT <<PK>>
+  --
+  titulo : VARCHAR
+  descricao : LONGTEXT
+  status : ENUM("planned","in_progress","completed")
+  cidade_id : INT <<FK>>
+  caminho_capa : VARCHAR NULL
+  autor_id : INT <<FK>>
+  criado_em : DATETIME
+  atualizado_em : DATETIME
+}
+
 Usuario "1" -- "1" PerfilAcesso
 PerfilAcesso "1" -- "0..*" PerfilPermissao
 Permissao "1" -- "0..*" PerfilPermissao
 
-' --- CHATBOT ---
-Cidadao "1" -- "0..*" ChatbotSessao
-Cidadao "1" -- "1" PreferenciaConteudo
-Cidadao "1" -- "0..*" Notificacao
-
-' --- DEMANDAS ---
-Usuario "1" -- "0..*" Demanda : cria >
-Usuario "1" -- "0..*" Demanda : responsável >
-Cidadao "1" -- "0..*" Demanda : cria via chatbot >
-
-' --- CIDADE ---
-Cidade "1" -- "0..*" Demanda
-Cidade "1" -- "0..*" Emenda
 Cidade "1" -- "0..*" Instituicao
-
-' --- INSTITUIÇÃO ---
 Instituicao "1" -- "0..*" Lideranca
+Cidade "1" -- "0..*" Demanda
+Cidade "1" -- "0..*" Evento
+Cidade "1" -- "0..*" Emenda
+Cidade "1" -- "0..*" ProjetoSite
+
+Cidadao "1" -- "0..*" TelefoneCidadao
+Cidadao "1" -- "0..*" ChatbotSessao
+Cidadao "1" -- "0..1" PreferenciaConteudo
+Cidadao "1" -- "0..*" Demanda
+Cidadao "1" -- "0..*" AlertaDemanda
+
+Usuario "1" -- "0..*" Demanda : cria >
+Usuario "1" -- "0..*" Demanda : responsavel >
 Instituicao "1" -- "0..*" Demanda
+Demanda "1" -- "0..*" HistoricoDemanda
+Demanda "1" -- "0..*" AlertaDemanda
+Usuario "1" -- "0..*" HistoricoDemanda
+Usuario "1" -- "0..*" AlertaDemanda
 
-' --- EVENTOS ---
 Demanda "0..*" -- "0..*" Evento : DemandaEvento
+Evento "1" -- "0..*" AlertaEvento
+Usuario "1" -- "0..*" AlertaEvento
 
-' --- ANEXOS ---
-Demanda "1" -- "0..*" Anexo
-Emenda  "1" -- "0..*" Anexo
-
-' --- NOTIFICAÇÕES ---
-Demanda "1" -- "0..*" Notificacao
+Usuario "1" -- "0..*" Noticia : autor >
+Usuario "1" -- "0..*" ProjetoSite : autor >
 
 @enduml

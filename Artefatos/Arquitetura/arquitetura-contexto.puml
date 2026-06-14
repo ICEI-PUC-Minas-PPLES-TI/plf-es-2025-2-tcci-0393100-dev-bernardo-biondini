@@ -19,12 +19,13 @@ actor "Cidadão\n(Chatbot)" as CidadaoChat
 rectangle "Sistema Gabinete Inteligente" as SGI {
   rectangle "Frontend Web\n(React)" as FE
   rectangle "Backend API\n(Laravel/PHP)" as BE
-  rectangle "Chatbot API\n(Webhook)" as Chatbot
+  rectangle "Chatbot API\n(FastAPI / Webhook)" as Chatbot
+  rectangle "Servidor WebSocket\n(Alertas em tempo real)" as WS
 }
 
 cloud "Serviços Externos" as Ext {
   rectangle "WhatsApp / Plataforma\n de Mensagens" as WhatsApp
-  rectangle "E-mail/Notificações\n(SMTP/API)" as Email
+  rectangle "Fila / Workers\n(Jobs assíncronos)" as Queue
   database "Banco de Dados\n(MySQL)" as DB
   folder "Armazenamento de Arquivos\n(S3/Local)" as Storage
 }
@@ -40,8 +41,11 @@ WhatsApp --> Chatbot : Webhook / Mensagens
 Chatbot --> BE : Requisições REST/JSON
 
 FE --> BE : Requisições REST/JSON (HTTPS)
+FE --> WS : Assinatura de eventos\n(WebSocket)
 BE --> DB : CRUD (ORM Eloquent)
 BE --> Storage : Upload/Download\n(anexos, ofícios)
-BE --> Email : Envio de notificações
+BE --> Queue : Disparo de jobs\n(alertas, notificações)
+Queue --> Chatbot : Envio de mensagens\npara cidadãos
+BE --> WS : Publicação de eventos\n(alertas, lembretes, atualização)
 
 @enduml

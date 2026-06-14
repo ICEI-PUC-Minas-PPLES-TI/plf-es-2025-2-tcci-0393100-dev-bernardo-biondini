@@ -11,37 +11,59 @@ package "API Layer" {
   class DemandaController
   class RelatorioController
   class AgendaController
+  class ChatbotController
+  class DemandAlertController
+  class AgendaReminderController
 }
 
 package "DTOs" {
   class CriarDemandaDTO
   class AtualizarStatusDTO
   class EventoDTO
+  class ChatbotPayloadDTO
+  class DemandAlertDTO
 }
   
 package "Service Layer" {
   class DemandaService
   class RelatorioService
   class AgendaService
-  class NotificationService
+  class ChatbotDemandService
+  class DemandAlertService
+  class AgendaReminderService
+  class NotificationDispatchService
+  class WebSocketBroadcastService
 }
 
 package "Domain Model" {
   class Demanda
   class Evento
   class Emenda
+  class Citizen
+  class DemandAlert
+  class EventAlert
+  class ChatbotSession
 }
 
 package "Repository Layer" {
   interface DemandaRepository
   interface EventoRepository
   interface EmendaRepository
+  interface CitizenRepository
+  interface DemandAlertRepository
+  interface ChatbotSessionRepository
 }
 
 package "Infrastructure" {
   class EloquentDemandaRepository
   class EloquentEventoRepository
   class EloquentEmendaRepository
+  class EloquentCitizenRepository
+  class EloquentDemandAlertRepository
+  class EloquentChatbotSessionRepository
+  class WhatsAppGateway
+  class QueueJobProcessor
+  class WebSocketServer
   database MySQL
 }
 
@@ -49,6 +71,7 @@ package "Cross-Cutting Concerns" {
   class AuthorizationService
   class ValidationService
   class EventDispatcher
+  class AsyncJobDispatcher
 }
 
 DemandaController --> CriarDemandaDTO
@@ -58,22 +81,46 @@ AgendaController --> EventoDTO
 AgendaController --> AgendaService
 
 RelatorioController --> RelatorioService
+ChatbotController --> ChatbotPayloadDTO
+ChatbotController --> ChatbotDemandService
+DemandAlertController --> DemandAlertDTO
+DemandAlertController --> DemandAlertService
+AgendaReminderController --> AgendaReminderService
 
 DemandaService --> DemandaRepository
 AgendaService --> EventoRepository
 RelatorioService --> EmendaRepository
+ChatbotDemandService --> DemandaRepository
+ChatbotDemandService --> CitizenRepository
+ChatbotDemandService --> ChatbotSessionRepository
+DemandAlertService --> DemandAlertRepository
+AgendaReminderService --> EventoRepository
 
 DemandaRepository <|.. EloquentDemandaRepository
 EventoRepository <|.. EloquentEventoRepository
 EmendaRepository <|.. EloquentEmendaRepository
+CitizenRepository <|.. EloquentCitizenRepository
+DemandAlertRepository <|.. EloquentDemandAlertRepository
+ChatbotSessionRepository <|.. EloquentChatbotSessionRepository
 
 EloquentDemandaRepository --> MySQL
 EloquentEventoRepository --> MySQL
 EloquentEmendaRepository --> MySQL
+EloquentCitizenRepository --> MySQL
+EloquentDemandAlertRepository --> MySQL
+EloquentChatbotSessionRepository --> MySQL
 
 DemandaService --> AuthorizationService
 DemandaService --> ValidationService
 DemandaService --> EventDispatcher
+DemandaService --> DemandAlertService
+AgendaService --> AgendaReminderService
+DemandAlertService --> AsyncJobDispatcher
+AgendaReminderService --> AsyncJobDispatcher
 
-EventDispatcher --> NotificationService
+AsyncJobDispatcher --> QueueJobProcessor
+QueueJobProcessor --> NotificationDispatchService
+NotificationDispatchService --> WhatsAppGateway
+NotificationDispatchService --> WebSocketBroadcastService
+WebSocketBroadcastService --> WebSocketServer
 @enduml

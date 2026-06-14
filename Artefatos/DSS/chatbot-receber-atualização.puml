@@ -1,8 +1,24 @@
 @startuml
-participant Sistema
-participant Chatbot
-actor Cidadão
+title DSS - Enviar Atualizacao de Demanda ao Cidadao
 
-Sistema -> Chatbot : notificarAtualizacao(status)
-Chatbot -> Cidadão : enviarMensagemAtualizacao()
+participant "DemandService" as demand
+participant "DemandAlertService" as alerts
+participant "RepositorioAlertas" as repo
+participant "Fila" as queue
+participant "ProcessDemandAlertJob" as job
+participant "DemandAlertChannelFactory" as factory
+participant "ChatbotNotificationClient" as client
+participant "Chatbot API" as chatbot
+actor "Cidadao" as citizen
+
+demand -> alerts : createDemandUpdatedAlerts(demanda, changes)
+alerts -> repo : salvar alerta chatbot
+repo --> alerts : alertaPendente
+alerts -> queue : dispatch(job)
+queue -> job : processar(alertaId)
+job -> factory : make("chatbot")
+factory --> job : ChatbotDemandAlertChannel
+job -> client : sendCitizenMessage(phone, message)
+client -> chatbot : POST /internal/notifications/chatbot-message
+chatbot --> citizen : mensagem de atualizacao
 @enduml

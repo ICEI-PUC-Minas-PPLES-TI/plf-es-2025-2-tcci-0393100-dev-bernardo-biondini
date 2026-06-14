@@ -1,119 +1,115 @@
 @startuml
-title Diagrama de Componentes (UML) – Sistema Gabinete Inteligente
+title Diagrama de Componentes (UML) - Sistema Gabinete Virtual
+
+top to bottom direction
+scale 0.85
 
 skinparam componentStyle uml2
 skinparam shadowing false
+skinparam linetype ortho
+skinparam wrapWidth 140
+skinparam packageStyle rectangle
 
-' ================= Subsistema Frontend =======================
-package "Frontend Web (React)" <<Subsystem>> {
-  [Interface Web] <<Component>>
-  [HTTP Client] <<Component>>
+package "Frontend Web (React)" as FE <<Subsystem>> {
+  [UI Shell] as FE_UI <<Component>>
+  [Módulos de Domínio] as FE_DOMAIN <<Component>>
+  [Cliente REST] as FE_HTTP <<Component>>
+  [Cliente WebSocket] as FE_WS <<Component>>
+  [Popup e Lembretes] as FE_ALERTS <<Component>>
 }
 
-[Interface Web] --> [HTTP Client] : Envia requisições REST
-
-' ================= Backend - API REST =========================
-package "Backend API (Laravel)" <<Subsystem>> {
-
-  [API Gateway] <<Component>>
-
-  package "Controladores (Controllers)" <<Subsystem>> {
-    [AuthController] <<Component>>
-    [DemandasController] <<Component>>
-    [EmendasController] <<Component>>
-    [CidadesController] <<Component>>
-    [InstituicoesController] <<Component>>
-    [AgendaController] <<Component>>
-    [RelatoriosController] <<Component>>
-    [ChatbotController] <<Component>>
-  }
-
-  package "Serviços de Aplicação" <<Subsystem>> {
-    [AuthService] <<Component>>
-    [DemandasService] <<Component>>
-    [EmendasService] <<Component>>
-    [CidadesService] <<Component>>
-    [InstituicoesService] <<Component>>
-    [AgendaService] <<Component>>
-    [RelatoriosService] <<Component>>
-    [ChatbotService] <<Component>>
-  }
-
-  package "Autorização e Segurança" <<Subsystem>> {
-    [Policies] <<Component>>
-    [Guards/JWT] <<Component>>
-  }
+package "Backend API (Laravel)" as BE <<Subsystem>> {
+  [API Gateway] as BE_API <<Component>>
+  [Autenticação e Autorização] as BE_AUTH <<Component>>
+  [Módulo Demandas] as BE_DEMANDS <<Component>>
+  [Módulo Agenda] as BE_AGENDA <<Component>>
+  [Módulo Alertas] as BE_ALERTS <<Component>>
+  [Módulo CMS] as BE_CMS <<Component>>
+  [Módulo Cadastros] as BE_REF <<Component>>
+  [Módulo Relatórios] as BE_REPORTS <<Component>>
+  [Integração Chatbot] as BE_CHATBOT <<Component>>
 }
 
-' ================= Backend - Domínio & Persistência ===========
-package "Domínio & Persistência" <<Subsystem>> {
-  [Eloquent Models] <<Component>>
-  [DTOs / Resources] <<Component>>
+package "Chatbot API (FastAPI)" as BOT <<Subsystem>> {
+  [Webhook WhatsApp] as BOT_WEBHOOK <<Component>>
+  [Motor Conversacional] as BOT_ENGINE <<Component>>
+  [Pipeline de Validação] as BOT_VALIDATION <<Component>>
+  [Cliente Backend] as BOT_BACKEND <<Component>>
+  [Envio WhatsApp] as BOT_SENDER <<Component>>
+}
+
+package "Mensageria Assíncrona" as MQ <<Subsystem>> {
+  [Worker de Filas] as MQ_WORKER <<Component>>
+  [Job Alerta de Demanda] as MQ_DEMAND_JOB <<Component>>
+  [Job Lembrete de Agenda] as MQ_AGENDA_JOB <<Component>>
+}
+
+package "Persistência e Arquivos" as INFRA <<Subsystem>> {
+  [Modelos Eloquent] as ORM <<Component>>
   database "MySQL" as DB
+  folder "Storage S3/Local" as STORE
 }
 
-' ================= Infraestrutura =============================
-package "Infraestrutura" <<Subsystem>> {
-  folder "Storage (S3/Local)" as Store
-  [Mail Provider] <<Component>>
+package "Serviços Externos" as EXT <<Subsystem>> {
+  [WhatsApp Business API] as WA <<Component>>
+  [Servidor WebSocket] as WS <<Component>>
 }
 
-' ================= Plataforma de Mensagens ===================
-package "Plataforma de Mensagens" <<Subsystem>> {
-  [WhatsApp] <<Component>>
-}
+FE -[hidden]down- BE
+BE -[hidden]down- BOT
+BOT -[hidden]down- MQ
+MQ -[hidden]down- INFRA
+INFRA -[hidden]down- EXT
 
-' ================== Conexões FRONT -> BACK ====================
-[HTTP Client] --> [API Gateway] : HTTPS/JSON
-[WhatsApp] --> [ChatbotController] : Webhook / HTTPS
+FE_UI --> FE_DOMAIN
+FE_UI --> FE_ALERTS
+FE_DOMAIN --> FE_HTTP
+FE_ALERTS --> FE_WS
 
-' ================== Controladores =============================
-[API Gateway] --> [AuthController]
-[API Gateway] --> [DemandasController]
-[API Gateway] --> [EmendasController]
-[API Gateway] --> [CidadesController]
-[API Gateway] --> [InstituicoesController]
-[API Gateway] --> [AgendaController]
-[API Gateway] --> [RelatoriosController]
-[API Gateway] --> [ChatbotController]
+FE_HTTP --> BE_API : HTTPS/JSON
+FE_WS --> WS : WS/WSS
 
-' ================== Services =================================
-[AuthController] --> [AuthService]
-[DemandasController] --> [DemandasService]
-[EmendasController] --> [EmendasService]
-[CidadesController] --> [CidadesService]
-[InstituicoesController] --> [InstituicoesService]
-[AgendaController] --> [AgendaService]
-[RelatoriosController] --> [RelatoriosService]
-[ChatbotController] --> [ChatbotService]
+BE_API --> BE_AUTH
+BE_API --> BE_DEMANDS
+BE_API --> BE_AGENDA
+BE_API --> BE_ALERTS
+BE_API --> BE_CMS
+BE_API --> BE_REF
+BE_API --> BE_REPORTS
+BE_API --> BE_CHATBOT
 
-[ChatbotService] --> [DemandasService]
-[ChatbotService] --> [RelatoriosService]
-[ChatbotService] --> [AuthService]
+BE_DEMANDS --> ORM
+BE_AGENDA --> ORM
+BE_ALERTS --> ORM
+BE_CMS --> ORM
+BE_REF --> ORM
+BE_REPORTS --> ORM
+BE_CHATBOT --> ORM
+ORM --> DB
 
-' ================== Segurança ================================
-[AuthService] --> [Guards/JWT]
-[AuthService] --> [Policies]
+BE_DEMANDS --> STORE : ofícios / anexos
+BE_CMS --> STORE : imagens
+BE_REPORTS --> STORE : exportações
 
-[DemandasService] --> [Policies]
-[EmendasService] --> [Policies]
-[AgendaService] --> [Policies]
-[RelatoriosService] --> [Policies]
+BE_DEMANDS --> BE_ALERTS : alterações de demanda
+BE_AGENDA --> BE_ALERTS : lembretes
+BE_ALERTS --> MQ_WORKER : dispatch jobs
+BE_ALERTS --> WS : publicação realtime
 
-' ================== Persistência ==============================
-[DemandasService] --> [Eloquent Models]
-[EmendasService] --> [Eloquent Models]
-[CidadesService] --> [Eloquent Models]
-[InstituicoesService] --> [Eloquent Models]
-[AgendaService] --> [Eloquent Models]
-[RelatoriosService] --> [Eloquent Models]
+WA --> BOT_WEBHOOK : webhook
+BOT_WEBHOOK --> BOT_ENGINE
+BOT_ENGINE --> BOT_VALIDATION
+BOT_ENGINE --> BOT_BACKEND
+BOT_ENGINE --> BOT_SENDER
+BOT_BACKEND --> BE_API : REST interno
+BOT_SENDER --> WA : mensagens
 
-[Eloquent Models] --> DB
-[RelatoriosService] --> Store
-[DemandasService] --> Store
-
-' ================== Notificações =============================
-[AgendaService] --> [Mail Provider] : Envio de alertas
-[DemandasService] --> [Mail Provider] : Notificações
+MQ_WORKER --> MQ_DEMAND_JOB
+MQ_WORKER --> MQ_AGENDA_JOB
+MQ_DEMAND_JOB --> WA : notificação ao cidadão
+MQ_DEMAND_JOB --> WS : alerta interno
+MQ_AGENDA_JOB --> WS : lembrete interno
+MQ_DEMAND_JOB --> DB : status do alerta
+MQ_AGENDA_JOB --> DB : status do lembrete
 
 @enduml

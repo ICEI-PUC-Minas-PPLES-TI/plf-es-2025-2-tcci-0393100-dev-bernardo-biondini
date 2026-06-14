@@ -8,91 +8,92 @@ skinparam usecase {
 
 rectangle "Sistema Gabinete Virtual" {
 
-  ' ==== ATORES ====
   actor "Deputada" as A1
   actor "Chefe de Gabinete" as A2
   actor "Gestora de Demandas" as A3
   actor "Atendimento" as A4
   actor "Funcionários" as A5
+  actor "Cidadão" as A6
+  actor "WhatsApp Business API" as EXT1
+  actor "Servidor WebSocket" as EXT2
 
-  ' ==== CASO PRINCIPAL (AUTENTICAÇÃO + PERMISSÃO) ====
   usecase "UC01 - Autenticar no Sistema\n+ Validar Permissão" as UC01
 
-  ' ==== CASOS DE USO PRINCIPAIS ====
   usecase "UC02 - Gerenciar Cadastros\n(Instituições, Lideranças,\nCidades, Igrejas)" as UC02
   usecase "UC03 - Gerenciar Conteúdo do Site\n(Notícias, Projetos, Missão,\nTrajetória)" as UC03
   usecase "UC04 - Gerenciar Projetos de Lei" as UC04
   usecase "UC05 - Gerenciar Emendas" as UC05
   usecase "UC06 - Gerenciar Demandas" as UC06
-  usecase "UC07 - Gerenciar Agenda\n(Eventos, Calendário,\nAlertas/Conflitos)" as UC07
+  usecase "UC07 - Gerenciar Agenda\n(Eventos, Calendário,\nAlertas e Lembretes)" as UC07
+  usecase "UC08 - Receber Alertas\nem Tempo Real" as UC08
+  usecase "UC09 - Atender Cidadão\nvia Chatbot" as UC09
 
-  ' ==== RELATÓRIOS SEPARADOS ====
-  usecase "UC08a - Relatório de Projetos de Lei" as UC08a
-  usecase "UC08b - Relatório de Emendas" as UC08b
-  usecase "UC08c - Relatório de Demandas" as UC08c
-  usecase "UC08d - Relatório Consolidado Geral" as UC08d
+  usecase "UC10a - Relatório de Projetos de Lei" as UC10a
+  usecase "UC10b - Relatório de Emendas" as UC10b
+  usecase "UC10c - Relatório de Demandas" as UC10c
+  usecase "UC10d - Relatório Consolidado Geral" as UC10d
 
-  ' ==== TODOS incluem Autenticação + Permissão ====
   UC02 --> UC01 : <<include>>
   UC03 --> UC01 : <<include>>
   UC04 --> UC01 : <<include>>
   UC05 --> UC01 : <<include>>
   UC06 --> UC01 : <<include>>
   UC07 --> UC01 : <<include>>
-  UC08a --> UC01 : <<include>>
-  UC08b --> UC01 : <<include>>
-  UC08c --> UC01 : <<include>>
-  UC08d --> UC01 : <<include>>
+  UC08 --> UC01 : <<include>>
+  UC10a --> UC01 : <<include>>
+  UC10b --> UC01 : <<include>>
+  UC10c --> UC01 : <<include>>
+  UC10d --> UC01 : <<include>>
 
-  ' ==== RELAÇÕES DOS ATORES ====
-
-  ' --- Deputada: Acesso total ---
   A1 --> UC02
   A1 --> UC03
   A1 --> UC04
   A1 --> UC05
   A1 --> UC06
   A1 --> UC07
-  A1 --> UC08a
-  A1 --> UC08b
-  A1 --> UC08c
-  A1 --> UC08d
+  A1 --> UC10a
+  A1 --> UC10b
+  A1 --> UC10c
+  A1 --> UC10d
 
-  ' --- Chefe de Gabinete ---
   A2 --> UC02
-  A2 --> UC06
-  A2 --> UC07
   A2 --> UC04
   A2 --> UC05
-  A2 --> UC08a   
-  A2 --> UC08b   
+  A2 --> UC06
+  A2 --> UC07
+  A2 --> UC08
+  A2 --> UC10a
+  A2 --> UC10b
+  A2 --> UC10c
 
-  ' --- Gestora de Demandas ---
   A3 --> UC06
-  A3 --> UC08c  
+  A3 --> UC08
+  A3 --> UC10c
 
-  ' --- Atendimento ---
   A4 --> UC02
   A4 --> UC06
-  A4 --> UC08c  
+  A4 --> UC08
+  A4 --> UC10c
 
-  ' --- Funcionários ---
   A5 --> UC02
   A5 --> UC03
   A5 --> UC04
   A5 --> UC05
+  A5 --> UC07
+  A5 --> UC08
+
+  A6 --> UC09
+  EXT1 --> UC09
+  EXT2 --> UC08
 }
-
-
-' ===================== NOTAS DESCRITIVAS =====================
 
 note right of UC01
 <<Processo padrão>>
-Toda ação no sistema realiza:
+Toda ação autenticada no painel realiza:
 1. Verificação de autenticação
 2. Checagem de perfil do usuário
 3. Validação de permissões do recurso
-Este caso é incluído por TODOS os demais.
+Este caso é incluído pelos casos internos.
 end note
 
 note right of UC02
@@ -112,57 +113,79 @@ end note
 
 note right of UC04
 <<Inclui>>
-- Cadastrar PL
+- Cadastrar projeto de lei
 - Atualizar status
-- Consultar PL
+- Consultar projetos
 end note
 
 note right of UC05
 <<Inclui>>
-- Cadastrar Emenda
-- Atualizar Status
-- Consultar Emendas
+- Cadastrar emenda
+- Atualizar status
+- Consultar emendas
 end note
 
 note right of UC06
 <<Inclui>>
 - Abrir demanda
 - Atribuir responsável
-- Registrar pessoa atendida
-- Anexar ofício
-- Definir prazo
-- Enviar notificações
 - Atualizar status
+- Registrar histórico
+- Anexar, substituir e baixar ofício
+- Exibir motivo de descarte
+- Notificar gestor e responsável
 end note
 
 note right of UC07
 <<Inclui>>
-- Criar evento
+- Criar e editar evento
 - Visualizar calendário
+- Filtrar por período
 - Verificar conflitos
-- Criar alertas
+- Criar lembretes manuais
+- Gerar lembretes automáticos\n(10 dias, 1 dia e 1 hora antes)
 end note
 
-note right of UC08a
+note right of UC08
+<<Inclui>>
+- Receber popup de alteração de demanda
+- Receber lembretes da agenda
+- Consultar seção de lembretes
+end note
+
+note right of UC09
+<<Inclui>>
+- Identificar cidadão pelo telefone
+- Cadastrar cidadão quando necessário
+- Registrar opção de receber atualizações
+- Buscar cidade e instituições relacionadas
+- Abrir demanda via WhatsApp
+- Validar idioma, conteúdo ofensivo\n e similaridade
+- Descartar automaticamente demanda inválida
+- Enviar atualização da demanda ao cidadão
+end note
+
+note right of UC10a
 <<Relatório de Projetos de Lei>>
 - Deputada
 - Chefe de Gabinete
 end note
 
-note right of UC08b
+note right of UC10b
 <<Relatório de Emendas>>
 - Deputada
 - Chefe de Gabinete
 end note
 
-note right of UC08c
+note right of UC10c
 <<Relatório de Demandas>>
 - Deputada
+- Chefe de Gabinete
 - Gestora de Demandas
 - Atendimento
 end note
 
-note right of UC08d
+note right of UC10d
 <<Relatório Consolidado Geral>>
 - Apenas a Deputada
 end note
