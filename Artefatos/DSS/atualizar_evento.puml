@@ -1,0 +1,17 @@
+@startuml
+title DSS - Atualizar Evento
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioEventos" as repo
+participant "ServicoLembretesAgenda" as reminders
+
+u -> s : atualizarEvento(id, dados)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("AGENDA_UPDATE")
+s -> repo : persistirAlteracoes(id, dados)
+repo --> s : eventoAtualizado
+s -> reminders : syncAutomaticRemindersForEvent(eventoAtualizado)
+reminders --> s : ok
+s --> u : sucesso
+@enduml

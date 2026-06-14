@@ -6,28 +6,22 @@ actor "Cidadão" as C
 
 rectangle "Chatbot do Gabinete Virtual" {
 
-  usecase "Cadastrar-se\n(nome, CPF, data de nascimento)" as UC1
+  usecase "Cadastrar-se\n(nome, telefone)" as UC1
 
-  usecase "Enviar Reclamação\nou Demanda" as UC2
-  usecase "Consultar Status\nda Reclamação/Demanda" as UC3
+  usecase "Enviar Demanda" as UC2
 
-  usecase "Receber Atualizações\nsobre Reclamações e Demandas" as UC4
+  usecase "Receber Atualizações\nsobre Demandas" as UC3
 
-  usecase "Optar por Receber Conteúdos" as UC5
-  usecase "Receber Projetos, Atualizações e Notícias da Deputada" as UC6
+  usecase "Optar por Receber Conteúdos" as UC4
 }
 
 C --> UC1
 C --> UC2
 C --> UC3
-C --> UC5
+C --> UC4
 
 UC2 --> UC1 : <<include>>
 UC3 --> UC1 : <<include>>
 UC4 --> UC1 : <<include>>
-
-UC5 --> UC6 : <<extend>>
-
-UC2 --> UC4 : <<include>>
 
 @enduml

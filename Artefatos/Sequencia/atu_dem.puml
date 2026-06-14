@@ -1,0 +1,66 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control DemandController as C
+control DemandService as S
+control DemandAlertService as Alert
+entity Demanda as M
+control AuthorizationService as AuthZ
+control ValidationService as Val
+control HistoryService as Hist
+control FileStorageService as FS
+queue "Fila / Queue" as Queue
+
+Usuario -> FE : atualizarDemanda(dados,\n novoOficio?, removeOficio?)
+FE -> C : PUT /demandas/{id} (multipart/form-data)
+
+C -> AuthZ : verificarPermissao("DEMANDS_UPDATE")
+AuthZ --> C : permitido
+
+C -> Val : validarAtualizacaoDemanda(dados)
+Val --> C : ok
+
+alt novo oficio informado
+    C -> Val : validarArquivo(oficio,\n pdf/jpg/jpeg/png/webp/doc/docx/xls/xlsx/ods/csv,\n max 10 MB)
+    Val --> C : arquivoValido
+else sem novo oficio
+    C -> C : seguir com arquivo atual
+end
+
+C -> S : atualizarDemanda(id, dados, usuarioAutenticado)
+S -> M : find(id)
+M --> S : demandaEncontradaOuNull
+
+alt demanda inexistente
+    S --> C : erro("Demanda nao encontrada")
+    C --> FE : respostaErro
+    FE --> Usuario : exibirErro
+else demanda encontrada
+    alt removeOficio = true e demanda possui arquivo
+        S -> FS : excluir(oficioAtual)
+        FS --> S : arquivoRemovido
+    end
+
+    alt novoOficio informado
+        alt demanda possui oficio anterior
+            S -> FS : excluir(oficioAtual)
+            FS --> S : arquivoAntigoRemovido
+        end
+        S -> FS : armazenar(novoOficio,\n "demands/oficios")
+        FS --> S : path, original_name, mime_type
+    else manter oficio atual
+        S -> S : reutilizar metadados atuais
+    end
+
+    S -> M : update(dados + metadadosDoOficio)
+    M --> S : demandaAtualizada
+    S -> Hist : registrar("Demanda atualizada", usuarioAutenticado, demandaAtualizada)
+    Hist --> S : ok
+    S -> Alert : createDemandUpdatedAlerts(demandaAtualizada, changes)
+    Alert -> Queue : dispatch ProcessDemandAlertJob
+    S --> C : sucesso(demandaAtualizada)
+    C --> FE : respostaOK
+    FE --> Usuario : exibirSucesso
+end
+@enduml

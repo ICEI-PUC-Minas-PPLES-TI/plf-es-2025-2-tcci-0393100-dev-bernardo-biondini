@@ -1,10 +1,15 @@
 @startuml
-participant CMSService
-participant "Chatbot API" as API
-participant "WhatsApp" as WA
+participant "Sistema de Conteudo" as CMSService
+database "Banco de Dados" as DB
+participant "Chatbot API" as Chatbot
+participant "WhatsApp Business API" as WA
 actor Cidadao
 
-CMSService -> API : publicarConteudo(noticia)
-API -> WA : enviar conteúdo
-WA -> Cidadao : receber notícia/projeto
+CMSService -> DB : consultar cidadaos com\nreceive_content = true
+DB --> CMSService : lista de destinatarios
+CMSService -> Chatbot : enviarConteudo(destinatarios, noticiaProjeto)
+loop para cada destinatario
+  Chatbot -> WA : enviar mensagem
+  WA -> Cidadao : receber noticia/projeto
+end
 @enduml

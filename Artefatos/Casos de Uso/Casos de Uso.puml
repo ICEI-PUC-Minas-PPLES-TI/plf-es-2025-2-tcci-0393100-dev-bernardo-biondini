@@ -19,12 +19,12 @@ rectangle "Sistema Gabinete Virtual" {
 
   usecase "UC01 - Autenticar no Sistema\n+ Validar Permissão" as UC01
 
-  usecase "UC02 - Gerenciar Cadastros\n(Instituições, Lideranças,\nCidades, Igrejas)" as UC02
+  usecase "UC02 - Gerenciar Cadastros\n(Instituições, Lideranças\n e Cidades)" as UC02
   usecase "UC03 - Gerenciar Conteúdo do Site\n(Notícias, Projetos, Missão,\nTrajetória)" as UC03
   usecase "UC04 - Gerenciar Projetos de Lei" as UC04
   usecase "UC05 - Gerenciar Emendas" as UC05
   usecase "UC06 - Gerenciar Demandas" as UC06
-  usecase "UC07 - Gerenciar Agenda\n(Eventos, Calendário,\nAlertas e Lembretes)" as UC07
+  usecase "UC07 - Gerenciar Agenda\n(Eventos, Calendário\n e Lembretes)" as UC07
   usecase "UC08 - Receber Alertas\nem Tempo Real" as UC08
   usecase "UC09 - Atender Cidadão\nvia Chatbot" as UC09
 
@@ -101,7 +101,6 @@ note right of UC02
 - Cadastrar/Consultar Instituições
 - Cadastrar/Consultar Lideranças
 - Cadastrar/Consultar Cidades
-- Cadastrar/Consultar Igrejas
 end note
 
 note right of UC03
@@ -114,36 +113,34 @@ end note
 note right of UC04
 <<Inclui>>
 - Cadastrar projeto de lei
-- Atualizar status
+- Atualizar projeto de lei
 - Consultar projetos
 end note
 
 note right of UC05
 <<Inclui>>
 - Cadastrar emenda
-- Atualizar status
+- Atualizar emenda
 - Consultar emendas
 end note
 
 note right of UC06
 <<Inclui>>
 - Abrir demanda
-- Atribuir responsável
-- Atualizar status
+- Consultar demandas
+- Atualizar demanda\n(status, responsável,\nprazo, descrição e ofício)
 - Registrar histórico
-- Anexar, substituir e baixar ofício
+- Baixar ofício
 - Exibir motivo de descarte
-- Notificar gestor e responsável
 end note
 
 note right of UC07
 <<Inclui>>
-- Criar e editar evento
+- Criar e atualizar evento
 - Visualizar calendário
 - Filtrar por período
 - Verificar conflitos
-- Criar lembretes manuais
-- Gerar lembretes automáticos\n(10 dias, 1 dia e 1 hora antes)
+- Sincronizar lembretes automáticos do sistema
 end note
 
 note right of UC08

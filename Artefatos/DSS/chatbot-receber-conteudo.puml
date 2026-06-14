@@ -1,8 +1,13 @@
 @startuml
+title DSS - Enviar Conteudo pelo Chatbot
+
 participant Sistema
+participant "RepositorioPreferencias" as Repo
 participant Chatbot
 actor Cidadão
 
-Sistema -> Chatbot : enviarConteudo(noticiaProjeto)
-Chatbot -> Cidadão : exibirConteudo()
+Sistema -> Repo : buscarDestinatariosOptIn()
+Repo --> Sistema : listaDeCidadaos
+Sistema -> Chatbot : enviarConteudo(destinatarios, noticiaProjeto)
+Chatbot --> Cidadão : exibirConteudo()
 @enduml

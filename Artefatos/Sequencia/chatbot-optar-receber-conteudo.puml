@@ -1,16 +1,21 @@
 @startuml
 actor Cidadao
-participant "WhatsApp" as WA
-participant "Chatbot API" as API
-participant PreferenciaService
+participant "WhatsApp Business API" as WA
+participant "Chatbot API" as Chatbot
+participant "Backend API" as API
+participant "Sistema de Conteudo" as ContentService
 database "Banco de Dados" as DB
 
-Cidadao -> WA : ativar recebimento de conteúdos
-WA -> API : POST /webhook/mensagem
-API -> PreferenciaService : salvarPreferencia(cidadao, true)
-PreferenciaService -> DB : update preferencia
-DB --> PreferenciaService : ok
-PreferenciaService --> API : preferenciaSalva
-API --> WA : confirmação
-WA --> Cidadao : opção registrada
+Cidadao -> WA : optar por receber conteudos
+WA -> Chatbot : POST /webhook
+Chatbot -> API : identificar cidadao por telefone
+API --> Chatbot : cidadao identificado
+Chatbot -> API : atualizar preferencia de conteudo
+API -> ContentService : salvarPreferencia(citizen_id, true)
+ContentService -> DB : upsert content_preferences
+DB --> ContentService : ok
+ContentService --> API : preferenciaSalva
+API --> Chatbot : resposta
+Chatbot -> WA : confirmar opcao
+WA --> Cidadao : opcao registrada
 @enduml

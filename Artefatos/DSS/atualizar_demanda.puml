@@ -1,0 +1,22 @@
+@startuml
+title DSS - Atualizar Demanda
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioDemandas" as repo
+participant "RepositorioHistorico" as hist
+participant "DemandAlertService" as alerts
+participant "Fila" as queue
+
+u -> s : atualizarDemanda(id, dados)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("DEMANDS_UPDATE")
+s -> repo : persistirAlteracoes(id, dados)
+repo --> s : demandaAtualizada
+s -> hist : registrar("Demanda atualizada", usuario)
+hist --> s : ok
+s -> alerts : createDemandUpdatedAlerts(demandaAtualizada, changes)
+alerts -> queue : dispatch(job)
+queue --> s : processamento assincrono iniciado
+s --> u : sucesso
+@enduml

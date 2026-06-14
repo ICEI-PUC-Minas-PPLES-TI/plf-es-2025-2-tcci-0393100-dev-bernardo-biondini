@@ -1,12 +1,30 @@
 @startuml
-actor Cidadão
-participant "Chatbot" as Chatbot
-participant "Sistema Gabinete Virtual" as Sistema
+title DSS - Cadastrar ou Identificar Cidadao no Chatbot
 
-Cidadão -> Chatbot : iniciarCadastro()
-Chatbot -> Cidadão : solicitarDados(nome, cpf, dataNascimento)
-Cidadão -> Chatbot : enviarDados()
-Chatbot -> Sistema : cadastrarCidadao(dados)
-Sistema --> Chatbot : cadastroConfirmado()
-Chatbot --> Cidadão : confirmarCadastro()
+actor Cidadão
+participant "Chatbot API" as Chatbot
+participant "Backend API" as Sistema
+participant "ServicoChatbotDemandas" as Service
+participant "RepositorioCitizenPhones" as Phones
+participant "RepositorioCidadaos" as Citizens
+
+Cidadão -> Chatbot : iniciarConversa()
+Chatbot -> Sistema : lookupCitizen(phone)
+Sistema -> Service : findCitizenByPhone(phone)
+Service -> Phones : buscarPorTelefone()
+Phones --> Service : citizenPhone ou null
+
+alt telefone nao encontrado
+  Chatbot -> Cidadão : solicitarNomeEPreferencia()
+  Cidadão -> Chatbot : enviarNomeEPreferencia()
+  Chatbot -> Sistema : registerCitizen(name, phone,\nreceive_demand_updates)
+  Sistema -> Service : registerCitizen(dados)
+  Service -> Citizens : criarCidadao()
+  Service -> Phones : criarTelefone()
+  Sistema --> Chatbot : cadastroConfirmado()
+  Chatbot --> Cidadão : confirmarCadastro()
+else telefone encontrado
+  Sistema --> Chatbot : cidadaoIdentificado()
+  Chatbot --> Cidadão : prosseguirAtendimento()
+end
 @enduml

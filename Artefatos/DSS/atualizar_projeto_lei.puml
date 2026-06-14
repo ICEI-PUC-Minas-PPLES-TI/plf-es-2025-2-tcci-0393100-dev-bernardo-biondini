@@ -1,0 +1,14 @@
+@startuml
+title DSS - Atualizar Projeto de Lei
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioPL" as repo
+
+u -> s : atualizarProjetoLei(id, dados)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("PROJECT_LAWS_UPDATE")
+s -> repo : persistirAlteracoes(id, dados)
+repo --> s : projetoAtualizado
+s --> u : sucesso
+@enduml

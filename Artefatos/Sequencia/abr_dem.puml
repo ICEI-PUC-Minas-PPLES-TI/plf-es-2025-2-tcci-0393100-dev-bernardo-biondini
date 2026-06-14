@@ -10,15 +10,23 @@ entity Instituicao as Inst
 control AuthorizationService as AuthZ
 control ValidationService as Val
 control HistoryService as Hist
+control FileStorageService as FS
 
-Usuario -> FE : preencherFormDemanda(dados)
-FE -> C : POST /demandas (dados)
+Usuario -> FE : preencherFormDemanda(dados, oficio?)
+FE -> C : POST /demandas (multipart/form-data)
 
 C -> AuthZ : verificarPermissao("CRIAR_DEMANDA")
 AuthZ --> C : permitido
 
 C -> Val : validarCamposDemanda(dados)
 Val --> C : ok
+
+alt oficio informado
+    C -> Val : validarArquivo(oficio,\n pdf/jpg/jpeg/png/webp/doc/docx/xls/xlsx/ods/csv,\n max 10 MB)
+    Val --> C : arquivoValido
+else sem oficio
+    C -> C : seguir sem anexo
+end
 
 C -> S : abrirDemanda(dados, usuarioAutenticado)
 
@@ -40,8 +48,15 @@ else cidade válida
         C --> FE : respostaErro
         FE --> Usuario : exibirErro
     else válida ou não obrigatória
+        alt oficio informado
+            S -> FS : armazenar(oficio,\n "demands/oficios")
+            FS --> S : path, original_name, mime_type
+        else sem oficio
+            S -> S : oficioPath = null
+        end
+
         ' --- Criação da demanda ---
-        S -> M : create(dados)
+        S -> M : create(dados + metadadosDoOficio)
         M --> S : demandaCriada
 
         ' --- Histórico ---

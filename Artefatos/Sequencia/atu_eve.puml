@@ -1,0 +1,41 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control AgendaController as C
+control AgendaService as S
+control AgendaReminderService as Reminder
+entity Evento as M
+control AuthorizationService as AuthZ
+control ValidationService as Val
+control HistoryService as Hist
+
+Usuario -> FE : atualizarEvento(dados)
+FE -> C : PUT /agenda/eventos/{id}
+
+C -> AuthZ : verificarPermissao("AGENDA_UPDATE")
+AuthZ --> C : permitido
+
+C -> Val : validarAtualizacaoEvento(dados)
+Val --> C : ok
+
+C -> S : atualizarEvento(id, dados, usuarioAutenticado)
+S -> M : find(id)
+M --> S : eventoEncontradoOuNull
+
+alt evento inexistente
+    S --> C : erro("Evento nao encontrado")
+    C --> FE : respostaErro
+    FE --> Usuario : exibirErro
+else evento encontrado
+    S -> M : update(dados)
+    M --> S : eventoAtualizado
+    S -> Hist : registrar("Evento atualizado", usuarioAutenticado, eventoAtualizado)
+    Hist --> S : ok
+    S -> Reminder : syncAutomaticRemindersForEvent(eventoAtualizado)
+    Reminder --> S : lembretesSincronizados
+    S --> C : sucesso(eventoAtualizado)
+    C --> FE : respostaOK
+    FE --> Usuario : exibirSucesso
+end
+@enduml

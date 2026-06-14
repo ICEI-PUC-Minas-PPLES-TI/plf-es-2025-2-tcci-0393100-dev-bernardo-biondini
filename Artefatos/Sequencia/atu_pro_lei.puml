@@ -1,0 +1,38 @@
+@startuml
+actor Usuario
+
+boundary Frontend as FE
+control ProjetoLeiController as C
+control ProjetoLeiService as S
+entity ProjetoLei as M
+control AuthorizationService as AuthZ
+control ValidationService as Val
+control HistoryService as Hist
+
+Usuario -> FE : atualizarProjetoLei(dados)
+FE -> C : PUT /projetos-lei/{id}
+
+C -> AuthZ : verificarPermissao("PROJECT_LAWS_UPDATE")
+AuthZ --> C : permitido
+
+C -> Val : validarAtualizacaoProjetoLei(dados)
+Val --> C : ok
+
+C -> S : atualizarProjetoLei(id, dados, usuarioAutenticado)
+S -> M : find(id)
+M --> S : projetoEncontradoOuNull
+
+alt projeto inexistente
+    S --> C : erro("Projeto de lei nao encontrado")
+    C --> FE : respostaErro
+    FE --> Usuario : mostrarErro
+else projeto encontrado
+    S -> M : update(dados)
+    M --> S : projetoAtualizado
+    S -> Hist : registrar("Projeto de lei atualizado", usuarioAutenticado, projetoAtualizado)
+    Hist --> S : ok
+    S --> C : sucesso(projetoAtualizado)
+    C --> FE : respostaOK
+    FE --> Usuario : exibirSucesso
+end
+@enduml

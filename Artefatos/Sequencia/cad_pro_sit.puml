@@ -10,7 +10,7 @@ control ValidationService as Val
 control FileStorageService as FS
 
 Usuario -> FE : preencherFormProjetoSite(titulo, descricao, imagemCapa?)
-FE -> C : POST /projetos-site (dados, arquivoOpcional)
+FE -> C : POST /projetos-site (multipart/form-data)
 
 C -> AuthZ : verificarPermissao("CADASTRAR_PROJETO_SITE")
 AuthZ --> C : permitido
@@ -19,7 +19,14 @@ C -> Val : validarDadosProjetoSite(dados)
 Val --> C : ok
 
 alt projeto possui imagem de capa
-    C -> FS : armazenar(arquivoCapa)
+    C -> Val : validarImagem(cover_image,\n formatos de imagem,\n max 5 MB)
+    Val --> C : imagemValida
+else sem imagem de capa
+    C -> C : seguir sem capa
+end
+
+alt projeto possui imagem de capa
+    C -> FS : armazenar(arquivoCapa,\n "cms/site-projects")
     FS --> C : caminhoArquivoCapa
 else sem imagem de capa
     C -> C : caminhoArquivoCapa = null

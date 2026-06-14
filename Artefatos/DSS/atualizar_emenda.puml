@@ -1,0 +1,14 @@
+@startuml
+title DSS - Atualizar Emenda
+
+actor Usuario as u
+participant "Sistema" as s
+participant "RepositorioEmenda" as repo
+
+u -> s : atualizarEmenda(id, dados)
+s -> s : autenticarUsuario()
+s -> s : validarPermissao("AMENDMENTS_UPDATE")
+s -> repo : persistirAlteracoes(id, dados)
+repo --> s : emendaAtualizada
+s --> u : sucesso
+@enduml

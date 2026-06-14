@@ -1,19 +1,35 @@
 @startuml
 actor Cidadao
-participant "WhatsApp" as WA
-participant "Chatbot API" as API
-participant CidadaoService
+participant "WhatsApp Business API" as WA
+participant "Chatbot API" as Chatbot
+participant "Backend API" as API
+participant "ChatbotDemandService" as Service
 database "Banco de Dados" as DB
 
 Cidadao -> WA : iniciar conversa
-WA -> API : POST /webhook/mensagem
-API -> WA : solicitar dados cadastrais
-Cidadao -> WA : enviar nome, CPF, data nascimento
-WA -> API : POST /chatbot/cadastro
-API -> CidadaoService : cadastrarCidadao(dados)
-CidadaoService -> DB : insert Cidadao
-DB --> CidadaoService : ok
-CidadaoService --> API : cidadaoCriado
-API --> WA : mensagem confirmação
-WA --> Cidadao : cadastro realizado
+WA -> Chatbot : POST /webhook
+Chatbot -> API : GET /api/chatbot/citizens/lookup?phone
+API -> Service : findCitizenByPhone(phone)
+Service -> DB : buscar citizen_phones
+DB --> Service : cidadao ou null
+Service --> API : resultado
+API --> Chatbot : resposta
+
+alt cidadao nao encontrado
+  Chatbot -> WA : solicitar nome e opcao\n de receber atualizacoes
+  Cidadao -> WA : enviar nome
+  Cidadao -> WA : informar preferencia
+  WA -> Chatbot : webhook com dados
+  Chatbot -> API : POST /api/chatbot/citizens
+  API -> Service : registerCitizen(name, phone,\nreceive_demand_updates)
+  Service -> DB : criar citizen + citizen_phone
+  DB --> Service : cidadaoCriado
+  Service --> API : citizen
+  API --> Chatbot : resposta
+  Chatbot -> WA : confirmar identificacao
+  WA --> Cidadao : cadastro realizado
+else cidadao encontrado
+  Chatbot -> WA : informar continuidade do atendimento
+  WA --> Cidadao : cadastro reutilizado
+end
 @enduml

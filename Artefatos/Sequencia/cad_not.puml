@@ -7,9 +7,10 @@ control NoticiaService as S
 entity Noticia as M
 control AuthorizationService as AuthZ
 control ValidationService as Val
+control FileStorageService as FS
 
 Usuario -> FE : preencherFormNoticia(titulo, conteudo, opcional:imagem)
-FE -> C : POST /noticias (dados)
+FE -> C : POST /noticias (multipart/form-data)
 
 C -> AuthZ : verificarPermissao("CADASTRAR_NOTICIA")
 AuthZ --> C : permitido
@@ -17,9 +18,23 @@ AuthZ --> C : permitido
 C -> Val : validarCamposNoticia(dados)
 Val --> C : ok
 
+alt imagem informada
+    C -> Val : validarImagem(image,\n formatos de imagem,\n max 5 MB)
+    Val --> C : imagemValida
+else sem imagem
+    C -> C : seguir sem capa
+end
+
 C -> S : cadastrarNoticia(dados, usuarioAutenticado)
 
-S -> M : create(dados)
+alt imagem informada
+    S -> FS : armazenar(image,\n "cms/news")
+    FS --> S : imagePath
+else sem imagem
+    S -> S : imagePath = null
+end
+
+S -> M : create(dados + imagePath)
 M --> S : noticiaCriada
 
 S --> C : sucesso(noticiaCriada)

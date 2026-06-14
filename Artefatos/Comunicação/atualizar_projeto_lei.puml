@@ -1,0 +1,23 @@
+@startuml
+skinparam linetype ortho
+title Comunicação - UC04 Atualizar Projeto de Lei
+
+rectangle Usuario
+rectangle Frontend
+rectangle ProjetoLeiController
+rectangle ProjetoLeiService
+rectangle ProjetoLeiRepository
+
+Usuario --> Frontend : 1: editarProjetoLei()
+Frontend --> ProjetoLeiController : 2: PUT /projetos-lei/{id}
+ProjetoLeiController --> ProjetoLeiService : 3: atualizarProjetoLei(id, dados)
+
+ProjetoLeiService --> ProjetoLeiRepository : 4: buscarPorId(id)
+ProjetoLeiRepository --> ProjetoLeiService : 5: projetoEncontrado
+ProjetoLeiService --> ProjetoLeiRepository : 6: persistirAlteracoes()
+ProjetoLeiRepository --> ProjetoLeiService : 7: projetoAtualizado
+
+ProjetoLeiService --> ProjetoLeiController : 8: sucesso()
+ProjetoLeiController --> Frontend : 9: respostaOK()
+Frontend --> Usuario : 10: mostrarMensagem()
+@enduml

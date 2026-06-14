@@ -1,10 +1,17 @@
 @startuml
+title DSS - Optar por Receber Conteudos
+
 actor Cidadão
 participant Chatbot
 participant Sistema
+participant "ServicoPreferenciasConteudo" as Service
+participant "RepositorioPreferencias" as Repo
 
 Cidadão -> Chatbot : optarReceberConteudos()
-Chatbot -> Sistema : atualizarPreferencias(cpf, true)
+Chatbot -> Sistema : atualizarPreferencia(phone, true)
+Sistema -> Service : salvarPreferencia(citizen_id, true)
+Service -> Repo : upsert(content_preferences)
+Repo --> Service : preferenciaAtualizada
 Sistema --> Chatbot : preferenciaAtualizada()
 Chatbot --> Cidadão : confirmarOpcao()
 @enduml
