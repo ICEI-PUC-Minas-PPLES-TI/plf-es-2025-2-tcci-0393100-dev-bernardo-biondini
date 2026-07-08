@@ -1,16 +1,18 @@
 @startuml
 title Diagrama de Componentes (UML) - Sistema Gabinete Virtual
 
-top to bottom direction
-scale 0.85
+left to right direction
 
 skinparam componentStyle uml2
 skinparam shadowing false
 skinparam linetype ortho
-skinparam wrapWidth 140
+skinparam wrapWidth 160
 skinparam packageStyle rectangle
+skinparam defaultTextAlignment center
+skinparam ranksep 90
+skinparam nodesep 70
 
-package "Frontend Web (React)" as FE <<Subsystem>> {
+package "Frontend Web\n(React)" as FE <<Subsystem>> {
   [UI Shell] as FE_UI <<Component>>
   [Módulos de Domínio] as FE_DOMAIN <<Component>>
   [Cliente REST] as FE_HTTP <<Component>>
@@ -18,9 +20,9 @@ package "Frontend Web (React)" as FE <<Subsystem>> {
   [Popup e Lembretes] as FE_ALERTS <<Component>>
 }
 
-package "Backend API (Laravel)" as BE <<Subsystem>> {
+package "Backend API\n(Laravel / PHP)" as BE <<Subsystem>> {
   [API Gateway] as BE_API <<Component>>
-  [Autenticação e Autorização] as BE_AUTH <<Component>>
+  [Autenticação e\nAutorização] as BE_AUTH <<Component>>
   [Módulo Demandas] as BE_DEMANDS <<Component>>
   [Módulo Agenda] as BE_AGENDA <<Component>>
   [Módulo Alertas] as BE_ALERTS <<Component>>
@@ -28,26 +30,23 @@ package "Backend API (Laravel)" as BE <<Subsystem>> {
   [Módulo Cadastros] as BE_REF <<Component>>
   [Módulo Relatórios] as BE_REPORTS <<Component>>
   [Integração Chatbot] as BE_CHATBOT <<Component>>
+  [Processador de Filas] as BE_QUEUE <<Component>>
 }
 
-package "Chatbot API (FastAPI)" as BOT <<Subsystem>> {
+package "Chatbot API\n(FastAPI / Python)" as BOT <<Subsystem>> {
   [Webhook WhatsApp] as BOT_WEBHOOK <<Component>>
   [Motor Conversacional] as BOT_ENGINE <<Component>>
   [Pipeline de Validação] as BOT_VALIDATION <<Component>>
   [Cliente Backend] as BOT_BACKEND <<Component>>
   [Envio WhatsApp] as BOT_SENDER <<Component>>
+  [Publicador WebSocket] as BOT_WS_PUBLISHER <<Component>>
 }
 
-package "Mensageria Assíncrona" as MQ <<Subsystem>> {
-  [Worker de Filas] as MQ_WORKER <<Component>>
-  [Job Alerta de Demanda] as MQ_DEMAND_JOB <<Component>>
-  [Job Lembrete de Agenda] as MQ_AGENDA_JOB <<Component>>
-}
-
-package "Persistência e Arquivos" as INFRA <<Subsystem>> {
-  [Modelos Eloquent] as ORM <<Component>>
+package "Persistência e Infraestrutura" as INFRA <<Subsystem>> {
+  [Modelos / ORM] as ORM <<Component>>
   database "MySQL" as DB
-  folder "Storage S3/Local" as STORE
+  folder "Armazenamento\nS3 / Disco Local" as STORE
+  queue "Fila de Jobs\n(Alertas e lembretes)" as Q_ALERTS
 }
 
 package "Serviços Externos" as EXT <<Subsystem>> {
@@ -55,19 +54,20 @@ package "Serviços Externos" as EXT <<Subsystem>> {
   [Servidor WebSocket] as WS <<Component>>
 }
 
-FE -[hidden]down- BE
-BE -[hidden]down- BOT
-BOT -[hidden]down- MQ
-MQ -[hidden]down- INFRA
-INFRA -[hidden]down- EXT
+interface "IHTTP Frontend\nREST / HTTP / JSON" as I_HTTP_FE
+interface "IHTTP Chatbot\nREST interno / HTTP / JSON" as I_HTTP_BOT
+interface "IRealtime\nWebSocket / WS / WSS" as I_WS
+interface "IWebhook WhatsApp\nWebhook / HTTPS" as I_WA_HOOK
+interface "IEnvio WhatsApp\nGraph API / HTTPS" as I_WA_SEND
+interface "IFiles\nLeitura / escrita de arquivos" as I_FILES
+interface "IDatabase\nSQL / TCP-IP" as I_DB
+interface "IQueue Dispatch\nJobs assíncronos" as I_QUEUE_DISPATCH
+interface "IQueue Consume\nWorkers assíncronos" as I_QUEUE_CONSUME
 
 FE_UI --> FE_DOMAIN
 FE_UI --> FE_ALERTS
 FE_DOMAIN --> FE_HTTP
 FE_ALERTS --> FE_WS
-
-FE_HTTP --> BE_API : HTTPS/JSON
-FE_WS --> WS : WS/WSS
 
 BE_API --> BE_AUTH
 BE_API --> BE_DEMANDS
@@ -77,6 +77,7 @@ BE_API --> BE_CMS
 BE_API --> BE_REF
 BE_API --> BE_REPORTS
 BE_API --> BE_CHATBOT
+BE_ALERTS --> BE_QUEUE
 
 BE_DEMANDS --> ORM
 BE_AGENDA --> ORM
@@ -85,31 +86,66 @@ BE_CMS --> ORM
 BE_REF --> ORM
 BE_REPORTS --> ORM
 BE_CHATBOT --> ORM
-ORM --> DB
+BE_QUEUE --> ORM
 
-BE_DEMANDS --> STORE : ofícios / anexos
-BE_CMS --> STORE : imagens
-BE_REPORTS --> STORE : exportações
-
-BE_DEMANDS --> BE_ALERTS : alterações de demanda
-BE_AGENDA --> BE_ALERTS : lembretes
-BE_ALERTS --> MQ_WORKER : dispatch jobs
-BE_ALERTS --> WS : publicação realtime
-
-WA --> BOT_WEBHOOK : webhook
 BOT_WEBHOOK --> BOT_ENGINE
 BOT_ENGINE --> BOT_VALIDATION
 BOT_ENGINE --> BOT_BACKEND
 BOT_ENGINE --> BOT_SENDER
-BOT_BACKEND --> BE_API : REST interno
-BOT_SENDER --> WA : mensagens
+BE_CHATBOT --> BE_QUEUE
+BE_QUEUE --> BOT_WS_PUBLISHER
 
-MQ_WORKER --> MQ_DEMAND_JOB
-MQ_WORKER --> MQ_AGENDA_JOB
-MQ_DEMAND_JOB --> WA : notificação ao cidadão
-MQ_DEMAND_JOB --> WS : alerta interno
-MQ_AGENDA_JOB --> WS : lembrete interno
-MQ_DEMAND_JOB --> DB : status do alerta
-MQ_AGENDA_JOB --> DB : status do lembrete
+FE_HTTP ..> I_HTTP_FE : requer
+BE_API -- I_HTTP_FE : fornece
+
+BOT_BACKEND ..> I_HTTP_BOT : requer
+BE_API -- I_HTTP_BOT : fornece
+
+FE_WS ..> I_WS : requer
+BOT_WS_PUBLISHER -- I_WS : fornece
+WS -- I_WS : hospeda / entrega
+
+WA ..> I_WA_HOOK : dispara
+BOT_WEBHOOK -- I_WA_HOOK : recebe
+
+BOT_SENDER ..> I_WA_SEND : requer
+WA -- I_WA_SEND : fornece
+
+BE_DEMANDS ..> I_FILES : requer
+BE_CMS ..> I_FILES : requer
+BE_REPORTS ..> I_FILES : requer
+STORE -- I_FILES : fornece
+
+ORM ..> I_DB : requer
+DB -- I_DB : fornece
+
+BE_ALERTS ..> I_QUEUE_DISPATCH : requer
+BE_CHATBOT ..> I_QUEUE_DISPATCH : requer
+Q_ALERTS -- I_QUEUE_DISPATCH : fornece
+
+BE_QUEUE ..> I_QUEUE_CONSUME : consome
+Q_ALERTS -- I_QUEUE_CONSUME : fornece
+
+BE_DEMANDS --> BE_ALERTS : atualização de demanda
+BE_AGENDA --> BE_ALERTS : criação de lembrete
+BE_CMS --> STORE : imagens institucionais
+BE_DEMANDS --> STORE : ofícios / anexos
+BE_REPORTS --> STORE : exportações
+
+BE_QUEUE --> WA : notificação ao cidadão
+BE_QUEUE --> WS : alerta interno em tempo real
+BE_QUEUE --> DB : atualização de status
+
+FE -[hidden]right- BE
+BE -[hidden]right- BOT
+BE -[hidden]down- INFRA
+BOT -[hidden]down- EXT
+INFRA -[hidden]right- EXT
+
+note bottom of Q_ALERTS
+Fila assíncrona responsável por desacoplar
+o disparo de alertas, lembretes e notificações
+do fluxo síncrono principal da API.
+end note
 
 @enduml

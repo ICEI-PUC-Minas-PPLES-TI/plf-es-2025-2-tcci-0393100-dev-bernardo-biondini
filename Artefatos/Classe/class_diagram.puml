@@ -1,180 +1,358 @@
 @startuml
-title Diagrama de Classes - Gabinete Virtual
+title Diagrama de Classes de Dominio e Servicos - Gabinete Virtual
+top to bottom direction
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam linetype ortho
 
-package "Autorização" {
-  class PerfilAcesso {
-    +id: int
-    +nome: String
-    +descricao: String
-  }
-
-  class Permissao {
-    +id: int
-    +codigo: String
-    +descricao: String
-  }
-
-  class Usuario {
-    +id: int
+package "Autorizacao e Usuarios" {
+  class Usuario <<entity>> {
     +nome: String
     +email: String
-    +ativo: bool
+    --
+    +atribuirPerfil(perfil: PerfilAcesso)
     +temPermissao(codigo: String): bool
+    +desativar()
+  }
+
+  class PerfilAcesso <<entity>> {
+    +nome: String
+    --
+    +adicionarPermissao(permissao: Permissao)
+    +removerPermissao(permissao: Permissao)
+    +permite(codigo: String): bool
+  }
+
+  class Permissao <<value object>> {
+    +codigo: String
+    --
+    +corresponde(codigo: String): bool
+  }
+
+  class AuthService <<service>> {
+    +register(dados: array): array
+    +login(credenciais: array): array
+    +logout(usuario: Usuario, token: String)
+    +resolveUserFromToken(token: String): Usuario
+  }
+
+  class AccessProfileService <<service>> {
+    +list(perPage: int): Page
+    +findById(id: int): PerfilAcesso
+    +create(dados: array): PerfilAcesso
+    +update(id: int, dados: array): PerfilAcesso
+    +delete(id: int)
+  }
+
+  class UserService <<service>> {
+    +list(perPage: int): Page
+    +create(dados: array): Usuario
+    +delete(userId: int, authenticatedUserId: int)
   }
 }
 
-package "Referências" {
-  class Cidade {
-    +id: int
+package "Referencias e Relacionamento" {
+  class Cidade <<entity>> {
     +nome: String
     +regiao: String
+    --
+    +combinaCom(query: String): bool
   }
 
-  class Instituicao {
-    +id: int
+  class Instituicao <<entity>> {
     +nome: String
     +tipo: String
+    --
+    +pertenceACidade(cidade: Cidade): bool
+    +atualizarDados(dados: array)
   }
 
-  class Lideranca {
-    +id: int
+  class Lideranca <<entity>> {
     +nome: String
     +cargo: String
+    --
+    +vincularInstituicao(instituicao: Instituicao)
+    +atualizarContato(dados: array)
+  }
+
+  class InstitutionService <<service>> {
+    +list(perPage: int, filtros: array): Page
+    +options(): array
+    +create(dados: array): Instituicao
+    +update(id: int, dados: array): Instituicao
+    +delete(id: int)
+  }
+
+  class LeaderService <<service>> {
+    +list(perPage: int, filtros: array): Page
+    +options(): array
+    +create(dados: array): Lideranca
+    +update(id: int, dados: array): Lideranca
+    +delete(id: int)
   }
 }
 
-package "Chatbot e Cidadãos" {
-  class Cidadao {
-    +id: int
+package "Cidadaos e Chatbot" {
+  class Cidadao <<entity>> {
     +nome: String
-    +cpf: String?
-    +dataNascimento: Date?
-    +telefoneLegado: String?
     +receberAtualizacoesDemanda: bool
+    --
+    +atualizarCadastro(nome: String, receberAtualizacoes: bool)
+    +podeReceberAtualizacoes(): bool
+    +telefonePrincipal(): String
   }
 
-  class TelefoneCidadao {
-    +id: int
+  class TelefoneCidadao <<entity>> {
     +telefone: String
     +telefoneNormalizado: String
+    --
+    +normalizar(): String
+    +corresponde(telefone: String): bool
   }
 
-  class SessaoChatbot {
-    +id: int
+  class SessaoChatbot <<entity>> {
     +canal: String
-    +iniciadaEm: DateTime
-    +encerradaEm: DateTime?
+    +estado: String
+    --
+    +iniciar()
+    +avancar(estado: String)
+    +encerrar()
   }
 
-  class PreferenciaConteudo {
-    +id: int
+  class PreferenciaConteudo <<entity>> {
     +receberConteudo: bool
+    --
+    +ativar()
+    +desativar()
   }
 }
 
 package "Demandas" {
-  class Demanda {
-    +id: int
+  class Demanda <<entity>> {
     +titulo: String
-    +descricao: Text
-    +areaAtendimento: AreaAtendimento?
     +status: StatusDemanda
-    +mensagemDescarte: Text?
-    +oficioNomeOriginal: String?
-    +oficioMimeType: String?
-    +prioridade: Prioridade?
+    +prioridade: Prioridade
+    --
+    +atualizarDados(dados: array)
     +atribuirResponsavel(usuario: Usuario)
     +atualizarStatus(status: StatusDemanda)
+    +anexarOficio(oficio: Arquivo)
+    +removerOficio()
+    +descartar(mensagem: String)
   }
 
-  class HistoricoDemanda {
-    +id: int
+  class HistoricoDemanda <<entity>> {
     +acao: String
-    +descricao: Text
-    +metadata: Json?
-    +criadoEm: DateTime
+    --
+    +registrarAlteracao(descricao: String, metadata: array)
+    +descreverMudanca(): String
   }
 
-  class AlertaDemanda {
-    +id: int
+  class AlertaDemanda <<entity>> {
     +titulo: String
-    +mensagem: Text
-    +tipo: String
     +canal: CanalAlertaDemanda
     +status: StatusEnvioAlerta
-    +lidoEm: DateTime?
-    +enviadoEm: DateTime?
+    --
+    +enfileirarEnvio()
+    +marcarEnviado()
+    +marcarLido()
+    +registrarFalha(mensagem: String)
+  }
+
+  class DemandService <<service>> {
+    +list(perPage: int, filtros: array): Page
+    +findById(id: int): Demanda
+    +findStatusById(id: int): array
+    +create(dados: array, userId: int, citizenId: int): Demanda
+    +update(id: int, dados: array, userId: int): Demanda
+    +delete(id: int, userId: int)
+    +downloadOficio(id: int): Arquivo
+  }
+
+  class DemandHistoryService <<service>> {
+    +logDemandChange(demandId: int, userId: int, acao: String, descricao: String, metadata: array)
+    +listByDemand(demandId: int): array
+  }
+
+  class ChatbotDemandService <<service>> {
+    +options(): array
+    +searchCities(query: String, limit: int): array
+    +institutionsByCity(cityId: int): array
+    +findCitizenByPhone(phone: String): array
+    +registerCitizen(dados: array): array
+    +create(dados: array): Demanda
+    +status(id: int): array
+    +recentOpenDemands(cityId: int, months: int): array
   }
 }
 
 package "Agenda" {
-  class Evento {
-    +id: int
+  class Evento <<entity>> {
     +titulo: String
-    +tipo: String
-    +dataEvento: DateTime
-    +inicio: DateTime?
-    +fim: DateTime?
-    +local: String
-    +contexto: Text
-    +descricao: Text?
-    +participantesEsperados: int?
-    +cor: String?
+    +inicio: DateTime
+    +fim: DateTime
+    --
+    +reagendar(inicio: DateTime, fim: DateTime)
+    +vincularDemanda(demanda: Demanda)
+    +desvincularDemanda(demanda: Demanda)
+    +permiteIntervalo(inicio: DateTime, fim: DateTime): bool
   }
 
-  class AlertaEvento {
-    +id: int
+  class AlertaEvento <<entity>> {
     +titulo: String
-    +mensagem: Text?
     +alertaEm: DateTime
-    +antecedenciaMinutos: int?
-    +canal: CanalAlertaEvento
     +status: StatusEnvioAlerta
-    +automatico: bool
-    +recorrente: bool
-    +lidoEm: DateTime?
-    +enviadoEm: DateTime?
+    --
+    +agendar()
+    +marcarEnviado()
+    +marcarLido()
+  }
+
+  class AgendaService <<service>> {
+    +listEvents(perPage: int, filtros: array): Page
+    +findEventById(id: int): Evento
+    +createEvent(dados: array): Evento
+    +updateEvent(id: int, dados: array): Evento
+    +deleteEvent(id: int)
+    +options(): array
+  }
+
+  class AgendaReminderService <<service>> {
+    +unreadRemindersForUser(user: Usuario, limit: int): array
+    +listUserReminders(user: Usuario, perPage: int, filtros: array): Page
+    +createUserAlert(dados: array, user: Usuario): AlertaEvento
+    +markAsRead(id: int, user: Usuario): AlertaEvento
+    +syncAutomaticRemindersForEvent(evento: Evento)
+    +deleteAutomaticRemindersForEvent(eventId: int)
+    +dispatchDueReminders(referenceTime: DateTime): int
   }
 }
 
 package "Parlamentar" {
-  class Emenda {
-    +id: int
+  class Emenda <<entity>> {
     +numero: String
-    +valor: Decimal
     +status: StatusEmenda
-    +areaAplicacao: String
+    --
+    +atualizarDados(dados: array)
+    +atualizarStatus(status: StatusEmenda)
   }
 
-  class ProjetoLei {
-    +id: int
+  class ProjetoLei <<entity>> {
     +numero: String
-    +descricao: Text
     +status: StatusProjetoLei
-    +dataProtocolo: Date
+    --
+    +atualizarDados(dados: array)
+    +atualizarStatus(status: StatusProjetoLei)
+  }
+
+  class AmendmentService <<service>> {
+    +list(perPage: int, filtros: array): Page
+    +options(): array
+    +findById(id: int): Emenda
+    +create(dados: array): Emenda
+    +update(id: int, dados: array): Emenda
+    +updateStatus(id: int, status: String): Emenda
+    +delete(id: int)
+  }
+
+  class ProjectLawService <<service>> {
+    +list(perPage: int, filtros: array): Page
+    +options(): array
+    +findById(id: int): ProjetoLei
+    +create(dados: array): ProjetoLei
+    +update(id: int, dados: array): ProjetoLei
+    +updateStatus(id: int, status: String): ProjetoLei
+    +delete(id: int)
   }
 }
 
-package "CMS" {
-  class SecaoCms {
-    +id: int
+package "CMS e Indicadores" {
+  class SecaoCms <<entity>> {
     +chave: String
     +titulo: String
-    +conteudo: Text
+    --
+    +atualizarConteudo(dados: array)
+    +substituirMidia(arquivo: Arquivo)
   }
 
-  class Noticia {
-    +id: int
+  class Noticia <<entity>> {
     +titulo: String
-    +conteudo: Text
     +publicadaEm: DateTime
+    --
+    +publicar()
+    +atualizar(dados: array)
+    +removerImagem()
   }
 
-  class ProjetoSite {
-    +id: int
+  class ProjetoSite <<entity>> {
     +titulo: String
-    +descricao: Text
     +status: StatusProjetoSite
+    --
+    +publicar()
+    +atualizar(dados: array)
+    +removerCapa()
+  }
+
+  class CmsSectionService <<service>> {
+    +all(): array
+    +findByKey(chave: String): SecaoCms
+    +update(chave: String, dados: array): SecaoCms
+    +ensureDefaultSections()
+  }
+
+  class NewsService <<service>> {
+    +listAdmin(perPage: int, filtros: array): Page
+    +listPublic(perPage: int, filtros: array): Page
+    +latest(limit: int): array
+    +findById(id: int): Noticia
+    +create(dados: array, authorId: int): Noticia
+    +update(id: int, dados: array): Noticia
+    +delete(id: int)
+  }
+
+  class SiteProjectService <<service>> {
+    +listAdmin(perPage: int, filtros: array): Page
+    +listPublic(perPage: int, filtros: array): Page
+    +latest(limit: int): array
+    +options(): array
+    +findById(id: int): ProjetoSite
+    +create(dados: array, authorId: int): ProjetoSite
+    +update(id: int, dados: array): ProjetoSite
+    +delete(id: int)
+  }
+
+  class DashboardService <<service>> {
+    +overview(filtros: array): array
+  }
+}
+
+package "Notificacoes" {
+  interface DemandAlertChannel {
+    +send(alerta: AlertaDemanda)
+  }
+
+  class ChatbotNotificationClient <<gateway>> {
+    +sendCitizenMessage(phone: String, message: String)
+    +publishSystemAlert(userId: int, alertId: int, title: String, message: String)
+  }
+
+  class DemandAlertChannelFactory <<factory>> {
+    +make(channel: String): DemandAlertChannel
+  }
+
+  class ChatbotDemandAlertChannel <<service>> {
+    +send(alerta: AlertaDemanda)
+  }
+
+  class WebSocketDemandAlertChannel <<service>> {
+    +send(alerta: AlertaDemanda)
+  }
+
+  class DemandAlertService <<service>> {
+    +createDemandUpdatedAlerts(demanda: Demanda, changes: array)
+    +unreadSystemAlertsForUser(user: Usuario, limit: int): array
+    +markAsRead(alertId: int, user: Usuario): AlertaDemanda
   }
 }
 
@@ -193,7 +371,7 @@ Cidadao "1" -- "0..1" PreferenciaConteudo
 Cidadao "1" -- "0..*" Demanda : cria via chatbot >
 Cidadao "1" -- "0..*" AlertaDemanda : recebe >
 
-Usuario "0..1" -- "0..*" Demanda : responsável >
+Usuario "0..1" -- "0..*" Demanda : responsavel >
 Usuario "0..1" -- "0..*" HistoricoDemanda : registra >
 Usuario "0..1" -- "0..*" AlertaDemanda : recebe >
 Usuario "0..1" -- "0..*" AlertaEvento : recebe >
@@ -207,6 +385,42 @@ Demanda "1" -- "0..*" AlertaDemanda
 Demanda "0..*" -- "0..*" Evento
 
 Evento "1" -- "0..*" AlertaEvento
+
+AuthService ..> Usuario
+AuthService ..> PerfilAcesso
+AccessProfileService ..> PerfilAcesso
+UserService ..> Usuario
+InstitutionService ..> Instituicao
+LeaderService ..> Lideranca
+
+DemandService ..> Demanda
+DemandService ..> DemandHistoryService
+DemandService ..> DemandAlertService
+ChatbotDemandService ..> DemandService
+ChatbotDemandService ..> Cidadao
+ChatbotDemandService ..> TelefoneCidadao
+
+AgendaService ..> Evento
+AgendaService ..> AgendaReminderService
+AgendaReminderService ..> AlertaEvento
+
+AmendmentService ..> Emenda
+ProjectLawService ..> ProjetoLei
+
+CmsSectionService ..> SecaoCms
+NewsService ..> Noticia
+SiteProjectService ..> ProjetoSite
+DashboardService ..> Demanda
+DashboardService ..> Emenda
+DashboardService ..> ProjetoLei
+DashboardService ..> Evento
+
+DemandAlertService ..> AlertaDemanda
+DemandAlertChannelFactory ..> DemandAlertChannel
+DemandAlertChannel <|.. ChatbotDemandAlertChannel
+DemandAlertChannel <|.. WebSocketDemandAlertChannel
+ChatbotDemandAlertChannel ..> ChatbotNotificationClient
+WebSocketDemandAlertChannel ..> ChatbotNotificationClient
 
 enum StatusDemanda {
   open
@@ -222,29 +436,9 @@ enum Prioridade {
   high
 }
 
-enum AreaAtendimento {
-  saude
-  educacao
-  infraestrutura
-  seguranca
-  assistencia_social
-  transporte
-  habitacao
-  meio_ambiente
-  agricultura
-  cultura
-  esporte
-  outro
-}
-
 enum CanalAlertaDemanda {
   system
   chatbot
-}
-
-enum CanalAlertaEvento {
-  system
-  email
 }
 
 enum StatusEnvioAlerta {

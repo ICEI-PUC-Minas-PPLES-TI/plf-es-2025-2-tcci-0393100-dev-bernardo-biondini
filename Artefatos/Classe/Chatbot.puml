@@ -1,59 +1,172 @@
 @startuml
-title Diagrama de Classes - Chatbot do Gabinete Virtual
+title Diagrama de Classes de Dominio e Servicos - Chatbot do Gabinete Virtual
+top to bottom direction
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam linetype ortho
 
-package "Chatbot" {
-  class Cidadao {
-    +id: int
-    +nome: String
-    +cpf: String?
-    +dataNascimento: Date?
-    +telefoneLegado: String?
-    +receberAtualizacoesDemanda: bool
+package "Conversa e Atendimento" {
+  class ChatbotService <<service>> {
+    +handleWebhook(payload: dict)
+    +buildReply(message: IncomingWhatsAppMessage): String
+    +startDemandFlow(sender: String): String
+    +confirmDemand(session: ConversationSession): String
   }
 
-  class TelefoneCidadao {
-    +id: int
+  class ConversationSession <<entity>> {
+    +state: String
+    --
+    +reiniciar()
+    +avancarPara(state: String)
+    +armazenar(chave: String, valor: Any)
+  }
+
+  class IncomingWhatsAppMessage <<dto>> {
+    +sender: String
+    +text: String
+    --
+    +hasText(): bool
+  }
+
+  class WhatsAppClient <<gateway>> {
+    +validateSignature(signature: String, body: bytes)
+    +sendTextMessage(phone: String, message: String)
+  }
+}
+
+package "Integracao com Backend" {
+  class BackendApiClient <<gateway>> {
+    +searchCities(query: String, limit: int): array
+    +getCityInstitutions(cityId: int): array
+    +findCitizenByPhone(phone: String): array
+    +registerCitizen(name: String, phone: String, receiveUpdates: bool): array
+    +createDemand(payload: dict): dict
+    +getRecentOpenDemands(cityId: int, months: int): array
+    +getAuthenticatedUser(token: String): dict
+  }
+}
+
+package "Validacao de Demandas" {
+  interface DemandValidator {
+    +validate(demand: DemandData)
+  }
+
+  class DemandValidationService <<service>> {
+    +validate(demand: DemandData)
+  }
+
+  class DemandLanguageValidator <<validator>> {
+    +validate(demand: DemandData)
+  }
+
+  class HateSpeechValidator <<validator>> {
+    +validate(demand: DemandData)
+  }
+
+  class ProfanityValidator <<validator>> {
+    +validate(demand: DemandData)
+  }
+
+  class AggressiveToneValidator <<validator>> {
+    +validate(demand: DemandData)
+  }
+
+  class SpamValidator <<validator>> {
+    +validate(demand: DemandData)
+  }
+
+  class SimilarDemandValidator <<validator>> {
+    +validate(demand: DemandData)
+  }
+}
+
+package "Dominio Compartilhado" {
+  class Cidadao <<entity>> {
+    +nome: String
+    +receberAtualizacoesDemanda: bool
+    --
+    +atualizarCadastro(nome: String, receberAtualizacoes: bool)
+    +podeReceberAtualizacoes(): bool
+  }
+
+  class TelefoneCidadao <<entity>> {
     +telefone: String
     +telefoneNormalizado: String
+    --
+    +normalizar(): String
+    +corresponde(telefone: String): bool
   }
 
-  class SessaoChatbot {
-    +id: int
+  class SessaoChatbot <<entity>> {
     +canal: String
-    +iniciadaEm: DateTime
-    +encerradaEm: DateTime?
+    +estado: String
+    --
+    +iniciar()
+    +avancar(estado: String)
+    +encerrar()
   }
 
-  class PreferenciaConteudo {
-    +id: int
+  class PreferenciaConteudo <<entity>> {
     +receberConteudo: bool
+    --
+    +ativar()
+    +desativar()
   }
-}
 
-package "Demandas" {
-  class Demanda {
-    +id: int
+  class Demanda <<entity>> {
     +titulo: String
-    +descricao: Text
     +status: StatusDemanda
-    +mensagemDescarte: Text?
+    --
+    +registrar()
+    +descartar(mensagem: String)
+    +estaDescartada(): bool
   }
 
-  class AlertaDemanda {
-    +id: int
+  class AlertaDemanda <<entity>> {
     +titulo: String
-    +mensagem: Text
-    +canal: CanalAlertaDemanda
     +status: StatusEnvioAlerta
+    --
+    +agendarEnvio()
+    +marcarEnviado()
+    +marcarFalha()
   }
 }
 
-Cidadao "1" --> "0..*" TelefoneCidadao
-Cidadao "1" --> "0..*" SessaoChatbot
-Cidadao "1" --> "0..1" PreferenciaConteudo
-Cidadao "1" --> "0..*" Demanda
-Cidadao "1" --> "0..*" AlertaDemanda
-Demanda "1" --> "0..*" AlertaDemanda
+package "Tempo Real" {
+  class RealtimeAlertBroker <<service>> {
+    +connect(userId: int, websocket: WebSocket)
+    +disconnect(userId: int, websocket: WebSocket)
+    +publishToUser(userId: int, payload: dict): int
+  }
+}
+
+ChatbotService *-- "0..*" ConversationSession
+ChatbotService ..> IncomingWhatsAppMessage
+ChatbotService ..> WhatsAppClient
+ChatbotService ..> BackendApiClient
+ChatbotService ..> DemandValidationService
+
+DemandValidationService o-- "1..*" DemandValidator
+DemandValidator <|.. DemandLanguageValidator
+DemandValidator <|.. HateSpeechValidator
+DemandValidator <|.. ProfanityValidator
+DemandValidator <|.. AggressiveToneValidator
+DemandValidator <|.. SpamValidator
+DemandValidator <|.. SimilarDemandValidator
+
+SimilarDemandValidator ..> BackendApiClient
+
+Cidadao "1" -- "0..*" TelefoneCidadao
+Cidadao "1" -- "0..*" SessaoChatbot
+Cidadao "1" -- "0..1" PreferenciaConteudo
+Cidadao "1" -- "0..*" Demanda
+Cidadao "1" -- "0..*" AlertaDemanda
+Demanda "1" -- "0..*" AlertaDemanda
+
+BackendApiClient ..> Cidadao
+BackendApiClient ..> Demanda
+RealtimeAlertBroker ..> AlertaDemanda
 
 enum StatusDemanda {
   open
@@ -61,11 +174,6 @@ enum StatusDemanda {
   in_progress
   completed
   discarded
-}
-
-enum CanalAlertaDemanda {
-  system
-  chatbot
 }
 
 enum StatusEnvioAlerta {
