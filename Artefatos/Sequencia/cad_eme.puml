@@ -4,39 +4,56 @@ actor Usuario
 boundary Frontend as FE
 control EmendaController as C
 control EmendaService as S
-entity Emenda as M
-entity Cidade as City
+entity CidadeModel as City
+entity EmendaModel as M
 control AuthorizationService as AuthZ
 control ValidationService as Val
 control HistoryService as Hist
+database "Banco de Dados" as DB
 
 Usuario -> FE : preencherFormEmenda()
-FE -> C : POST /emendas (dados)
-
+activate FE
+FE -> C : POST /emendas
+activate C
 C -> AuthZ : verificarPermissao("CADASTRAR_EMENDA")
+activate AuthZ
 AuthZ --> C : permitido
-
+deactivate AuthZ
 C -> Val : validarDadosEmenda(dados)
+activate Val
 Val --> C : ok
-
-C -> S : cadastrarEmenda(dados, usuarioAutenticado)
-
-S -> City : find(dados.cidade_id)
-City --> S : cidadeEncontradaOuNull
+deactivate Val
+C -> S : cadastrarEmenda(dados, usuario)
+activate S
+S -> City : find(cidade_id)
+activate City
+City -> DB : SELECT cidade
+activate DB
+DB --> City : registro
+deactivate DB
+City --> S : cidadeOuNull
+deactivate City
 
 alt cidade inexistente
-    S --> C : erro("Cidade não encontrada")
-    C --> FE : respostaErro
-    FE --> Usuario : exibirErro
-else cidade válida
-    S -> M : create(dados)
-    M --> S : emendaCriada
-
-    S -> Hist : registrar("Cadastro de Emenda", usuarioAutenticado, emendaCriada)
-    Hist --> S : ok
-
-    S --> C : sucesso(emendaCriada)
-    C --> FE : respostaOK
-    FE --> Usuario : exibirSucesso
+  S --> C : erro("Cidade nao encontrada")
+else cidade valida
+  S -> M : create(dados)
+  activate M
+  M -> DB : INSERT emenda
+  activate DB
+  DB --> M : emendaPersistida
+  deactivate DB
+  M --> S : emendaCriada
+  deactivate M
+  S -> Hist : registrar("Cadastro de Emenda")
+  activate Hist
+  Hist --> S : ok
+  deactivate Hist
+  S --> C : sucesso(emendaCriada)
 end
+deactivate S
+C --> FE : resposta
+deactivate C
+FE --> Usuario : exibirResultado
+deactivate FE
 @enduml

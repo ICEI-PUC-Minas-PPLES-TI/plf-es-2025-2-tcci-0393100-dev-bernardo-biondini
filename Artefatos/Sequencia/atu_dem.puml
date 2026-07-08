@@ -5,62 +5,90 @@ boundary Frontend as FE
 control DemandController as C
 control DemandService as S
 control DemandAlertService as Alert
-entity Demanda as M
+entity DemandaModel as M
 control AuthorizationService as AuthZ
 control ValidationService as Val
 control HistoryService as Hist
 control FileStorageService as FS
 queue "Fila / Queue" as Queue
+database "Banco de Dados" as DB
 
-Usuario -> FE : atualizarDemanda(dados,\n novoOficio?, removeOficio?)
-FE -> C : PUT /demandas/{id} (multipart/form-data)
+Usuario -> FE : atualizarDemanda(dados, oficio?)
+activate FE
+FE -> C : PUT /demandas/{id}
+activate C
 
 C -> AuthZ : verificarPermissao("DEMANDS_UPDATE")
+activate AuthZ
 AuthZ --> C : permitido
+deactivate AuthZ
 
 C -> Val : validarAtualizacaoDemanda(dados)
+activate Val
 Val --> C : ok
+deactivate Val
 
 alt novo oficio informado
-    C -> Val : validarArquivo(oficio,\n pdf/jpg/jpeg/png/webp/doc/docx/xls/xlsx/ods/csv,\n max 10 MB)
-    Val --> C : arquivoValido
-else sem novo oficio
-    C -> C : seguir com arquivo atual
+  C -> Val : validarArquivo(oficio)
+  activate Val
+  Val --> C : arquivoValido
+  deactivate Val
 end
 
-C -> S : atualizarDemanda(id, dados, usuarioAutenticado)
+C -> S : atualizarDemanda(id, dados, usuario)
+activate S
 S -> M : find(id)
-M --> S : demandaEncontradaOuNull
+activate M
+M -> DB : SELECT demanda
+activate DB
+DB --> M : registro
+deactivate DB
+M --> S : demandaOuNull
+deactivate M
 
 alt demanda inexistente
-    S --> C : erro("Demanda nao encontrada")
-    C --> FE : respostaErro
-    FE --> Usuario : exibirErro
+  S --> C : erro("Demanda nao encontrada")
 else demanda encontrada
-    alt removeOficio = true e demanda possui arquivo
-        S -> FS : excluir(oficioAtual)
-        FS --> S : arquivoRemovido
-    end
+  alt remover oficio atual
+    S -> FS : excluir(oficioAtual)
+    activate FS
+    FS --> S : ok
+    deactivate FS
+  end
 
-    alt novoOficio informado
-        alt demanda possui oficio anterior
-            S -> FS : excluir(oficioAtual)
-            FS --> S : arquivoAntigoRemovido
-        end
-        S -> FS : armazenar(novoOficio,\n "demands/oficios")
-        FS --> S : path, original_name, mime_type
-    else manter oficio atual
-        S -> S : reutilizar metadados atuais
-    end
+  alt novo oficio informado
+    S -> FS : armazenar(novoOficio)
+    activate FS
+    FS --> S : metadadosDoOficio
+    deactivate FS
+  end
 
-    S -> M : update(dados + metadadosDoOficio)
-    M --> S : demandaAtualizada
-    S -> Hist : registrar("Demanda atualizada", usuarioAutenticado, demandaAtualizada)
-    Hist --> S : ok
-    S -> Alert : createDemandUpdatedAlerts(demandaAtualizada, changes)
-    Alert -> Queue : dispatch ProcessDemandAlertJob
-    S --> C : sucesso(demandaAtualizada)
-    C --> FE : respostaOK
-    FE --> Usuario : exibirSucesso
+  S -> M : update(dados)
+  activate M
+  M -> DB : UPDATE demanda
+  activate DB
+  DB --> M : demandaPersistida
+  deactivate DB
+  M --> S : demandaAtualizada
+  deactivate M
+
+  S -> Hist : registrar("Demanda atualizada")
+  activate Hist
+  Hist --> S : ok
+  deactivate Hist
+
+  S -> Alert : createDemandUpdatedAlerts(demandaAtualizada, changes)
+  activate Alert
+  Alert -> Queue : dispatch ProcessDemandAlertJob
+  Alert --> S : alertasEnfileirados
+  deactivate Alert
+
+  S --> C : sucesso(demandaAtualizada)
 end
+deactivate S
+
+C --> FE : resposta
+deactivate C
+FE --> Usuario : exibirResultado
+deactivate FE
 @enduml

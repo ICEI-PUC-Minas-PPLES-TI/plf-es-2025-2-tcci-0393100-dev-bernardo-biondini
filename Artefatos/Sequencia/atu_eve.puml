@@ -5,37 +5,59 @@ boundary Frontend as FE
 control AgendaController as C
 control AgendaService as S
 control AgendaReminderService as Reminder
-entity Evento as M
+entity EventoModel as M
 control AuthorizationService as AuthZ
 control ValidationService as Val
 control HistoryService as Hist
+database "Banco de Dados" as DB
 
 Usuario -> FE : atualizarEvento(dados)
+activate FE
 FE -> C : PUT /agenda/eventos/{id}
-
+activate C
 C -> AuthZ : verificarPermissao("AGENDA_UPDATE")
+activate AuthZ
 AuthZ --> C : permitido
-
+deactivate AuthZ
 C -> Val : validarAtualizacaoEvento(dados)
+activate Val
 Val --> C : ok
-
-C -> S : atualizarEvento(id, dados, usuarioAutenticado)
+deactivate Val
+C -> S : atualizarEvento(id, dados, usuario)
+activate S
 S -> M : find(id)
-M --> S : eventoEncontradoOuNull
+activate M
+M -> DB : SELECT evento
+activate DB
+DB --> M : registro
+deactivate DB
+M --> S : eventoOuNull
+deactivate M
 
 alt evento inexistente
-    S --> C : erro("Evento nao encontrado")
-    C --> FE : respostaErro
-    FE --> Usuario : exibirErro
+  S --> C : erro("Evento nao encontrado")
 else evento encontrado
-    S -> M : update(dados)
-    M --> S : eventoAtualizado
-    S -> Hist : registrar("Evento atualizado", usuarioAutenticado, eventoAtualizado)
-    Hist --> S : ok
-    S -> Reminder : syncAutomaticRemindersForEvent(eventoAtualizado)
-    Reminder --> S : lembretesSincronizados
-    S --> C : sucesso(eventoAtualizado)
-    C --> FE : respostaOK
-    FE --> Usuario : exibirSucesso
+  S -> M : update(dados)
+  activate M
+  M -> DB : UPDATE evento
+  activate DB
+  DB --> M : eventoPersistido
+  deactivate DB
+  M --> S : eventoAtualizado
+  deactivate M
+  S -> Hist : registrar("Evento atualizado")
+  activate Hist
+  Hist --> S : ok
+  deactivate Hist
+  S -> Reminder : syncAutomaticRemindersForEvent(eventoAtualizado)
+  activate Reminder
+  Reminder --> S : lembretesSincronizados
+  deactivate Reminder
+  S --> C : sucesso(eventoAtualizado)
 end
+deactivate S
+C --> FE : resposta
+deactivate C
+FE --> Usuario : exibirResultado
+deactivate FE
 @enduml

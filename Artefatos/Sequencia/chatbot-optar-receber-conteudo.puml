@@ -4,18 +4,49 @@ participant "WhatsApp Business API" as WA
 participant "Chatbot API" as Chatbot
 participant "Backend API" as API
 participant "Sistema de Conteudo" as ContentService
+entity CitizenModel as CitizenModel
+entity ContentPreferenceModel as PreferenceModel
 database "Banco de Dados" as DB
 
 Cidadao -> WA : optar por receber conteudos
+activate WA
 WA -> Chatbot : POST /webhook
+activate Chatbot
 Chatbot -> API : identificar cidadao por telefone
+activate API
+API -> ContentService : localizarCidadao(phone)
+activate ContentService
+ContentService -> CitizenModel : buscarPorTelefone(phone)
+activate CitizenModel
+CitizenModel -> DB : SELECT citizen
+activate DB
+DB --> CitizenModel : registro
+deactivate DB
+CitizenModel --> ContentService : cidadao
+deactivate CitizenModel
+ContentService --> API : cidadao
+deactivate ContentService
 API --> Chatbot : cidadao identificado
+deactivate API
+
 Chatbot -> API : atualizar preferencia de conteudo
+activate API
 API -> ContentService : salvarPreferencia(citizen_id, true)
-ContentService -> DB : upsert content_preferences
-DB --> ContentService : ok
+activate ContentService
+ContentService -> PreferenceModel : upsert(content_preferences)
+activate PreferenceModel
+PreferenceModel -> DB : INSERT/UPDATE preference
+activate DB
+DB --> PreferenceModel : preferenciaPersistida
+deactivate DB
+PreferenceModel --> ContentService : preferencia
+deactivate PreferenceModel
 ContentService --> API : preferenciaSalva
+deactivate ContentService
 API --> Chatbot : resposta
+deactivate API
 Chatbot -> WA : confirmar opcao
 WA --> Cidadao : opcao registrada
+deactivate Chatbot
+deactivate WA
 @enduml

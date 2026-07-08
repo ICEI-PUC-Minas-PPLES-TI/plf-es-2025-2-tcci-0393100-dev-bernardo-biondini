@@ -1,41 +1,57 @@
 @startuml
 actor Usuario
-
 boundary Frontend as FE
 control DemandaController as C
 control DemandaService as S
-entity Demanda as M
+entity DemandaModel as M
 control AuthorizationService as AuthZ
 control ValidationService as Val
 control HistoryService as Hist
+database "Banco de Dados" as DB
 
 Usuario -> FE : preencherFormPessoaAtendida(dados)
-FE -> C : PUT /demandas/{id}/pessoa-atendida (dados)
-
+activate FE
+FE -> C : PUT /demandas/{id}/pessoa-atendida
+activate C
 C -> AuthZ : verificarPermissao("REGISTRAR_PESSOA")
+activate AuthZ
 AuthZ --> C : permitido
-
+deactivate AuthZ
 C -> Val : validarPessoaAtendida(dados)
+activate Val
 Val --> C : ok
-
-C -> S : registrarPessoaAtendida(idDemanda, dados, usuarioAutenticado)
-
-S -> M : find(idDemanda)
+deactivate Val
+C -> S : registrarPessoaAtendida(id, dados, usuario)
+activate S
+S -> M : find(id)
+activate M
+M -> DB : SELECT demanda
+activate DB
+DB --> M : registro
+deactivate DB
 M --> S : demandaOuNull
+deactivate M
 
 alt demanda inexistente
-    S --> C : erro("Demanda não encontrada")
-    C --> FE : respostaErro
-    FE --> Usuario : exibirErro
-else
-    S -> M : update(dados)
-    M --> S : demandaAtualizada
-
-    S -> Hist : registrar("Pessoa atendida registrada", usuarioAutenticado, demandaAtualizada)
-    Hist --> S : ok
-
-    S --> C : sucesso(demandaAtualizada)
-    C --> FE : respostaOK
-    FE --> Usuario : exibirSucesso
+  S --> C : erro("Demanda nao encontrada")
+else demanda encontrada
+  S -> M : update(dados)
+  activate M
+  M -> DB : UPDATE demanda
+  activate DB
+  DB --> M : demandaPersistida
+  deactivate DB
+  M --> S : demandaAtualizada
+  deactivate M
+  S -> Hist : registrar("Pessoa atendida registrada")
+  activate Hist
+  Hist --> S : ok
+  deactivate Hist
+  S --> C : sucesso(demandaAtualizada)
 end
+deactivate S
+C --> FE : resposta
+deactivate C
+FE --> Usuario : exibirResultado
+deactivate FE
 @enduml

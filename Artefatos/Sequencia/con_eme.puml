@@ -1,21 +1,29 @@
 @startuml
 actor Usuario
-
 boundary Frontend as FE
 control EmendaController as C
 control EmendaService as S
-entity Emenda as M
+entity EmendaModel as M
+database "Banco de Dados" as DB
 
 Usuario -> FE : consultarEmendas(filtros)
-FE -> C : GET /emendas?filtros
-
+activate FE
+FE -> C : GET /emendas
+activate C
 C -> S : consultarEmendas(filtros)
-
+activate S
 S -> M : query(filtros)
+activate M
+M -> DB : SELECT emendas
+activate DB
+DB --> M : registros
+deactivate DB
 M --> S : listaEmendas
-
-S --> C
-C --> FE
+deactivate M
+S --> C : listaEmendas
+deactivate S
+C --> FE : respostaOK
+deactivate C
 FE --> Usuario : exibirListaEmendas
-
+deactivate FE
 @enduml

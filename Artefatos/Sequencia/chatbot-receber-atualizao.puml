@@ -4,7 +4,9 @@ boundary Frontend as FE
 participant "Backend API" as API
 participant "DemandService" as DemandService
 participant "DemandAlertService" as AlertService
-database "Banco de Dados" as DB
+entity DemandModel as DemandModel
+entity DemandHistoryModel as HistoryModel
+entity DemandAlertModel as AlertModel
 queue "Fila / Queue" as Queue
 participant "ProcessDemandAlertJob" as Job
 participant "ChannelFactory" as Factory
@@ -12,35 +14,103 @@ participant "ChatbotNotificationClient" as Client
 participant "Chatbot API" as Chatbot
 participant "WhatsApp Business API" as WA
 participant "Servidor WebSocket" as WS
+database "Banco de Dados" as DB
 actor Cidadao
 
 Gestora -> FE : atualizar demanda
+activate FE
 FE -> API : PATCH /api/demands/{id}
+activate API
 API -> DemandService : update(id, dados)
-DemandService -> DB : salvar demanda + historico
+activate DemandService
+DemandService -> DemandModel : update(dados)
+activate DemandModel
+DemandModel -> DB : UPDATE demanda
+activate DB
+DB --> DemandModel : demandaPersistida
+deactivate DB
+DemandModel --> DemandService : demandaAtualizada
+deactivate DemandModel
+DemandService -> HistoryModel : create(historico)
+activate HistoryModel
+HistoryModel -> DB : INSERT historico
+activate DB
+DB --> HistoryModel : historicoPersistido
+deactivate DB
+HistoryModel --> DemandService : historico
+deactivate HistoryModel
 DemandService -> AlertService : createDemandUpdatedAlerts(demanda, changes)
-
-AlertService -> DB : criar alertas system\n(gestores / responsavel)
-AlertService -> DB : criar alerta chatbot\n(cidadao opt-in)
+activate AlertService
+AlertService -> AlertModel : create(system alerts)
+activate AlertModel
+AlertModel -> DB : INSERT demand_alert
+activate DB
+DB --> AlertModel : alertasPersistidos
+deactivate DB
+AlertModel --> AlertService : alertasSystem
+deactivate AlertModel
+AlertService -> AlertModel : create(chatbot alert)
+activate AlertModel
+AlertModel -> DB : INSERT demand_alert
+activate DB
+DB --> AlertModel : alertaPersistido
+deactivate DB
+AlertModel --> AlertService : alertaChatbot
+deactivate AlertModel
 AlertService -> Queue : dispatch ProcessDemandAlertJob
+AlertService --> DemandService : alertasEnfileirados
+deactivate AlertService
+DemandService --> API : demandaAtualizada
+deactivate DemandService
+API --> FE : respostaOK
+deactivate API
+FE --> Gestora : confirmar atualizacao
+deactivate FE
 
 Queue -> Job : processar alerta
-Job -> DB : carregar demand_alert
+activate Job
+Job -> AlertModel : find(alertId)
+activate AlertModel
+AlertModel -> DB : SELECT demand_alert
+activate DB
+DB --> AlertModel : alerta
+deactivate DB
+AlertModel --> Job : alerta
+deactivate AlertModel
 Job -> Factory : make(channel)
+activate Factory
+Factory --> Job : canal
+deactivate Factory
 
 alt canal = system
-  Factory -> Client : publishSystemAlert(...)
+  Job -> Client : publishSystemAlert(...)
+  activate Client
   Client -> Chatbot : POST /internal/notifications/websocket-alert
+  activate Chatbot
   Chatbot -> WS : publicar evento
   WS -> FE : popup / lista de alertas
+  deactivate Chatbot
+  Client --> Job : ok
+  deactivate Client
 else canal = chatbot
-  Factory -> Client : sendCitizenMessage(phone, message)
+  Job -> Client : sendCitizenMessage(phone, message)
+  activate Client
   Client -> Chatbot : POST /internal/notifications/chatbot-message
+  activate Chatbot
   Chatbot -> WA : enviar mensagem
   WA -> Cidadao : atualizacao da demanda
+  deactivate Chatbot
+  Client --> Job : ok
+  deactivate Client
 end
 
-Job -> DB : marcar alerta como sent ou failed
-API --> FE : respostaOK
-FE --> Gestora : confirmar atualizacao
+Job -> AlertModel : update(status)
+activate AlertModel
+AlertModel -> DB : UPDATE demand_alert
+activate DB
+DB --> AlertModel : alertaPersistido
+deactivate DB
+AlertModel --> Job : alertaAtualizado
+deactivate AlertModel
+deactivate Job
 @enduml

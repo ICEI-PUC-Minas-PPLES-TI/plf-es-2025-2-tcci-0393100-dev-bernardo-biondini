@@ -4,35 +4,55 @@ actor Usuario
 boundary Frontend as FE
 control ProjetoLeiController as C
 control ProjetoLeiService as S
-entity ProjetoLei as M
+entity ProjetoLeiModel as M
 control AuthorizationService as AuthZ
 control ValidationService as Val
 control HistoryService as Hist
+database "Banco de Dados" as DB
 
 Usuario -> FE : atualizarProjetoLei(dados)
+activate FE
 FE -> C : PUT /projetos-lei/{id}
-
+activate C
 C -> AuthZ : verificarPermissao("PROJECT_LAWS_UPDATE")
+activate AuthZ
 AuthZ --> C : permitido
-
+deactivate AuthZ
 C -> Val : validarAtualizacaoProjetoLei(dados)
+activate Val
 Val --> C : ok
-
-C -> S : atualizarProjetoLei(id, dados, usuarioAutenticado)
+deactivate Val
+C -> S : atualizarProjetoLei(id, dados, usuario)
+activate S
 S -> M : find(id)
-M --> S : projetoEncontradoOuNull
+activate M
+M -> DB : SELECT projeto_lei
+activate DB
+DB --> M : registro
+deactivate DB
+M --> S : projetoOuNull
+deactivate M
 
 alt projeto inexistente
-    S --> C : erro("Projeto de lei nao encontrado")
-    C --> FE : respostaErro
-    FE --> Usuario : mostrarErro
+  S --> C : erro("Projeto de lei nao encontrado")
 else projeto encontrado
-    S -> M : update(dados)
-    M --> S : projetoAtualizado
-    S -> Hist : registrar("Projeto de lei atualizado", usuarioAutenticado, projetoAtualizado)
-    Hist --> S : ok
-    S --> C : sucesso(projetoAtualizado)
-    C --> FE : respostaOK
-    FE --> Usuario : exibirSucesso
+  S -> M : update(dados)
+  activate M
+  M -> DB : UPDATE projeto_lei
+  activate DB
+  DB --> M : projetoPersistido
+  deactivate DB
+  M --> S : projetoAtualizado
+  deactivate M
+  S -> Hist : registrar("Projeto de lei atualizado")
+  activate Hist
+  Hist --> S : ok
+  deactivate Hist
+  S --> C : sucesso(projetoAtualizado)
 end
+deactivate S
+C --> FE : resposta
+deactivate C
+FE --> Usuario : exibirResultado
+deactivate FE
 @enduml

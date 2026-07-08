@@ -1,21 +1,29 @@
 @startuml
 actor Usuario
-
 boundary Frontend as FE
 control DemandaController as C
 control DemandaService as S
-entity Demanda as M
+entity DemandaModel as M
+database "Banco de Dados" as DB
 
 Usuario -> FE : consultarDemandas(filtros)
-FE -> C : GET /demandas?filtros
-
+activate FE
+FE -> C : GET /demandas
+activate C
 C -> S : consultarDemandas(filtros)
-
+activate S
 S -> M : queryComFiltros(filtros)
+activate M
+M -> DB : SELECT demandas
+activate DB
+DB --> M : registros
+deactivate DB
 M --> S : listaDemandas
-
-S --> C
-C --> FE
+deactivate M
+S --> C : listaDemandas
+deactivate S
+C --> FE : respostaOK
+deactivate C
 FE --> Usuario : apresentarDemandas
-
+deactivate FE
 @enduml

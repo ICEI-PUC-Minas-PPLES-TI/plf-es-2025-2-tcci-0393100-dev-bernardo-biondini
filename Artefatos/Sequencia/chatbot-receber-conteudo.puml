@@ -1,15 +1,24 @@
 @startuml
 participant "Sistema de Conteudo" as CMSService
-database "Banco de Dados" as DB
+entity ContentPreferenceModel as PreferenceModel
 participant "Chatbot API" as Chatbot
 participant "WhatsApp Business API" as WA
+database "Banco de Dados" as DB
 actor Cidadao
 
-CMSService -> DB : consultar cidadaos com\nreceive_content = true
-DB --> CMSService : lista de destinatarios
-CMSService -> Chatbot : enviarConteudo(destinatarios, noticiaProjeto)
+CMSService -> PreferenceModel : buscarDestinatariosOptIn()
+activate PreferenceModel
+PreferenceModel -> DB : SELECT content_preferences
+activate DB
+DB --> PreferenceModel : destinatarios
+deactivate DB
+PreferenceModel --> CMSService : listaDestinatarios
+deactivate PreferenceModel
+CMSService -> Chatbot : enviarConteudo(destinatarios, conteudo)
+activate Chatbot
 loop para cada destinatario
   Chatbot -> WA : enviar mensagem
   WA -> Cidadao : receber noticia/projeto
 end
+deactivate Chatbot
 @enduml

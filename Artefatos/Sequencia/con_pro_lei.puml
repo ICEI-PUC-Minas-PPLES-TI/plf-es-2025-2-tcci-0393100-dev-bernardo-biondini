@@ -1,25 +1,34 @@
 @startuml
 actor Usuario
-
 boundary Frontend as FE
 control ProjetoLeiController as C
 control ProjetoLeiService as S
-entity ProjetoLei as M
+entity ProjetoLeiModel as M
 control AuthorizationService as AuthZ
+database "Banco de Dados" as DB
 
 Usuario -> FE : consultarPL(filtros)
-FE -> C : GET /projetos-lei?filtros
-
+activate FE
+FE -> C : GET /projetos-lei
+activate C
 C -> AuthZ : validarPermissao("CONSULTAR_PL")
+activate AuthZ
 AuthZ --> C : permitido
-
+deactivate AuthZ
 C -> S : consultarPL(filtros)
-
+activate S
 S -> M : query(filtros)
+activate M
+M -> DB : SELECT projetos_lei
+activate DB
+DB --> M : registros
+deactivate DB
 M --> S : listaPL
-
-S --> C
-C --> FE
+deactivate M
+S --> C : listaPL
+deactivate S
+C --> FE : respostaOK
+deactivate C
 FE --> Usuario : exibirListaPL
-
+deactivate FE
 @enduml

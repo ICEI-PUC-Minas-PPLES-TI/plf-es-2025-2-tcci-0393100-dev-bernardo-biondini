@@ -1,25 +1,34 @@
 @startuml
 actor Usuario
-
 boundary Frontend as FE
 control LiderancaController as C
 control LiderancaService as S
-entity Lideranca as M
+entity LiderancaModel as M
 control AuthorizationService as AuthZ
+database "Banco de Dados" as DB
 
 Usuario -> FE : solicitarListaLiderancas(filtros)
-FE -> C : GET /liderancas?filtros
-
+activate FE
+FE -> C : GET /liderancas
+activate C
 C -> AuthZ : validarPermissao("CONSULTAR_LIDERANCAS")
+activate AuthZ
 AuthZ --> C : permitido
-
+deactivate AuthZ
 C -> S : consultarLiderancas(filtros)
-
+activate S
 S -> M : query(filtros)
+activate M
+M -> DB : SELECT liderancas
+activate DB
+DB --> M : registros
+deactivate DB
 M --> S : listaLiderancas
-
+deactivate M
 S --> C : listaLiderancas
-C --> FE : respostaOK(lista)
+deactivate S
+C --> FE : respostaOK
+deactivate C
 FE --> Usuario : mostrarLista
-
+deactivate FE
 @enduml

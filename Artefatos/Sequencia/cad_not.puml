@@ -4,41 +4,52 @@ actor Usuario
 boundary Frontend as FE
 control NoticiaController as C
 control NoticiaService as S
-entity Noticia as M
+entity NoticiaModel as M
 control AuthorizationService as AuthZ
 control ValidationService as Val
 control FileStorageService as FS
+database "Banco de Dados" as DB
 
-Usuario -> FE : preencherFormNoticia(titulo, conteudo, opcional:imagem)
-FE -> C : POST /noticias (multipart/form-data)
-
+Usuario -> FE : preencherFormNoticia()
+activate FE
+FE -> C : POST /noticias
+activate C
 C -> AuthZ : verificarPermissao("CADASTRAR_NOTICIA")
+activate AuthZ
 AuthZ --> C : permitido
-
+deactivate AuthZ
 C -> Val : validarCamposNoticia(dados)
+activate Val
 Val --> C : ok
+deactivate Val
 
 alt imagem informada
-    C -> Val : validarImagem(image,\n formatos de imagem,\n max 5 MB)
-    Val --> C : imagemValida
-else sem imagem
-    C -> C : seguir sem capa
+  C -> Val : validarImagem(image)
+  activate Val
+  Val --> C : imagemValida
+  deactivate Val
 end
 
-C -> S : cadastrarNoticia(dados, usuarioAutenticado)
-
+C -> S : cadastrarNoticia(dados, usuario)
+activate S
 alt imagem informada
-    S -> FS : armazenar(image,\n "cms/news")
-    FS --> S : imagePath
-else sem imagem
-    S -> S : imagePath = null
+  S -> FS : armazenar(image)
+  activate FS
+  FS --> S : imagePath
+  deactivate FS
 end
-
-S -> M : create(dados + imagePath)
+S -> M : create(dados)
+activate M
+M -> DB : INSERT noticia
+activate DB
+DB --> M : noticiaPersistida
+deactivate DB
 M --> S : noticiaCriada
-
+deactivate M
 S --> C : sucesso(noticiaCriada)
-C --> FE : respostaOK(JSON noticia)
-FE --> Usuario : exibir "Notícia cadastrada com sucesso"
-
+deactivate S
+C --> FE : respostaOK
+deactivate C
+FE --> Usuario : exibirSucesso
+deactivate FE
 @enduml

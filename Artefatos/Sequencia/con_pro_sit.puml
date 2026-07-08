@@ -1,20 +1,29 @@
 @startuml
 actor Usuario
-
 boundary Frontend as FE
 control ProjetoSiteController as C
 control ProjetoSiteService as S
-entity ProjetoSite as M
+entity ProjetoSiteModel as M
+database "Banco de Dados" as DB
 
 Usuario -> FE : consultarProjetos()
+activate FE
 FE -> C : GET /projetos-site
-
+activate C
 C -> S : consultarProjetos()
+activate S
 S -> M : all()
+activate M
+M -> DB : SELECT projetos_site
+activate DB
+DB --> M : registros
+deactivate DB
 M --> S : listaProjetos
-
-S --> C
-C --> FE
+deactivate M
+S --> C : listaProjetos
+deactivate S
+C --> FE : respostaOK
+deactivate C
 FE --> Usuario : exibirListaProjetos
-
+deactivate FE
 @enduml

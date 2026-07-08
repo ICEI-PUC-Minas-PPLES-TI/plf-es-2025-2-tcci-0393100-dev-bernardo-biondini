@@ -4,33 +4,42 @@ actor Usuario
 boundary Frontend as FE
 control AuthController as C
 control AuthService as S
-entity Usuario as M
+entity UsuarioModel as M
 control AuthorizationService as A
+database "Banco de Dados" as DB
 
 Usuario -> FE : informarCredenciais(email, senha)
+activate FE
 FE -> C : POST /login
-
+activate C
 C -> S : autenticar(email, senha)
+activate S
 S -> M : buscarPorEmail(email)
-M --> S : usuarioEncontrado ou null
+activate M
+M -> DB : SELECT usuario
+activate DB
+DB --> M : registro
+deactivate DB
+M --> S : usuarioOuNull
+deactivate M
 
-alt usuário não encontrado
-    S --> C : erro("Credenciais inválidas")
-    C --> FE : respostaErro
-    FE --> Usuario : exibir mensagem
-else usuário encontrado
-    S -> S : verificarHash(senha, usuario.senhaHash)
-    
-    alt senha incorreta
-        S --> C : erro("Credenciais inválidas")
-        C --> FE : respostaErro
-        FE --> Usuario : exibir mensagem
-    else senha correta
-        S -> A : gerarToken(usuario)
-        A --> S : tokenJWT
-        S --> C : sucesso(tokenJWT)
-        C --> FE : respostaOK
-        FE --> Usuario : exibir dashboard
-    end
+alt usuario nao encontrado
+  S --> C : erro("Credenciais invalidas")
+else usuario encontrado
+  S -> S : verificarHash(senha)
+  alt senha incorreta
+    S --> C : erro("Credenciais invalidas")
+  else senha correta
+    S -> A : gerarToken(usuario)
+    activate A
+    A --> S : tokenJWT
+    deactivate A
+    S --> C : sucesso(tokenJWT)
+  end
 end
+deactivate S
+C --> FE : resposta
+deactivate C
+FE --> Usuario : exibirResultado
+deactivate FE
 @enduml

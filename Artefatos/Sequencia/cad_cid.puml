@@ -4,25 +4,37 @@ actor Usuario
 boundary Frontend as FE
 control CidadeController as C
 control CidadeService as S
-entity Cidade as M
+entity CidadeModel as M
 control AuthorizationService as AuthZ
 control ValidationService as Val
+database "Banco de Dados" as DB
 
 Usuario -> FE : preencherFormCidade()
+activate FE
 FE -> C : POST /cidades
-
+activate C
 C -> AuthZ : verificarPermissao("CADASTRAR_CIDADE")
+activate AuthZ
 AuthZ --> C : permitido
-
+deactivate AuthZ
 C -> Val : validarCampos(dados)
+activate Val
 Val --> C : ok
-
+deactivate Val
 C -> S : cadastrarCidade(dados)
-
+activate S
 S -> M : create(dados)
+activate M
+M -> DB : INSERT cidade
+activate DB
+DB --> M : cidadePersistida
+deactivate DB
 M --> S : cidadeCriada
-
-S --> C : sucesso
+deactivate M
+S --> C : sucesso(cidadeCriada)
+deactivate S
 C --> FE : respostaOK
-FE --> Usuario : exibir sucesso
+deactivate C
+FE --> Usuario : exibirSucesso
+deactivate FE
 @enduml

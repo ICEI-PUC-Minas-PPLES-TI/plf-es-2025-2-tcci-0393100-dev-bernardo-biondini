@@ -4,41 +4,52 @@ actor Usuario
 boundary Frontend as FE
 control ProjetoSiteController as C
 control ProjetoSiteService as S
-entity ProjetoSite as M
+entity ProjetoSiteModel as M
 control AuthorizationService as AuthZ
 control ValidationService as Val
 control FileStorageService as FS
+database "Banco de Dados" as DB
 
-Usuario -> FE : preencherFormProjetoSite(titulo, descricao, imagemCapa?)
-FE -> C : POST /projetos-site (multipart/form-data)
-
+Usuario -> FE : preencherFormProjetoSite()
+activate FE
+FE -> C : POST /projetos-site
+activate C
 C -> AuthZ : verificarPermissao("CADASTRAR_PROJETO_SITE")
+activate AuthZ
 AuthZ --> C : permitido
-
+deactivate AuthZ
 C -> Val : validarDadosProjetoSite(dados)
+activate Val
 Val --> C : ok
+deactivate Val
 
-alt projeto possui imagem de capa
-    C -> Val : validarImagem(cover_image,\n formatos de imagem,\n max 5 MB)
-    Val --> C : imagemValida
-else sem imagem de capa
-    C -> C : seguir sem capa
+alt capa informada
+  C -> Val : validarImagem(cover_image)
+  activate Val
+  Val --> C : imagemValida
+  deactivate Val
 end
 
-alt projeto possui imagem de capa
-    C -> FS : armazenar(arquivoCapa,\n "cms/site-projects")
-    FS --> C : caminhoArquivoCapa
-else sem imagem de capa
-    C -> C : caminhoArquivoCapa = null
+C -> S : cadastrarProjetoSite(dados, usuario)
+activate S
+alt capa informada
+  S -> FS : armazenar(cover_image)
+  activate FS
+  FS --> S : coverPath
+  deactivate FS
 end
-
-C -> S : cadastrarProjetoSite(dados, caminhoArquivoCapa, usuarioAutenticado)
-
 S -> M : create(dados)
+activate M
+M -> DB : INSERT projeto_site
+activate DB
+DB --> M : projetoPersistido
+deactivate DB
 M --> S : projetoCriado
-
+deactivate M
 S --> C : sucesso(projetoCriado)
-C --> FE : respostaOK(JSON projeto)
-FE --> Usuario : exibir "Projeto cadastrado com sucesso"
-
+deactivate S
+C --> FE : respostaOK
+deactivate C
+FE --> Usuario : exibirSucesso
+deactivate FE
 @enduml

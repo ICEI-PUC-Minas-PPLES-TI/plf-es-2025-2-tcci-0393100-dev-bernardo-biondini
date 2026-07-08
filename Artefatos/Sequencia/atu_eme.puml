@@ -4,35 +4,55 @@ actor Usuario
 boundary Frontend as FE
 control EmendaController as C
 control EmendaService as S
-entity Emenda as M
+entity EmendaModel as M
 control AuthorizationService as AuthZ
 control ValidationService as Val
 control HistoryService as Hist
+database "Banco de Dados" as DB
 
 Usuario -> FE : atualizarEmenda(dados)
+activate FE
 FE -> C : PUT /emendas/{id}
-
+activate C
 C -> AuthZ : verificarPermissao("AMENDMENTS_UPDATE")
+activate AuthZ
 AuthZ --> C : permitido
-
+deactivate AuthZ
 C -> Val : validarAtualizacaoEmenda(dados)
+activate Val
 Val --> C : ok
-
-C -> S : atualizarEmenda(id, dados, usuarioAutenticado)
+deactivate Val
+C -> S : atualizarEmenda(id, dados, usuario)
+activate S
 S -> M : find(id)
-M --> S : emendaEncontradaOuNull
+activate M
+M -> DB : SELECT emenda
+activate DB
+DB --> M : registro
+deactivate DB
+M --> S : emendaOuNull
+deactivate M
 
 alt emenda inexistente
-    S --> C : erro("Emenda nao encontrada")
-    C --> FE : respostaErro
-    FE --> Usuario : exibirErro
+  S --> C : erro("Emenda nao encontrada")
 else emenda encontrada
-    S -> M : update(dados)
-    M --> S : emendaAtualizada
-    S -> Hist : registrar("Emenda atualizada", usuarioAutenticado, emendaAtualizada)
-    Hist --> S : ok
-    S --> C : sucesso(emendaAtualizada)
-    C --> FE : respostaOK
-    FE --> Usuario : mostrarSucesso
+  S -> M : update(dados)
+  activate M
+  M -> DB : UPDATE emenda
+  activate DB
+  DB --> M : emendaPersistida
+  deactivate DB
+  M --> S : emendaAtualizada
+  deactivate M
+  S -> Hist : registrar("Emenda atualizada")
+  activate Hist
+  Hist --> S : ok
+  deactivate Hist
+  S --> C : sucesso(emendaAtualizada)
 end
+deactivate S
+C --> FE : resposta
+deactivate C
+FE --> Usuario : exibirResultado
+deactivate FE
 @enduml

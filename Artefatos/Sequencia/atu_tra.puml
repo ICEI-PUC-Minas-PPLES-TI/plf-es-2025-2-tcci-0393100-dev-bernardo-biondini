@@ -4,33 +4,50 @@ actor Usuario
 boundary Frontend as FE
 control CMSController as C
 control CMSService as S
-entity CMSSecao as M
+entity CMSSecaoModel as M
 control AuthorizationService as AuthZ
 control ValidationService as Val
 control HistoryService as Hist
+database "Banco de Dados" as DB
 
 Usuario -> FE : editarTextoTrajetoria(novoTexto)
-FE -> C : PUT /cms/trajetoria (novoTexto)
-
+activate FE
+FE -> C : PUT /cms/trajetoria
+activate C
 C -> AuthZ : verificarPermissao("ATUALIZAR_TRAJETORIA")
+activate AuthZ
 AuthZ --> C : permitido
-
+deactivate AuthZ
 C -> Val : validarTextoNaoVazio(novoTexto)
+activate Val
 Val --> C : ok
-
-C -> S : atualizarTrajetoria(novoTexto, usuarioAutenticado)
-
+deactivate Val
+C -> S : atualizarTrajetoria(novoTexto, usuario)
+activate S
 S -> M : findByChave("TRAJETORIA")
+activate M
+M -> DB : SELECT secao
+activate DB
+DB --> M : registro
+deactivate DB
 M --> S : secaoTrajetoria
-
-S -> Hist : registrar("Atualização Trajetória", usuarioAutenticado, secaoTrajetoria)
+deactivate M
+S -> Hist : registrar("Atualizacao Trajetoria")
+activate Hist
 Hist --> S : ok
-
-S -> M : update(secaoTrajetoria, {conteudo = novoTexto})
+deactivate Hist
+S -> M : update(secaoTrajetoria)
+activate M
+M -> DB : UPDATE secao
+activate DB
+DB --> M : secaoPersistida
+deactivate DB
 M --> S : secaoAtualizada
-
+deactivate M
 S --> C : sucesso
+deactivate S
 C --> FE : respostaOK
-FE --> Usuario : exibir "Trajetória atualizada"
-
+deactivate C
+FE --> Usuario : exibirSucesso
+deactivate FE
 @enduml

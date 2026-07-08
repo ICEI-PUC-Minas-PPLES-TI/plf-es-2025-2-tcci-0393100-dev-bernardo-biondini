@@ -1,25 +1,34 @@
 @startuml
 actor Usuario
-
 boundary Frontend as FE
 control RelatorioController as C
 control RelatorioService as S
-entity Emenda as E
+entity EmendaModel as E
 control AuthorizationService as AuthZ
+database "Banco de Dados" as DB
 
 Usuario -> FE : gerarRelatorioEmendas()
+activate FE
 FE -> C : GET /relatorios/emendas
-
+activate C
 C -> AuthZ : validarPermissao("RELATORIO_EMENDAS")
+activate AuthZ
 AuthZ --> C : permitido
-
+deactivate AuthZ
 C -> S : gerarRelatorioEmendas()
-
+activate S
 S -> E : queryTodos()
+activate E
+E -> DB : SELECT emendas
+activate DB
+DB --> E : dadosEmendas
+deactivate DB
 E --> S : dadosEmendas
-
-S --> C
-C --> FE
+deactivate E
+S --> C : relatorio
+deactivate S
+C --> FE : arquivo
+deactivate C
 FE --> Usuario : downloadPDF
-
+deactivate FE
 @enduml

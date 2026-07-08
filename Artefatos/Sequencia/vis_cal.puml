@@ -1,21 +1,29 @@
 @startuml
 actor Usuario
-
 boundary Frontend as FE
 control AgendaController as C
 control AgendaService as S
-entity Evento as M
+entity EventoModel as M
+database "Banco de Dados" as DB
 
 Usuario -> FE : visualizarCalendario(mes)
+activate FE
 FE -> C : GET /agenda?mes=mes
-
+activate C
 C -> S : consultarEventosDoMes(mes)
-
+activate S
 S -> M : where(mes = mes)
+activate M
+M -> DB : SELECT eventos
+activate DB
+DB --> M : registros
+deactivate DB
 M --> S : listaEventos
-
-S --> C
-C --> FE
+deactivate M
+S --> C : listaEventos
+deactivate S
+C --> FE : respostaOK
+deactivate C
 FE --> Usuario : exibirCalendario
-
+deactivate FE
 @enduml

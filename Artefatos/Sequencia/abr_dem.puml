@@ -4,68 +4,89 @@ actor Usuario
 boundary Frontend as FE
 control DemandaController as C
 control DemandaService as S
-entity Demanda as M
-entity Cidade as City
-entity Instituicao as Inst
+entity CidadeModel as City
+entity InstituicaoModel as Inst
+entity DemandaModel as M
 control AuthorizationService as AuthZ
 control ValidationService as Val
 control HistoryService as Hist
 control FileStorageService as FS
+database "Banco de Dados" as DB
 
 Usuario -> FE : preencherFormDemanda(dados, oficio?)
-FE -> C : POST /demandas (multipart/form-data)
+activate FE
+FE -> C : POST /demandas
+activate C
 
 C -> AuthZ : verificarPermissao("CRIAR_DEMANDA")
+activate AuthZ
 AuthZ --> C : permitido
+deactivate AuthZ
 
 C -> Val : validarCamposDemanda(dados)
+activate Val
 Val --> C : ok
+deactivate Val
 
 alt oficio informado
-    C -> Val : validarArquivo(oficio,\n pdf/jpg/jpeg/png/webp/doc/docx/xls/xlsx/ods/csv,\n max 10 MB)
-    Val --> C : arquivoValido
-else sem oficio
-    C -> C : seguir sem anexo
+  C -> Val : validarArquivo(oficio)
+  activate Val
+  Val --> C : arquivoValido
+  deactivate Val
 end
 
-C -> S : abrirDemanda(dados, usuarioAutenticado)
-
-' --- Validação de cidade ---
-S -> City : find(dados.cidade_id)
+C -> S : abrirDemanda(dados, usuario)
+activate S
+S -> City : find(cidade_id)
+activate City
+City -> DB : SELECT cidade
+activate DB
+DB --> City : registro
+deactivate DB
 City --> S : cidadeOuNull
+deactivate City
 
-alt cidade inexistente
-    S --> C : erro("Cidade inválida")
-    C --> FE : respostaErro
-    FE --> Usuario : exibirErro
-else cidade válida
-    ' --- Validação da instituição (opcional) ---
-    S -> Inst : find(dados.instituicao_id)
+alt cidade invalida
+  S --> C : erro("Cidade invalida")
+else cidade valida
+  alt instituicao informada
+    S -> Inst : find(instituicao_id)
+    activate Inst
+    Inst -> DB : SELECT instituicao
+    activate DB
+    DB --> Inst : registro
+    deactivate DB
     Inst --> S : instOuNull
+    deactivate Inst
+  end
 
-    alt instituição obrigatória e não encontrada
-        S --> C : erro("Instituição inválida")
-        C --> FE : respostaErro
-        FE --> Usuario : exibirErro
-    else válida ou não obrigatória
-        alt oficio informado
-            S -> FS : armazenar(oficio,\n "demands/oficios")
-            FS --> S : path, original_name, mime_type
-        else sem oficio
-            S -> S : oficioPath = null
-        end
+  alt oficio informado
+    S -> FS : armazenar(oficio)
+    activate FS
+    FS --> S : metadadosDoOficio
+    deactivate FS
+  end
 
-        ' --- Criação da demanda ---
-        S -> M : create(dados + metadadosDoOficio)
-        M --> S : demandaCriada
+  S -> M : create(dados)
+  activate M
+  M -> DB : INSERT demanda
+  activate DB
+  DB --> M : demandaPersistida
+  deactivate DB
+  M --> S : demandaCriada
+  deactivate M
 
-        ' --- Histórico ---
-        S -> Hist : registrar("Demanda criada", usuarioAutenticado, demandaCriada)
-        Hist --> S : ok
+  S -> Hist : registrar("Demanda criada")
+  activate Hist
+  Hist --> S : ok
+  deactivate Hist
 
-        S --> C : sucesso(demandaCriada)
-        C --> FE : respostaOK
-        FE --> Usuario : exibirSucesso
-    end
+  S --> C : sucesso(demandaCriada)
 end
+deactivate S
+
+C --> FE : resposta
+deactivate C
+FE --> Usuario : exibirResultado
+deactivate FE
 @enduml

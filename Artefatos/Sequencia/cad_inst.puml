@@ -4,25 +4,37 @@ actor Usuario
 boundary Frontend as FE
 control InstituicaoController as C
 control InstituicaoService as S
-entity Instituicao as M
+entity InstituicaoModel as M
 control AuthorizationService as AuthZ
 control ValidationService as Val
+database "Banco de Dados" as DB
 
 Usuario -> FE : preencherFormInstituicao()
-FE -> C : POST /instituicoes (dados)
-
+activate FE
+FE -> C : POST /instituicoes
+activate C
 C -> AuthZ : verificarPermissao("CADASTRAR_INSTITUICAO")
+activate AuthZ
 AuthZ --> C : permitido
-
+deactivate AuthZ
 C -> Val : validarCampos(dados)
+activate Val
 Val --> C : ok
-
+deactivate Val
 C -> S : cadastrarInstituicao(dados)
-
+activate S
 S -> M : create(dados)
+activate M
+M -> DB : INSERT instituicao
+activate DB
+DB --> M : instituicaoPersistida
+deactivate DB
 M --> S : instituicaoCriada
-
-S --> C : sucesso(instituicao)
+deactivate M
+S --> C : sucesso(instituicaoCriada)
+deactivate S
 C --> FE : respostaOK
-FE --> Usuario : exibir "Instituição cadastrada"
+deactivate C
+FE --> Usuario : exibirSucesso
+deactivate FE
 @enduml

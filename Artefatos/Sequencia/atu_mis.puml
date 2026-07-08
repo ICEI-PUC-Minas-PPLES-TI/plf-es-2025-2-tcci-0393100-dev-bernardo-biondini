@@ -4,33 +4,50 @@ actor Usuario
 boundary Frontend as FE
 control CMSController as C
 control CMSService as S
-entity CMSSecao as M
+entity CMSSecaoModel as M
 control AuthorizationService as AuthZ
 control ValidationService as Val
 control HistoryService as Hist
+database "Banco de Dados" as DB
 
 Usuario -> FE : editarTextoMissao(novoTexto)
-FE -> C : PUT /cms/missao (novoTexto)
-
+activate FE
+FE -> C : PUT /cms/missao
+activate C
 C -> AuthZ : verificarPermissao("ATUALIZAR_MISSAO")
+activate AuthZ
 AuthZ --> C : permitido
-
+deactivate AuthZ
 C -> Val : validarTextoNaoVazio(novoTexto)
+activate Val
 Val --> C : ok
-
-C -> S : atualizarMissao(novoTexto, usuarioAutenticado)
-
+deactivate Val
+C -> S : atualizarMissao(novoTexto, usuario)
+activate S
 S -> M : findByChave("MISSAO")
+activate M
+M -> DB : SELECT secao
+activate DB
+DB --> M : registro
+deactivate DB
 M --> S : secaoMissao
-
-S -> Hist : registrar("Atualização Missão", usuarioAutenticado, secaoMissao)
+deactivate M
+S -> Hist : registrar("Atualizacao Missao")
+activate Hist
 Hist --> S : ok
-
-S -> M : update(secaoMissao, {conteudo = novoTexto})
+deactivate Hist
+S -> M : update(secaoMissao)
+activate M
+M -> DB : UPDATE secao
+activate DB
+DB --> M : secaoPersistida
+deactivate DB
 M --> S : secaoAtualizada
-
+deactivate M
 S --> C : sucesso
+deactivate S
 C --> FE : respostaOK
-FE --> Usuario : exibir "Missão atualizada"
-
+deactivate C
+FE --> Usuario : exibirSucesso
+deactivate FE
 @enduml

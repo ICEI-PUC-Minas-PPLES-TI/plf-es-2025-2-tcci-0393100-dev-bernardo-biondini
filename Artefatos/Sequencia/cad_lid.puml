@@ -4,34 +4,51 @@ actor Usuario
 boundary Frontend as FE
 control LiderancaController as C
 control LiderancaService as S
-entity Lideranca as M
-entity Instituicao as Inst
+entity InstituicaoModel as Inst
+entity LiderancaModel as M
 control AuthorizationService as AuthZ
 control ValidationService as Val
+database "Banco de Dados" as DB
 
 Usuario -> FE : preencherDadosLideranca()
+activate FE
 FE -> C : POST /liderancas
-
+activate C
 C -> AuthZ : verificarPermissao("CADASTRAR_LIDERANCA")
+activate AuthZ
 AuthZ --> C : permitido
-
+deactivate AuthZ
 C -> Val : validarCampos(dados)
+activate Val
 Val --> C : ok
-
+deactivate Val
 C -> S : cadastrarLideranca(dados)
+activate S
+S -> Inst : find(instituicao_id)
+activate Inst
+Inst -> DB : SELECT instituicao
+activate DB
+DB --> Inst : registro
+deactivate DB
+Inst --> S : instituicaoOuNull
+deactivate Inst
 
-S -> Inst : find(dados.instituicao_id)
-Inst --> S : instituicaoExiste
-
-alt instituição não existe
-    S --> C : erro("Instituição inválida")
-    C --> FE : respostaErro
-    FE --> Usuario : exibir erro
-else
-    S -> M : create(dados)
-    M --> S : liderancaCriada
-    S --> C : sucesso
-    C --> FE : respostaOK
-    FE --> Usuario : exibir sucesso
+alt instituicao inexistente
+  S --> C : erro("Instituicao invalida")
+else instituicao valida
+  S -> M : create(dados)
+  activate M
+  M -> DB : INSERT lideranca
+  activate DB
+  DB --> M : liderancaPersistida
+  deactivate DB
+  M --> S : liderancaCriada
+  deactivate M
+  S --> C : sucesso(liderancaCriada)
 end
+deactivate S
+C --> FE : resposta
+deactivate C
+FE --> Usuario : exibirResultado
+deactivate FE
 @enduml

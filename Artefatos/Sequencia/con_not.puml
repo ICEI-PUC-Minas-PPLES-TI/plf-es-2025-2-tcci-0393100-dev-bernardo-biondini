@@ -1,20 +1,29 @@
 @startuml
 actor Usuario
-
 boundary Frontend as FE
 control NoticiaController as C
 control NoticiaService as S
-entity Noticia as M
+entity NoticiaModel as M
+database "Banco de Dados" as DB
 
 Usuario -> FE : consultarNoticias(filtro)
-FE -> C : GET /noticias?filtro
-
+activate FE
+FE -> C : GET /noticias
+activate C
 C -> S : consultarNoticias(filtro)
+activate S
 S -> M : query(filtro)
+activate M
+M -> DB : SELECT noticias
+activate DB
+DB --> M : registros
+deactivate DB
 M --> S : listaNoticias
-
-S --> C
-C --> FE
+deactivate M
+S --> C : listaNoticias
+deactivate S
+C --> FE : respostaOK
+deactivate C
 FE --> Usuario : exibirNoticias
-
+deactivate FE
 @enduml

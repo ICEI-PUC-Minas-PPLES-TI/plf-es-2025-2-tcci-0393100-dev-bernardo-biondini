@@ -4,32 +4,65 @@ participant "WhatsApp Business API" as WA
 participant "Chatbot API" as Chatbot
 participant "Backend API" as API
 participant "ChatbotDemandService" as Service
+entity CitizenPhoneModel as PhoneModel
+entity CitizenModel as CitizenModel
 database "Banco de Dados" as DB
 
 Cidadao -> WA : iniciar conversa
+activate WA
 WA -> Chatbot : POST /webhook
-Chatbot -> API : GET /api/chatbot/citizens/lookup?phone
+activate Chatbot
+Chatbot -> API : GET /api/chatbot/citizens/lookup
+activate API
 API -> Service : findCitizenByPhone(phone)
-Service -> DB : buscar citizen_phones
-DB --> Service : cidadao ou null
-Service --> API : resultado
+activate Service
+Service -> PhoneModel : where(normalized_phone)
+activate PhoneModel
+PhoneModel -> DB : SELECT citizen_phone
+activate DB
+DB --> PhoneModel : registroOuNull
+deactivate DB
+PhoneModel --> Service : telefoneOuNull
+deactivate PhoneModel
+Service --> API : cidadaoOuNull
+deactivate Service
 API --> Chatbot : resposta
+deactivate API
 
 alt cidadao nao encontrado
-  Chatbot -> WA : solicitar nome e opcao\n de receber atualizacoes
-  Cidadao -> WA : enviar nome
-  Cidadao -> WA : informar preferencia
-  WA -> Chatbot : webhook com dados
+  Chatbot -> WA : solicitar nome e preferencia
+  Cidadao -> WA : informar dados
+  WA -> Chatbot : POST /webhook
   Chatbot -> API : POST /api/chatbot/citizens
-  API -> Service : registerCitizen(name, phone,\nreceive_demand_updates)
-  Service -> DB : criar citizen + citizen_phone
-  DB --> Service : cidadaoCriado
+  activate API
+  API -> Service : registerCitizen(dados)
+  activate Service
+  Service -> CitizenModel : createOrUpdate(citizen)
+  activate CitizenModel
+  CitizenModel -> DB : INSERT/UPDATE citizen
+  activate DB
+  DB --> CitizenModel : citizenPersistido
+  deactivate DB
+  CitizenModel --> Service : citizen
+  deactivate CitizenModel
+  Service -> PhoneModel : createOrUpdate(phone)
+  activate PhoneModel
+  PhoneModel -> DB : INSERT/UPDATE citizen_phone
+  activate DB
+  DB --> PhoneModel : phonePersistido
+  deactivate DB
+  PhoneModel --> Service : phone
+  deactivate PhoneModel
   Service --> API : citizen
+  deactivate Service
   API --> Chatbot : resposta
+  deactivate API
   Chatbot -> WA : confirmar identificacao
-  WA --> Cidadao : cadastro realizado
 else cidadao encontrado
   Chatbot -> WA : informar continuidade do atendimento
-  WA --> Cidadao : cadastro reutilizado
 end
+
+WA --> Cidadao : resposta
+deactivate Chatbot
+deactivate WA
 @enduml

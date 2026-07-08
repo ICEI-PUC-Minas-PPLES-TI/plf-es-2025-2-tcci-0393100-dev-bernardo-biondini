@@ -1,25 +1,34 @@
 @startuml
 actor Usuario
-
 boundary Frontend as FE
 control CidadeController as C
 control CidadeService as S
-entity Cidade as M
+entity CidadeModel as M
 control AuthorizationService as AuthZ
+database "Banco de Dados" as DB
 
 Usuario -> FE : consultarCidades()
+activate FE
 FE -> C : GET /cidades
-
+activate C
 C -> AuthZ : validarPermissao("CONSULTAR_CIDADES")
+activate AuthZ
 AuthZ --> C : permitido
-
+deactivate AuthZ
 C -> S : consultarCidades()
-
+activate S
 S -> M : all()
+activate M
+M -> DB : SELECT cidades
+activate DB
+DB --> M : registros
+deactivate DB
 M --> S : listaCidades
-
+deactivate M
 S --> C : listaCidades
+deactivate S
 C --> FE : respostaOK
+deactivate C
 FE --> Usuario : mostrarLista
-
+deactivate FE
 @enduml

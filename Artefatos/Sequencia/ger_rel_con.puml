@@ -1,33 +1,52 @@
 @startuml
 actor Usuario
-
 boundary Frontend as FE
 control RelatorioController as C
 control RelatorioService as S
-entity Emenda as EM
-entity ProjetoLei as PL
-entity Demanda as DM
+entity EmendaModel as EM
+entity ProjetoLeiModel as PL
+entity DemandaModel as DM
 control AuthorizationService as AuthZ
+database "Banco de Dados" as DB
 
 Usuario -> FE : gerarRelatorioConsolidado()
+activate FE
 FE -> C : GET /relatorios/consolidado
-
+activate C
 C -> AuthZ : validarPermissao("RELATORIO_CONSOLIDADO")
+activate AuthZ
 AuthZ --> C : permitido
-
+deactivate AuthZ
 C -> S : gerarRelatorioConsolidado()
-
+activate S
 S -> EM : count()
+activate EM
+EM -> DB : SELECT count(emendas)
+activate DB
+DB --> EM : totalEmendas
+deactivate DB
 EM --> S : totalEmendas
-
+deactivate EM
 S -> PL : count()
+activate PL
+PL -> DB : SELECT count(projetos_lei)
+activate DB
+DB --> PL : totalProjetos
+deactivate DB
 PL --> S : totalProjetos
-
+deactivate PL
 S -> DM : count()
+activate DM
+DM -> DB : SELECT count(demandas)
+activate DB
+DB --> DM : totalDemandas
+deactivate DB
 DM --> S : totalDemandas
-
+deactivate DM
 S --> C : consolidado
-C --> FE
+deactivate S
+C --> FE : arquivo
+deactivate C
 FE --> Usuario : downloadRelatorio
-
+deactivate FE
 @enduml

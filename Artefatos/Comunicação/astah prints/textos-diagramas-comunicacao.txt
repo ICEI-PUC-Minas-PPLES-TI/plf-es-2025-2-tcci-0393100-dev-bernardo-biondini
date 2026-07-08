@@ -1,0 +1,88 @@
+Os textos abaixo descrevem individualmente os diagramas de comunicação gerados no Astah, mantendo o mesmo padrão narrativo utilizado no Documento de Projeto para os diagramas de sequência. Cada parágrafo enfatiza os objetos participantes, a ordem geral das mensagens e a responsabilidade de cada componente no fluxo.
+
+UC01 Autenticar no Sistema
+O diagrama de comunicação de autenticação representa o fluxo de entrada seguro no sistema Gabinete Virtual, evidenciando a cooperação entre usuário, interface web, controlador, serviço de autenticação e componentes de autorização. A interação inicia-se quando o usuário informa suas credenciais no cliente web, que encaminha a requisição ao AuthController. Em seguida, o AuthService valida os dados recebidos, consulta o modelo de usuário, verifica o perfil e as permissões associadas e, em caso de sucesso, gera o token de acesso. Ao final, a resposta é devolvida ao frontend, permitindo que o usuário acesse as funcionalidades compatíveis com seu perfil.
+
+UC02 Cadastrar Cidade
+O diagrama de comunicação de cadastro de cidade descreve a operação em que o usuário envia os dados de um novo município pelo cliente web e o sistema os processa até a persistência final. A solicitação é recebida pelo controller responsável, que valida a permissão do usuário e aciona o serviço de domínio. O serviço aplica as validações necessárias e, estando tudo consistente, persiste a nova cidade no modelo Municipio. Por fim, o histórico da operação é registrado e a confirmação retorna ao usuário.
+
+UC02 Cadastrar Instituicao
+O diagrama de comunicação de cadastro de instituição demonstra como os objetos do sistema cooperam para registrar uma nova entidade vinculada a um município. A requisição parte do usuário, passa pelo cliente web e chega ao controlador de instituições, que primeiro valida as permissões. Em seguida, o serviço responsável verifica a integridade dos dados informados, confirma a existência da cidade associada e persiste a nova instituição no modelo correspondente. Depois da gravação, o sistema registra o histórico da ação e devolve ao frontend a confirmação de sucesso.
+
+UC02 Consultar Cidades
+O diagrama de comunicação de consulta de cidades representa uma operação de leitura, na qual o usuário solicita a listagem de municípios disponíveis para uso nos demais módulos do sistema. A interface encaminha a requisição ao controller, que aciona o serviço de cidades para montar a consulta. O serviço interage com o modelo Municipio, recupera os registros compatíveis com os filtros enviados e devolve o resultado ao controlador. Como não há alteração de estado, o fluxo encerra-se com o retorno dos dados ao frontend, sem necessidade de histórico.
+
+UC02 Consultar Instituicoes
+O diagrama de comunicação de consulta de instituições apresenta o fluxo utilizado para recuperar entidades cadastradas com base em filtros opcionais. O usuário realiza a solicitação pelo frontend, que a envia ao controller específico; este, por sua vez, valida a autorização e delega a busca ao serviço de instituições. O serviço monta a consulta, acessa o modelo Instituicao e retorna a coleção de resultados ao controlador. A resposta final é então encaminhada ao cliente web para exibição ao usuário.
+
+UC02 Consultar Liderancas
+O diagrama de comunicação de consulta de lideranças descreve o processo de recuperação de lideranças políticas ou comunitárias já cadastradas no sistema. O fluxo começa no frontend, onde o usuário informa os filtros desejados, e segue para o controller, que valida o acesso e chama o serviço correspondente. O serviço consulta o modelo Lideranca, aplica os critérios de busca e devolve os dados ao controlador. Ao final, o frontend apresenta os resultados sem que haja qualquer modificação persistente nos registros.
+
+UC03 Atualizar Missao
+O diagrama de comunicação de atualização da seção de missão institucional mostra a interação entre interface, controlador, serviço de conteúdo, validação e persistência. O usuário envia o novo texto pelo frontend, que encaminha a operação ao controller do CMS. Após a validação de permissão e de consistência do conteúdo informado, o serviço de conteúdo atualiza o registro correspondente no modelo de página institucional. Em seguida, o sistema registra a alteração no histórico e retorna ao usuário uma confirmação de que a atualização foi concluída com sucesso.
+
+UC03 Atualizar Trajetoria
+O diagrama de comunicação de atualização da trajetória institucional descreve um fluxo semelhante ao da missão, mas aplicado à seção dedicada ao histórico público da atuação parlamentar. A interação parte do usuário no cliente web, passa pelo controller responsável e chega ao serviço de conteúdo, que valida a autorização e a integridade do texto recebido. Uma vez aprovados os dados, o serviço persiste a alteração no modelo correspondente e registra o evento para auditoria. A confirmação final é então devolvida ao frontend.
+
+UC03 Cadastrar Noticia
+O diagrama de comunicação de cadastro de notícia representa o fluxo de publicação de conteúdo jornalístico no portal do gabinete. O usuário envia título, texto e demais atributos pelo frontend, que repassa a requisição ao controller do CMS. O serviço de notícias valida os dados, organiza a operação de persistência e aciona o modelo Noticia para gravar o novo conteúdo. Após o registro do histórico, o resultado da operação retorna ao cliente web, permitindo a confirmação visual da publicação.
+
+UC03 Cadastrar Projeto do Site
+O diagrama de comunicação de cadastro de projeto do site demonstra a cooperação entre os objetos que administram os conteúdos institucionais exibidos ao público. O usuário preenche os dados do projeto no frontend e a solicitação é enviada ao controller apropriado. O serviço valida os campos informados, persiste o novo projeto no modelo de conteúdo do site e registra a ação para fins de rastreabilidade. Ao término, o sistema retorna uma resposta de sucesso ao usuário.
+
+UC03 Consultar Noticias
+O diagrama de comunicação de consulta de notícias apresenta o fluxo de leitura dos conteúdos já publicados. O frontend envia a requisição ao controller com filtros opcionais, como título, data ou autor, e o serviço de notícias monta a consulta a partir desses critérios. O modelo Noticia devolve os registros encontrados, que são encaminhados ao controlador e, por fim, ao cliente web. Por se tratar de consulta, o fluxo não altera o estado do sistema nem gera histórico.
+
+UC03 Consultar Projetos do Site
+O diagrama de comunicação de consulta de projetos do site descreve a recuperação dos conteúdos institucionais apresentados no portal público. O usuário solicita a listagem por meio da interface, o controller aciona o serviço correspondente e este consulta o modelo ProjetoSite aplicando os filtros recebidos. O conjunto de resultados é retornado ao controlador e então ao frontend. A operação é exclusivamente de leitura e, portanto, não envolve persistência adicional.
+
+UC04 Atualizar Projeto de Lei
+O diagrama de comunicação de atualização de projeto de lei evidencia a coordenação entre objetos responsáveis por autorização, validação, persistência e auditoria. O usuário solicita a alteração no frontend, que encaminha a mensagem ao controller de projetos de lei. O serviço verifica se o registro existe, valida os novos dados permitidos e atualiza o modelo ProjetoLei. Após registrar a mudança no histórico, o sistema devolve a confirmação ao cliente; caso o projeto não seja localizado, o fluxo retorna uma resposta de erro.
+
+UC04 Cadastrar Projeto de Lei
+O diagrama de comunicação de cadastro de projeto de lei representa o processo de inserção de uma nova proposição legislativa acompanhada pelo gabinete. A requisição sai do frontend em direção ao controller, que verifica a permissão do usuário e encaminha o pedido ao serviço de domínio. O serviço valida a integridade dos campos, consulta o modelo para confirmar que não existe outro projeto com o mesmo número e, se estiver tudo correto, persiste o novo registro. O histórico é então gravado e a confirmação retorna ao usuário.
+
+UC04 Consultar Projetos de Lei
+O diagrama de comunicação de consulta de projetos de lei descreve a leitura dos registros legislativos com base em filtros informados pelo usuário. A operação parte do cliente web e chega ao controller, que delega a busca ao serviço correspondente. O serviço consulta o modelo ProjetoLei, aplica os critérios definidos e envia os resultados ao controlador. A resposta final é retornada ao frontend, sem produzir alterações no banco de dados.
+
+UC05 Atualizar Emenda
+O diagrama de comunicação de atualização de emenda mostra o fluxo utilizado para alterar dados de uma emenda parlamentar já cadastrada. O usuário inicia a operação no frontend e o controller aciona os serviços de permissão e validação antes de encaminhar o pedido ao serviço de emendas. Esse serviço localiza o registro, aplica as mudanças permitidas, persiste os novos valores no modelo Emenda e registra a alteração no histórico. Ao final, o resultado retorna ao cliente web; se a emenda não existir, o sistema devolve erro.
+
+UC05 Cadastrar Emenda
+O diagrama de comunicação de cadastro de emenda descreve o fluxo de registro de uma nova emenda parlamentar vinculada ao município ou contexto administrativo informado. O controller recebe a solicitação enviada pelo frontend, valida a autorização do usuário e repassa os dados ao serviço de emendas. O serviço confirma a consistência dos campos, verifica a existência da cidade relacionada e persiste o registro no modelo Emenda. Em seguida, a operação é registrada em histórico e a confirmação é devolvida ao usuário.
+
+UC05 Consultar Emendas
+O diagrama de comunicação de consulta de emendas representa a recuperação de registros legislativos a partir de filtros como número, situação ou cidade. A interface do usuário envia a requisição ao controller, que aciona o serviço de emendas para montar a consulta. O serviço utiliza o modelo Emenda para obter os registros compatíveis e retorna o conjunto de dados ao controlador. Por ser uma operação apenas de leitura, o fluxo é concluído sem gravação de histórico.
+
+UC06 Abrir Demanda
+O diagrama de comunicação de abertura de demanda apresenta o principal fluxo operacional do sistema, no qual uma nova solicitação é registrada para acompanhamento pelo gabinete. O usuário informa os dados da demanda no frontend e o controller responsável valida as permissões antes de acionar o serviço de demandas. O serviço verifica vínculos necessários, como cidade e eventual instituição, define os dados iniciais do registro, persiste a nova demanda no modelo correspondente e grava o evento no histórico. Ao final, o frontend recebe a confirmação da criação, assegurando rastreabilidade desde o primeiro momento do atendimento.
+
+UC06 Atualizar Demanda
+O diagrama de comunicação de atualização de demanda descreve um fluxo mais abrangente, no qual alterações como status, responsável, prazo, observações e outros atributos passam por validação e controle de acesso. O usuário solicita a atualização pelo cliente web, o controller valida as permissões do perfil envolvido e o serviço de demandas verifica a integridade das novas informações, inclusive a existência do responsável quando aplicável. Em seguida, o modelo de demanda é atualizado, o histórico registra a mudança e os componentes de notificação podem ser acionados quando a alteração exigir comunicação com usuários internos ou cidadãos vinculados. A resposta final retorna ao frontend, consolidando a atualização realizada.
+
+UC06 Consultar Demandas
+O diagrama de comunicação de consulta de demandas representa o fluxo de listagem e filtragem das solicitações registradas no sistema. O frontend envia os critérios ao controller de demandas, que verifica o contexto de acesso do usuário e delega a busca ao serviço de domínio. O serviço consulta o modelo Demanda, aplica filtros como status, prioridade, cidade, responsável ou período e retorna os resultados ao controlador. O usuário recebe então a relação de demandas compatíveis, sem que o estado do sistema seja modificado.
+
+UC07 Atualizar Evento
+O diagrama de comunicação de atualização de evento evidencia a colaboração entre cliente web, controlador de agenda, serviço de autorização, serviço de validação, serviço de agenda, modelo de eventos, modelo de histórico e componente de lembretes automáticos. Após o usuário solicitar a alteração, o controller valida se o perfil possui permissão para atualizar compromissos e se os dados enviados são consistentes. O AgendaService então persiste as mudanças no evento, registra a alteração no histórico e sincroniza novamente os lembretes automáticos derivados daquele compromisso. Ao final, a confirmação retorna ao frontend; se houver falha de permissão ou dados inválidos, o fluxo é interrompido antes da persistência.
+
+UC07 Cadastrar Evento
+O diagrama de comunicação de cadastro de evento descreve a criação de compromissos na agenda institucional do gabinete. O usuário preenche os dados do evento no frontend, o controller realiza as verificações de acesso e repassa a solicitação ao serviço de agenda. O serviço valida datas e informações obrigatórias, persiste o novo evento no modelo correspondente e registra a criação no histórico. Por fim, o resultado é devolvido ao cliente web, permitindo o acompanhamento do compromisso recém-criado.
+
+UC07 Consultar Agenda
+O diagrama de comunicação de consulta da agenda representa a recuperação dos eventos cadastrados para exibição no calendário institucional. A interface solicita os dados ao controller, que encaminha a operação ao serviço de agenda. O serviço consulta o modelo de eventos com base no intervalo solicitado e devolve ao controlador a lista de compromissos encontrados. O frontend então apresenta o calendário atualizado ao usuário, sem produzir efeitos colaterais sobre os dados persistidos.
+
+UC08d Relatorio Consolidado Geral
+O diagrama de comunicação do relatório consolidado geral descreve a geração do documento analítico mais abrangente do sistema, utilizado para apoiar a tomada de decisão da Deputada. O usuário solicita a emissão pelo frontend, o controller de relatórios valida a permissão específica e aciona o serviço de consolidação. Esse serviço consulta múltiplos modelos, como demandas, emendas e projetos de lei, agrega os dados conforme as regras definidas e produz o relatório final. A resposta é então devolvida ao cliente web para visualização ou download do documento gerado.
+
+Chatbot - cadastrar cidadao.png
+O diagrama de comunicação de cadastro de cidadão no chatbot representa o fluxo inicial de identificação do usuário externo no canal do WhatsApp. A interação começa quando o cidadão inicia a conversa, o WhatsApp encaminha a mensagem para a Chatbot API e esta delega ao serviço do chatbot a verificação do telefone informado. O serviço consulta o backend para localizar um cidadão já associado àquele número e, apenas quando não há cadastro prévio, solicita a criação do novo vínculo. Dessa forma, o fluxo demonstra que o atendimento automatizado prioriza a identificação por telefone antes de exigir novas informações cadastrais.
+
+Chatbot - optar por receber conteudo_0.png
+Embora o nome do arquivo sugira preferência de conteúdo, este diagrama de comunicação representa o fluxo de registro de demanda pelo chatbot. O cidadão interage pelo WhatsApp, a Chatbot API encaminha a solicitação ao serviço de demandas do chatbot e este aciona uma camada de validação composta por verificadores de idioma, spam, discurso ofensivo e similaridade com demandas anteriores. Caso as validações sejam superadas, o backend recebe a ordem de criação da demanda; caso contrário, o mesmo fluxo permite o envio da solicitação como descartada, com o motivo devidamente identificado. O diagrama evidencia, portanto, que o chatbot não grava diretamente os dados de negócio, mas atua como intermediador especializado antes da integração com a API principal.
+
+Chatbot - optar por receber conteudo.png
+O diagrama de comunicação de preferência por recebimento de conteúdo mostra o momento em que o cidadão opta por receber conteúdos institucionais ou atualizações por meio do chatbot. A escolha é informada via WhatsApp, encaminhada à Chatbot API e tratada pelo serviço do chatbot, que repassa a alteração ao backend principal. O backend atualiza a preferência persistida do cidadão e confirma a operação ao canal de origem. Com isso, o fluxo garante que o envio de conteúdos respeite a decisão explícita do usuário.
+
+Chatbot - receber atualizacao.png
+O diagrama de comunicação de recebimento de atualização descreve o fluxo assíncrono de notificações relacionadas a demandas já vinculadas a um cidadão. Quando ocorre uma alteração relevante, um componente externo de eventos ou websocket aciona a Chatbot API, que repassa a preparação da mensagem ao serviço do chatbot. Em seguida, a mensagem é enviada ao WhatsApp e entregue ao cidadão sem necessidade de uma nova solicitação ativa por parte dele. O diagrama destaca, assim, o papel do chatbot como canal de saída para alertas automáticos gerados pelo sistema principal.

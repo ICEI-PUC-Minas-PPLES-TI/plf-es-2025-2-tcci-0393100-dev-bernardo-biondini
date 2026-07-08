@@ -4,38 +4,55 @@ actor Usuario
 boundary Frontend as FE
 control ProjetoLeiController as C
 control ProjetoLeiService as S
-entity ProjetoLei as M
+entity ProjetoLeiModel as M
 control AuthorizationService as AuthZ
 control ValidationService as Val
 control HistoryService as Hist
+database "Banco de Dados" as DB
 
-Usuario -> FE : preencherFormProjetoLei(dados)
-FE -> C : POST /projetos-lei (dados)
-
+Usuario -> FE : preencherFormProjetoLei()
+activate FE
+FE -> C : POST /projetos-lei
+activate C
 C -> AuthZ : verificarPermissao("CADASTRAR_PL")
+activate AuthZ
 AuthZ --> C : permitido
-
+deactivate AuthZ
 C -> Val : validarCamposObrigatorios(dados)
+activate Val
 Val --> C : ok
-
-C -> S : cadastrarPL(dados, usuarioAutenticado)
-
-S -> M : where(numero = dados.numero).first()
+deactivate Val
+C -> S : cadastrarPL(dados, usuario)
+activate S
+S -> M : where(numero).first()
+activate M
+M -> DB : SELECT projeto_lei
+activate DB
+DB --> M : registroOuNull
+deactivate DB
 M --> S : plExistenteOuNull
+deactivate M
 
-alt número já cadastrado
-    S --> C : erro("Número de PL já existe")
-    C --> FE : respostaErro
-    FE --> Usuario : exibirErro
-else novo PL válido
-    S -> M : create(dados)
-    M --> S : plCriado
-
-    S -> Hist : registrar("Cadastro do PL", usuarioAutenticado, plCriado)
-    Hist --> S : ok
-
-    S --> C : sucesso(plCriado)
-    C --> FE : respostaOK
-    FE --> Usuario : exibirSucesso
+alt numero ja cadastrado
+  S --> C : erro("Numero de PL ja existe")
+else novo PL
+  S -> M : create(dados)
+  activate M
+  M -> DB : INSERT projeto_lei
+  activate DB
+  DB --> M : projetoPersistido
+  deactivate DB
+  M --> S : plCriado
+  deactivate M
+  S -> Hist : registrar("Cadastro do PL")
+  activate Hist
+  Hist --> S : ok
+  deactivate Hist
+  S --> C : sucesso(plCriado)
 end
+deactivate S
+C --> FE : resposta
+deactivate C
+FE --> Usuario : exibirResultado
+deactivate FE
 @enduml

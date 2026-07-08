@@ -2,36 +2,87 @@
 actor Cidadao
 participant "WhatsApp Business API" as WA
 participant "Chatbot API" as Chatbot
-participant "Validadores\nidioma / conteudo /\nsimilaridade" as Validators
+participant "Validadores" as Validators
 participant "Backend API" as API
 participant "ChatbotDemandService" as Service
+entity CitizenModel as CitizenModel
+entity CitizenPhoneModel as PhoneModel
+entity DemandModel as DemandModel
 database "Banco de Dados" as DB
 
 Cidadao -> WA : enviar mensagem
+activate WA
 WA -> Chatbot : POST /webhook
+activate Chatbot
 Chatbot -> Chatbot : identificar telefone\ncarregar sessao
 Chatbot -> Validators : validarMensagem(texto, cidade)
+activate Validators
 Validators --> Chatbot : resultado
+deactivate Validators
 
 alt mensagem invalida ou demanda similar
-  Chatbot -> API : POST /api/chatbot/demands\n(can_create=false, reason, message, demanda)
+  Chatbot -> API : POST /api/chatbot/demands
+  activate API
   API -> Service : registrarDemandaDescartada(payload)
-  Service -> DB : upsert citizen / phone
-  Service -> DB : insert demanda(status=discarded,\ndiscard_message)
-  DB --> Service : demandaDescartada
+  activate Service
+  Service -> CitizenModel : localizarCidadao()
+  activate CitizenModel
+  CitizenModel -> DB : SELECT/INSERT citizen
+  activate DB
+  DB --> CitizenModel : citizen
+  deactivate DB
+  CitizenModel --> Service : citizen
+  deactivate CitizenModel
+  Service -> PhoneModel : createOrUpdate(phone)
+  activate PhoneModel
+  PhoneModel -> DB : INSERT/UPDATE citizen_phone
+  activate DB
+  DB --> PhoneModel : phone
+  deactivate DB
+  PhoneModel --> Service : phone
+  deactivate PhoneModel
+  Service -> DemandModel : create(discarded)
+  activate DemandModel
+  DemandModel -> DB : INSERT demanda
+  activate DB
+  DB --> DemandModel : demandaPersistida
+  deactivate DB
+  DemandModel --> Service : demandaDescartada
+  deactivate DemandModel
   Service --> API : protocolo interno
+  deactivate Service
   API --> Chatbot : resposta
-  Chatbot -> WA : enviar confirmacao com motivo\n e protocolo
-  WA --> Cidadao : demanda descartada
+  deactivate API
+  Chatbot -> WA : enviar confirmacao com motivo
 else mensagem valida
-  Chatbot -> API : POST /api/chatbot/demands\n(can_create=true, citizen, city, institution, demanda)
+  Chatbot -> API : POST /api/chatbot/demands
+  activate API
   API -> Service : registrarDemanda(payload)
-  Service -> DB : localizar/criar citizen
-  Service -> DB : persistir demanda
-  DB --> Service : demandaCriada
+  activate Service
+  Service -> CitizenModel : find(citizen_id)
+  activate CitizenModel
+  CitizenModel -> DB : SELECT citizen
+  activate DB
+  DB --> CitizenModel : citizen
+  deactivate DB
+  CitizenModel --> Service : citizen
+  deactivate CitizenModel
+  Service -> DemandModel : create(under_review)
+  activate DemandModel
+  DemandModel -> DB : INSERT demanda
+  activate DB
+  DB --> DemandModel : demandaPersistida
+  deactivate DB
+  DemandModel --> Service : demandaCriada
+  deactivate DemandModel
   Service --> API : protocolo interno
+  deactivate Service
   API --> Chatbot : resposta
+  deactivate API
   Chatbot -> WA : enviar confirmacao de registro
-  WA --> Cidadao : demanda registrada
 end
+
+WA --> Cidadao : retorno final
+deactivate Chatbot
+deactivate WA
 @enduml
